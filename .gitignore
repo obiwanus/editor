@@ -27,3 +27,14 @@
 *.exe
 *.out
 *.app
+
+
+build/
+
+*.sublime-*
+*.pro
+*.pro.*
+*.creator*
+editor.config
+editor.files
+editor.includes
