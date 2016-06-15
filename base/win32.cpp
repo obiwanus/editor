@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <time.h>
+
 #include "base.h"
 
 global void *gWindowsBitmapMemory;
@@ -11,6 +14,12 @@ global const int kWindowWidth = 1024;
 global const int kWindowHeight = 768;
 
 global bool gRunning;
+
+struct point {
+  int x;
+  int y;
+  int z;
+};
 
 static void Win32UpdateWindow(HDC hdc) {
   if (!gWindowsBitmapMemory) return;
@@ -48,6 +57,25 @@ Win32WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   }
 
   return Result;
+}
+
+void DrawPixel(int x, int y, u32 Color) {
+  u32 *Pixel = (u32 *)gWindowsBitmapMemory + x + kWindowWidth * y;
+  *Pixel = Color;
+}
+
+void DrawStar(point *star) {
+  DrawPixel(star->x / star->z, star->y / star->z, 0x00FFFFFF);
+}
+
+void EraseStar(point *star) {
+  DrawPixel(star->x / star->z, star->y / star->z, 0x00000000);
+}
+
+void InitStar(point *star) {
+  star->x = rand() % kWindowWidth;
+  star->y = rand() % kWindowHeight;
+  star->z = rand() % 100 + 1;
 }
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -104,6 +132,13 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       GlobalBitmapInfo.bmiHeader.biBitCount = 32;
       GlobalBitmapInfo.bmiHeader.biCompression = BI_RGB;
 
+      srand((uint)time(NULL));
+      const int num_stars = 1000;
+      point stars[num_stars];
+      for (int i = 0; i < num_stars; i++) {
+        InitStar(&stars[i]);
+      }
+
       // Event loop
       while (gRunning) {
         // Process messages
@@ -139,9 +174,23 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
           }
         }
 
+        // Draw stars
+        for (int i = 0; i < num_stars; i++) {
+          point *star = &stars[i];
+
+          EraseStar(star);
+
+          star->z--;
+          if (star->z <= 1) {
+            InitStar(star);
+          }
+
+          DrawStar(star);
+        }
+
         // TODO: sleep on vblank
         Win32UpdateWindow(hdc);
-        Sleep(1);
+        Sleep(10);
       }
     }
   } else {
