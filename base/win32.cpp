@@ -3,47 +3,115 @@
 
 #include "base.h"
 
-global void *gWindowsBitmapMemory;
-
 #include <windows.h>
 #include <intrin.h>
-
-global BITMAPINFO GlobalBitmapInfo;
+#include <gl/gl.h>
 
 global const int kWindowWidth = 1024;
 global const int kWindowHeight = 768;
 
 global bool gRunning;
 
-struct point {
-  int x;
-  int y;
-  int z;
+struct pixel_buffer {
+  int width;
+  int height;
+  int max_width;
+  int max_height;
+  void *memory;
 };
 
-static void Win32UpdateWindow(HDC hdc) {
-  if (!gWindowsBitmapMemory) return;
+global pixel_buffer gPixelBuffer;
+global GLuint gTextureHandle;
 
-  StretchDIBits(hdc, 0, 0, kWindowWidth, kWindowHeight,  // dest
-                0, 0, kWindowWidth, kWindowHeight,       // src
-                gWindowsBitmapMemory, &GlobalBitmapInfo, DIB_RGB_COLORS,
-                SRCCOPY);
+static void Win32UpdateWindow(HDC hdc) {
+  if (!gPixelBuffer.memory) return;
+
+  glViewport(0, 0, gPixelBuffer.width, gPixelBuffer.height);
+
+  glEnable(GL_TEXTURE_2D);
+
+  glBindTexture(GL_TEXTURE_2D, gTextureHandle);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gPixelBuffer.width,
+               gPixelBuffer.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE,
+               gPixelBuffer.memory);
+
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+  glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+  glClear(GL_COLOR_BUFFER_BIT);
+
+  glMatrixMode(GL_TEXTURE);
+  glLoadIdentity();
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+
+  glBegin(GL_TRIANGLES);
+
+  glTexCoord2f(0.0f, 1.0f);
+  glVertex2i(-1, -1);
+  glTexCoord2f(1.0f, 1.0f);
+  glVertex2i(1, -1);
+  glTexCoord2f(1.0f, 0.0f);
+  glVertex2i(1, 1);
+
+  glTexCoord2f(0.0f, 1.0f);
+  glVertex2i(-1, -1);
+  glTexCoord2f(0.0f, 0.0f);
+  glVertex2i(-1, 1);
+  glTexCoord2f(1.0f, 0.0f);
+  glVertex2i(1, 1);
+
+  glEnd();
+
+  SwapBuffers(hdc);
+}
+
+static void Win32ResizeClientWindow(HWND window) {
+  if (!gPixelBuffer.memory) return;  // no buffer yet
+
+  RECT client_rect;
+  GetClientRect(window, &client_rect);
+  int width = client_rect.right - client_rect.left;
+  int height = client_rect.bottom - client_rect.top;
+
+  if (width > gPixelBuffer.max_width) {
+    width = gPixelBuffer.max_width;
+  }
+  if (height > gPixelBuffer.max_height) {
+    height = gPixelBuffer.max_height;
+  }
+
+  gPixelBuffer.width = width;
+  gPixelBuffer.height = height;
 }
 
 LRESULT CALLBACK
-Win32WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   LRESULT Result = 0;
 
   switch (uMsg) {
+    case WM_SIZE: {
+      Win32ResizeClientWindow(Window);
+    } break;
+
     case WM_CLOSE: {
       gRunning = false;
     } break;
 
     case WM_PAINT: {
       PAINTSTRUCT Paint = {};
-      HDC hdc = BeginPaint(hwnd, &Paint);
+      HDC hdc = BeginPaint(Window, &Paint);
       Win32UpdateWindow(hdc);
-      EndPaint(hwnd, &Paint);
+      EndPaint(Window, &Paint);
     } break;
 
     case WM_SYSKEYDOWN:
@@ -53,29 +121,10 @@ Win32WindowProc(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
       Assert(!"Keyboard input came in through a non-dispatch message!");
     } break;
 
-    default: { Result = DefWindowProc(hwnd, uMsg, wParam, lParam); } break;
+    default: { Result = DefWindowProc(Window, uMsg, wParam, lParam); } break;
   }
 
   return Result;
-}
-
-void DrawPixel(int x, int y, u32 Color) {
-  u32 *Pixel = (u32 *)gWindowsBitmapMemory + x + kWindowWidth * y;
-  *Pixel = Color;
-}
-
-void DrawStar(point *star) {
-  DrawPixel(star->x / star->z, star->y / star->z, 0x00FFFFFF);
-}
-
-void EraseStar(point *star) {
-  DrawPixel(star->x / star->z, star->y / star->z, 0x00000000);
-}
-
-void InitStar(point *star) {
-  star->x = rand() % kWindowWidth;
-  star->y = rand() % kWindowHeight;
-  star->z = rand() % 100 + 1;
 }
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -102,7 +151,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
   if (RegisterClass(&WindowClass)) {
     // Create window so that its client area is exactly kWindowWidth/Height
-    DWORD WindowStyle = WS_OVERLAPPEDWINDOW ^ WS_THICKFRAME | WS_VISIBLE;
+    DWORD WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
     RECT WindowRect = {};
     WindowRect.right = kWindowWidth;
     WindowRect.bottom = kWindowHeight;
@@ -119,24 +168,52 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
       gRunning = true;
 
-      // Init memory
-      gWindowsBitmapMemory =
-          VirtualAlloc(0, kWindowWidth * kWindowHeight * sizeof(u32),
-                       MEM_COMMIT, PAGE_READWRITE);
+      // Init pixel buffer
+      gPixelBuffer.max_width = 3000;
+      gPixelBuffer.max_height = 3000;
+      gPixelBuffer.memory = VirtualAlloc(
+          0, gPixelBuffer.max_width * gPixelBuffer.max_height * sizeof(u32),
+          MEM_COMMIT, PAGE_READWRITE);
 
-      // Init bitmap
-      GlobalBitmapInfo.bmiHeader.biWidth = kWindowWidth;
-      GlobalBitmapInfo.bmiHeader.biHeight = -kWindowHeight;
-      GlobalBitmapInfo.bmiHeader.biSize = sizeof(GlobalBitmapInfo.bmiHeader);
-      GlobalBitmapInfo.bmiHeader.biPlanes = 1;
-      GlobalBitmapInfo.bmiHeader.biBitCount = 32;
-      GlobalBitmapInfo.bmiHeader.biCompression = BI_RGB;
+      // Set proper buffer values based on actual client size
+      Win32ResizeClientWindow(Window);
 
-      srand((uint)time(NULL));
-      const int num_stars = 1000;
-      point stars[num_stars];
-      for (int i = 0; i < num_stars; i++) {
-        InitStar(&stars[i]);
+      // Init OpenGL
+      {
+        PIXELFORMATDESCRIPTOR DesiredPixelFormat = {};
+        DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
+        DesiredPixelFormat.nVersion = 1;
+        DesiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
+        DesiredPixelFormat.dwFlags =
+            PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
+        DesiredPixelFormat.cColorBits = 32;
+        DesiredPixelFormat.cAlphaBits = 8;
+        DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
+
+        int SuggestedPixelFormatIndex =
+            ChoosePixelFormat(hdc, &DesiredPixelFormat);
+        PIXELFORMATDESCRIPTOR SuggestedPixelFormat;
+        DescribePixelFormat(hdc, SuggestedPixelFormatIndex,
+                            sizeof(SuggestedPixelFormat),
+                            &SuggestedPixelFormat);
+
+        SetPixelFormat(hdc, SuggestedPixelFormatIndex, &SuggestedPixelFormat);
+
+        HGLRC OpenGLRC = wglCreateContext(hdc);
+        if (wglMakeCurrent(hdc, OpenGLRC)) {
+          // Success
+          glGenTextures(1, &gTextureHandle);
+
+          typedef BOOL WINAPI wgl_swap_interval_ext(int interval);
+          wgl_swap_interval_ext *wglSwapInterval =
+              (wgl_swap_interval_ext *)wglGetProcAddress("wglSwapIntervalEXT");
+          if (wglSwapInterval) {
+            wglSwapInterval(1);
+          }
+        } else {
+          // Something's wrong
+          Assert(false);
+        }
       }
 
       // Event loop
@@ -172,20 +249,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
               DispatchMessageA(&Message);
             } break;
           }
-        }
-
-        // Draw stars
-        for (int i = 0; i < num_stars; i++) {
-          point *star = &stars[i];
-
-          EraseStar(star);
-
-          star->z--;
-          if (star->z <= 1) {
-            InitStar(star);
-          }
-
-          DrawStar(star);
         }
 
         // TODO: sleep on vblank
