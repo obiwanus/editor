@@ -2,23 +2,13 @@
 #include <time.h>
 
 #include "base.h"
+#include "core.h"
 
 #include <windows.h>
 #include <intrin.h>
 #include <gl/gl.h>
 
-global const int kWindowWidth = 1024;
-global const int kWindowHeight = 768;
-
 global bool gRunning;
-
-struct pixel_buffer {
-  int width;
-  int height;
-  int max_width;
-  int max_height;
-  void *memory;
-};
 
 global pixel_buffer gPixelBuffer;
 global GLuint gTextureHandle;
@@ -153,6 +143,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     // Create window so that its client area is exactly kWindowWidth/Height
     DWORD WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
     RECT WindowRect = {};
+
+    // TODO: get monitor size
+    const int kWindowWidth = 1500;
+    const int kWindowHeight = 1000;
+
     WindowRect.right = kWindowWidth;
     WindowRect.bottom = kWindowHeight;
     AdjustWindowRect(&WindowRect, WindowStyle, 0);
@@ -209,6 +204,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
               (wgl_swap_interval_ext *)wglGetProcAddress("wglSwapIntervalEXT");
           if (wglSwapInterval) {
             wglSwapInterval(1);
+          } else {
+            // VSync not enabled or not supported
+            Assert(false);
           }
         } else {
           // Something's wrong
@@ -251,9 +249,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
           }
         }
 
-        // TODO: sleep on vblank
         Win32UpdateWindow(hdc);
-        Sleep(10);
       }
     }
   } else {
