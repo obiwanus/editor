@@ -249,6 +249,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
           }
         }
 
+        // TODO: create and pass global memory
+        UpdateAndRender(&gPixelBuffer);
+
         Win32UpdateWindow(hdc);
       }
     }

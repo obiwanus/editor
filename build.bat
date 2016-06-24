@@ -15,7 +15,9 @@ pushd build
 @del /Q *.pdb > NUL 2> NUL
 @del /Q *.gmi > NUL 2> NUL
 
-cl -Feeditor.exe %CommonCompilerFlags% ..\base\win32.cpp /link %CommonLinkerFlags%
+set FilesToCompile= ..\base\win32.cpp ..\base\core.cpp
+
+cl -Feeditor.exe %CommonCompilerFlags% %FilesToCompile% /link %CommonLinkerFlags%
 
 popd
 popd
