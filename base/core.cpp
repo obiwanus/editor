@@ -107,21 +107,36 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer) {
   int x_shift = 300;
   int y_shift = 300;
 
+  r32 angle = M_PI / 3.0f;
+
+
+  // TODO: rotation
+
+
+
+  m3x3 RotationMatrix = {
+    (r32)cos(angle), -1 * (r32)sin(angle), 0,
+    (r32)sin(angle), (r32)cos(angle), 0,
+    0, 0, 1,
+  };
+
   int edge_count = COUNT_OF(edges);
   for (int i = 0; i < edge_count; i++) {
     v2i edge = edges[i];
     v3 point1 = points[edge.x];
     v3 point2 = points[edge.y];
-    v2i A, B;
-    A.x = (int)(point1.x * scale / (point1.z + z_depth)) + x_shift;
-    A.y = (int)(point1.y * scale / (point1.z + z_depth)) + y_shift;
-    B.x = (int)(point2.x * scale / (point2.z + z_depth)) + x_shift;
-    B.y = (int)(point2.y * scale / (point2.z + z_depth)) + y_shift;
+    v2 A, B;
+    A.x = (point1.x * scale / (point1.z + z_depth)) + x_shift;
+    A.y = (point1.y * scale / (point1.z + z_depth)) + y_shift;
+    B.x = (point2.x * scale / (point2.z + z_depth)) + x_shift;
+    B.y = (point2.y * scale / (point2.z + z_depth)) + y_shift;
 
-    if (edge.x == 1 && edge.y == 5) {
-      int a = 1;
-    }
-    DrawLine(PixelBuffer, A, B, 0x00FFFFFF);
+    A = Transform(RotationMatrix, A);
+    B = Transform(RotationMatrix, B);
+
+    v2i Ai = {(int)A.x, (int)A.y};
+    v2i Bi = {(int)B.x, (int)B.y};
+    DrawLine(PixelBuffer, Ai, Bi, 0x00FFFFFF);
   }
 
   return result;
