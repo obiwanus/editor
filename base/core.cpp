@@ -1,50 +1,69 @@
 #include "core.h"
 #include "base.h"
+#include "editor_math.h"
 
-// NOTE: temporary function
-inline void DrawPixel(pixel_buffer *PixelBuffer, int X, int Y, u32 Color) {
-  if (X < 0 || X > PixelBuffer->width || Y < 0 || Y > PixelBuffer->height) {
+/*
+TODO:
+- Allocate max size and no more glitches on resize please
+- Think about the features
+
+Features (subject to change):
+- Load models
+- Create models
+- Edit models
+- Multiple viewports/workspaces
+- Ray tracer for rendering
+- Interface panels, dropdowns etc
+- Render fonts
+- 2d editor?
+-
+*/
+
+inline void DrawPixel(pixel_buffer *PixelBuffer, v2i Point, u32 Color) {
+  int x = Point.x;
+  int y = Point.y;
+
+  if (x < 0 || x > PixelBuffer->width || y < 0 || y > PixelBuffer->height) {
     return;
   }
-  u32 *pixel = (u32 *)PixelBuffer->memory + X + Y * PixelBuffer->width;
+  y = PixelBuffer->height - y;  // Origin in bottom-left
+  u32 *pixel = (u32 *)PixelBuffer->memory + x + y * PixelBuffer->width;
   *pixel = Color;
 }
 
-struct v2i {
-  int x;
-  int y;
-};
-
-struct v3f {
-  r32 x;
-  r32 y;
-  r32 z;
-};
-
-// NOTE: temporary function
 void DrawLine(pixel_buffer *PixelBuffer, v2i A, v2i B, u32 Color) {
-  v2i left = A;
-  v2i right = B;
+  bool swapped = false;
+  if (abs(B.x - A.x) < abs(B.y - A.y)) {
+    int tmp = A.x;
+    A.x = A.y;
+    A.y = tmp;
+    tmp = B.x;
+    B.x = B.y;
+    B.y = tmp;
+    swapped = true;
+  }
+  if (B.x - A.x < 0) {
+    v2i tmp = B;
+    B = A;
+    A = tmp;
+  }
 
-  if (A.x == B.x) {
-    int step = (A.y < B.y) ? 1 : -1;
-    int y = A.y;
-    while (y != B.y) {
-      DrawPixel(PixelBuffer, A.x, y, Color);
-      y += step;
+  int dy = B.y - A.y;
+  int dx = B.x - A.x;
+  int sign = dy >= 0 ? 1 : -1;
+  int error = sign * dy - dx;
+  int y = A.y;
+  for (int x = A.x; x <= B.x; x++) {
+    if (!swapped) {
+      DrawPixel(PixelBuffer, {x, y}, Color);
+    } else {
+      DrawPixel(PixelBuffer, {y, x}, Color);
     }
-    return;
-  }
-
-  if (A.x > B.x) {
-    left = B;
-    right = A;
-  }
-
-  for (int x = left.x; x < right.x; x++) {
-    r32 t = (x - left.x) / (r32)(right.x - left.x);
-    int y = (int)(left.y * (1.0f - t) + right.y * t);
-    DrawPixel(PixelBuffer, x, y, Color);
+    error += sign * dy;
+    if (error > 0) {
+      error -= dx;
+      y += sign;
+    }
   }
 }
 
@@ -56,39 +75,52 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer) {
   // DrawLine(PixelBuffer, A, B, 0x00FFFFFF);
 
   // Unit cube
-  v3f points[] = {
-      {-0.5f, -0.5f, -0.5f},
-      {0.5f, -0.5f, -0.5f},
-      {0.5f, 0.5f, -0.5f},
-      {-0.5f, 0.5f, -0.5f},
-      {-0.5f, -0.5f, 0.5f},
-      {0.5f, -0.5f, 0.5f},
-      {0.5f, 0.5f, 0.5f},
-      {-0.5f, 0.5f, 0.5f},
+  v3 points[] = {
+      {-0.5f, -0.5f, 2.5f},
+      {0.5f, -0.5f, 2.5f},
+      {0.5f, 0.5f, 2.5f},
+      {-0.5f, 0.5f, 2.5f},
+      {-0.5f, -0.5f, 3.5f},
+      {0.5f, -0.5f, 3.5f},
+      {0.5f, 0.5f, 3.5f},
+      {-0.5f, 0.5f, 3.5f},
   };
 
   v2i edges[] = {
-      {0, 1}, {1, 2}, {2, 3}, {3, 0},
-      {4, 5}, {5, 6}, {6, 7}, {7, 4},
-      {0, 4}, {1, 5}, {2, 6}, {3, 7},
+      {0, 1},
+      {1, 2},
+      {2, 3},
+      {3, 0},
+      {4, 5},
+      {5, 6},
+      {6, 7},
+      {7, 4},
+      {0, 4},
+      {1, 5},
+      {2, 6},
+      {3, 7},
   };
 
   // Render
   int scale = 300;
-  r32 z_depth = 1.0f;
-  int x_shift = 10;
-  int y_shift = 10;
+  r32 z_depth = 0;
+  int x_shift = 300;
+  int y_shift = 300;
 
   int edge_count = COUNT_OF(edges);
   for (int i = 0; i < edge_count; i++) {
     v2i edge = edges[i];
-    v3f point1 = points[edge.x];
-    v3f point2 = points[edge.y];
+    v3 point1 = points[edge.x];
+    v3 point2 = points[edge.y];
     v2i A, B;
-    A.x = (int)(point1.x * scale / (point1.z + z_depth)) + x_shift + scale;
-    A.y = (int)(point1.y * scale / (point1.z + z_depth)) + y_shift + scale;
-    B.x = (int)(point2.x * scale / (point2.z + z_depth)) + x_shift + scale;
-    B.y = (int)(point2.y * scale / (point2.z + z_depth)) + y_shift + scale;
+    A.x = (int)(point1.x * scale / (point1.z + z_depth)) + x_shift;
+    A.y = (int)(point1.y * scale / (point1.z + z_depth)) + y_shift;
+    B.x = (int)(point2.x * scale / (point2.z + z_depth)) + x_shift;
+    B.y = (int)(point2.y * scale / (point2.z + z_depth)) + y_shift;
+
+    if (edge.x == 1 && edge.y == 5) {
+      int a = 1;
+    }
     DrawLine(PixelBuffer, A, B, 0x00FFFFFF);
   }
 
