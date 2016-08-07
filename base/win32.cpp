@@ -214,6 +214,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         }
       }
 
+      user_input input = {};
+
       // Event loop
       while (gRunning) {
         // Process messages
@@ -240,6 +242,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
               if (VKCode == VK_ESCAPE) {
                 gRunning = false;
               }
+
+
+              // TODO: Set the base by click, then rotate by drag
+
+
             } break;
 
             default: {
@@ -249,8 +256,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
           }
         }
 
-        // TODO: create and pass global memory
-        UpdateAndRender(&gPixelBuffer);
+        UpdateAndRender(&gPixelBuffer, input);
 
         Win32UpdateWindow(hdc);
       }

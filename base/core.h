@@ -1,6 +1,9 @@
 #ifndef EDITOR_CORE_H
 #define EDITOR_CORE_H
 
+#include "base.h"
+#include "editor_math.h"
+
 struct pixel_buffer {
   int width;
   int height;
@@ -13,6 +16,11 @@ struct update_result {
   // empty for now
 };
 
-update_result UpdateAndRender(pixel_buffer *PixelBuffer);
+struct user_input {
+  r32 angle;
+  v2 base;
+};
+
+update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input);
 
 #endif  // EDITOR_CORE_H

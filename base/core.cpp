@@ -1,3 +1,5 @@
+#include <string.h>
+
 #include "core.h"
 #include "base.h"
 #include "editor_math.h"
@@ -67,12 +69,10 @@ void DrawLine(pixel_buffer *PixelBuffer, v2i A, v2i B, u32 Color) {
   }
 }
 
-update_result UpdateAndRender(pixel_buffer *PixelBuffer) {
+update_result UpdateAndRender(pixel_buffer *PixelBuffer, r32 angle) {
   update_result result = {};
 
-  // v2i A = {20, 30};
-  // v2i B = {PixelBuffer->width - 20, PixelBuffer->height - 30};
-  // DrawLine(PixelBuffer, A, B, 0x00FFFFFF);
+  memset(PixelBuffer->memory, 0, PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
   // Unit cube
   v3 points[] = {
@@ -107,12 +107,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer) {
   int x_shift = 300;
   int y_shift = 300;
 
-  r32 angle = M_PI / 3.0f;
-
-
-  // TODO: rotation
-
-
+  v2 base = V2i(350, 350);
 
   m3x3 RotationMatrix = {
     (r32)cos(angle), -1 * (r32)sin(angle), 0,
@@ -131,8 +126,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer) {
     B.x = (point2.x * scale / (point2.z + z_depth)) + x_shift;
     B.y = (point2.y * scale / (point2.z + z_depth)) + y_shift;
 
-    A = Transform(RotationMatrix, A);
-    B = Transform(RotationMatrix, B);
+    A = Rotate(RotationMatrix, A, base);
+    B = Rotate(RotationMatrix, B, base);
 
     v2i Ai = {(int)A.x, (int)A.y};
     v2i Bi = {(int)B.x, (int)B.y};
