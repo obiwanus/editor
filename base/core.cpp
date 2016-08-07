@@ -33,6 +33,12 @@ inline void DrawPixel(pixel_buffer *PixelBuffer, v2i Point, u32 Color) {
   *pixel = Color;
 }
 
+inline void DrawPixelV2(pixel_buffer *PixelBuffer, v2 Point, u32 Color) {
+  // A v2 version
+  v2i point = {(int)Point.x, (int)Point.y};
+  DrawPixel(PixelBuffer, point, Color);
+}
+
 void DrawLine(pixel_buffer *PixelBuffer, v2i A, v2i B, u32 Color) {
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
@@ -69,7 +75,13 @@ void DrawLine(pixel_buffer *PixelBuffer, v2i A, v2i B, u32 Color) {
   }
 }
 
-update_result UpdateAndRender(pixel_buffer *PixelBuffer, r32 angle) {
+void DrawLine(pixel_buffer *PixelBuffer, v2 A, v2 B, u32 Color) {
+  v2i a = {(int)A.x, (int)A.y};
+  v2i b = {(int)B.x, (int)B.y};
+  DrawLine(PixelBuffer, a, b, Color);
+}
+
+update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input) {
   update_result result = {};
 
   memset(PixelBuffer->memory, 0, PixelBuffer->height * PixelBuffer->width * sizeof(u32));
@@ -104,10 +116,17 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, r32 angle) {
   // Render
   int scale = 300;
   r32 z_depth = 0;
-  int x_shift = 300;
-  int y_shift = 300;
 
-  v2 base = V2i(350, 350);
+  v2 base = Input.base;
+  v2 pointer = Input.pointer;
+  r32 angle = Input.angle;
+
+  // Draw the base
+  DrawPixelV2(PixelBuffer, base, 0x00FFFFFF);
+
+  if (pointer != V2i(0, 0)) {
+    DrawLine(PixelBuffer, base, pointer, 0x00FFFFFF);
+  }
 
   m3x3 RotationMatrix = {
     (r32)cos(angle), -1 * (r32)sin(angle), 0,
@@ -121,10 +140,10 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, r32 angle) {
     v3 point1 = points[edge.x];
     v3 point2 = points[edge.y];
     v2 A, B;
-    A.x = (point1.x * scale / (point1.z + z_depth)) + x_shift;
-    A.y = (point1.y * scale / (point1.z + z_depth)) + y_shift;
-    B.x = (point2.x * scale / (point2.z + z_depth)) + x_shift;
-    B.y = (point2.y * scale / (point2.z + z_depth)) + y_shift;
+    A.x = (point1.x * scale / (point1.z + z_depth)) + base.x;
+    A.y = (point1.y * scale / (point1.z + z_depth)) + base.y;
+    B.x = (point2.x * scale / (point2.z + z_depth)) + base.x;
+    B.y = (point2.y * scale / (point2.z + z_depth)) + base.y;
 
     A = Rotate(RotationMatrix, A, base);
     B = Rotate(RotationMatrix, B, base);

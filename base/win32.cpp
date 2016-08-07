@@ -5,6 +5,7 @@
 #include "core.h"
 
 #include <windows.h>
+#include <windowsX.h>
 #include <intrin.h>
 #include <gl/gl.h>
 
@@ -117,6 +118,11 @@ Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   return Result;
 }
 
+inline v2 Win32GetCursorPosition(MSG Message) {
+  return V2i(GET_X_LPARAM(Message.lParam),
+             gPixelBuffer.height - GET_Y_LPARAM(Message.lParam));
+}
+
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                      LPSTR lpCmdLine, int nCmdShow) {
   WNDCLASS WindowClass = {};
@@ -215,6 +221,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       }
 
       user_input input = {};
+      input.base = V2i(300, 300);
 
       // Event loop
       while (gRunning) {
@@ -242,11 +249,32 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
               if (VKCode == VK_ESCAPE) {
                 gRunning = false;
               }
+            } break;
 
+            case WM_LBUTTONDOWN: {
+              v2 position = Win32GetCursorPosition(Message);
+              input.angle = AngleBetween(position - input.base, V2i(1, 0));
+              input.pointer = position;
+            } break;
 
-              // TODO: Set the base by click, then rotate by drag
+            case WM_RBUTTONDOWN: {
+              v2 position = Win32GetCursorPosition(Message);
+              input.base = position;
+            } break;
 
+            case WM_MOUSEMOVE: {
+              bool LeftButtonIsDown = ((Message.wParam & MK_LBUTTON) != 0);
+              v2 position = Win32GetCursorPosition(Message);
+              if (LeftButtonIsDown && position != input.base) {
+                input.angle = AngleBetween(position - input.base, V2i(1, 0));
+                input.pointer = position;
+              }
+            } break;
 
+            case WM_MOUSEWHEEL: {
+              v2 position = V2i(GET_X_LPARAM(Message.lParam),
+                                GET_Y_LPARAM(Message.lParam));
+              int delta = GET_WHEEL_DELTA_WPARAM(Message.wParam) / WHEEL_DELTA;
             } break;
 
             default: {

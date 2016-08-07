@@ -15,7 +15,7 @@ pushd build
 @del /Q *.pdb > NUL 2> NUL
 @del /Q *.gmi > NUL 2> NUL
 
-set FilesToCompile= ..\base\win32.cpp ..\base\core.cpp
+set FilesToCompile= ..\base\win32.cpp ..\base\core.cpp ..\base\editor_math.cpp
 
 cl -Feeditor.exe %CommonCompilerFlags% %FilesToCompile% /link %CommonLinkerFlags%
 

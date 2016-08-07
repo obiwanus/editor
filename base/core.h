@@ -19,6 +19,7 @@ struct update_result {
 struct user_input {
   r32 angle;
   v2 base;
+  v2 pointer;
 };
 
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input);
