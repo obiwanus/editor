@@ -221,8 +221,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       }
 
       user_input input = {};
-      input.base = V2i(300, 300);
-      input.scale = 300;
 
       // Event loop
       while (gRunning) {
@@ -278,8 +276,17 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             case WM_MOUSEMOVE: {
               bool LeftButtonIsDown = ((Message.wParam & MK_LBUTTON) != 0);
               bool RightButtonIsDown = ((Message.wParam & MK_RBUTTON) != 0);
+              bool MiddleButtonIsDown = ((Message.wParam & MK_MBUTTON) != 0);
 
               v2 position = Win32GetCursorPosition(Message);
+
+              if (!MiddleButtonIsDown) {
+                input.drag_start = input.drag_current = position;
+              }
+              if (MiddleButtonIsDown) {
+                input.drag_current = position;
+              }
+
               if (LeftButtonIsDown && position != input.base) {
                 input.angle.z = AngleBetween(position - input.base, V2i(1, 0));
                 input.pointer = position;
@@ -301,6 +308,13 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
               DispatchMessageA(&Message);
             } break;
           }
+        }
+
+        // Determine rotation angles
+        {
+          r32 kRotationSensitivity = 1000;
+          v2 rotation = input.drag_current - input.drag_start;
+          input.angle.y += rotation.x / kRotationSensitivity;
         }
 
         UpdateAndRender(&gPixelBuffer, input);

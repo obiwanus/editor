@@ -18,9 +18,11 @@ struct update_result {
 
 struct user_input {
   v3 angle;
-  v2 base;
+  v2 drag_start = {-1, -1};
+  v2 drag_current;
+  v2 base = {300.0f, 300.0f};
   v2 pointer;
-  int scale;
+  int scale = 300;
 };
 
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input);
