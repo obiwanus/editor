@@ -98,6 +98,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input) {
       {-0.5f, 0.5f, 3.5f},
   };
 
+  v3 center = V3(0, 0, 3.0f);
+
   v2i edges[] = {
       {0, 1},
       {1, 2},
@@ -114,12 +116,12 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input) {
   };
 
   // Render
-  int scale = 300;
   r32 z_depth = 0;
+  int scale = Input.scale;
 
   v2 base = Input.base;
   v2 pointer = Input.pointer;
-  r32 angle = Input.angle;
+  v3 angle = Input.angle;
 
   // Draw the base
   DrawPixelV2(PixelBuffer, base, 0x00FFFFFF);
@@ -128,9 +130,21 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input) {
     DrawLine(PixelBuffer, base, pointer, 0x00FFFFFF);
   }
 
-  m3x3 RotationMatrix = {
-    (r32)cos(angle), -1 * (r32)sin(angle), 0,
-    (r32)sin(angle), (r32)cos(angle), 0,
+  m3x3 RotationMatrixX = {
+    1, 0, 0,
+    0, (r32)cos(angle.x), -1 * (r32)sin(angle.x),
+    0, (r32)sin(angle.x), (r32)cos(angle.x),
+  };
+
+  m3x3 RotationMatrixY = {
+    (r32)cos(angle.y), 0, -1 * (r32)sin(angle.y),
+    0, 1, 0,
+    (r32)sin(angle.y), 0, (r32)cos(angle.y),
+  };
+
+  m3x3 RotationMatrixZ = {
+    (r32)cos(angle.z), -1 * (r32)sin(angle.z), 0,
+    (r32)sin(angle.z), (r32)cos(angle.z), 0,
     0, 0, 1,
   };
 
@@ -139,14 +153,21 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input) {
     v2i edge = edges[i];
     v3 point1 = points[edge.x];
     v3 point2 = points[edge.y];
+
+    point1 = Rotate(RotationMatrixY, point1, center);
+    point2 = Rotate(RotationMatrixY, point2, center);
+
+    point1 = Rotate(RotationMatrixX, point1, center);
+    point2 = Rotate(RotationMatrixX, point2, center);
+
+    point1 = Rotate(RotationMatrixZ, point1, center);
+    point2 = Rotate(RotationMatrixZ, point2, center);
+
     v2 A, B;
     A.x = (point1.x * scale / (point1.z + z_depth)) + base.x;
     A.y = (point1.y * scale / (point1.z + z_depth)) + base.y;
     B.x = (point2.x * scale / (point2.z + z_depth)) + base.x;
     B.y = (point2.y * scale / (point2.z + z_depth)) + base.y;
-
-    A = Rotate(RotationMatrix, A, base);
-    B = Rotate(RotationMatrix, B, base);
 
     v2i Ai = {(int)A.x, (int)A.y};
     v2i Bi = {(int)B.x, (int)B.y};

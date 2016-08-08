@@ -222,6 +222,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
       user_input input = {};
       input.base = V2i(300, 300);
+      input.scale = 300;
 
       // Event loop
       while (gRunning) {
@@ -249,11 +250,23 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
               if (VKCode == VK_ESCAPE) {
                 gRunning = false;
               }
+              if (VKCode == VK_UP) {
+                input.angle.x -= 0.05f;
+              }
+              if (VKCode == VK_DOWN) {
+                input.angle.x += 0.05f;
+              }
+              if (VKCode == VK_LEFT) {
+                input.angle.y -= 0.05f;
+              }
+              if (VKCode == VK_RIGHT) {
+                input.angle.y += 0.05f;
+              }
             } break;
 
             case WM_LBUTTONDOWN: {
               v2 position = Win32GetCursorPosition(Message);
-              input.angle = AngleBetween(position - input.base, V2i(1, 0));
+              input.angle.z = AngleBetween(position - input.base, V2i(1, 0));
               input.pointer = position;
             } break;
 
@@ -264,10 +277,15 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
             case WM_MOUSEMOVE: {
               bool LeftButtonIsDown = ((Message.wParam & MK_LBUTTON) != 0);
+              bool RightButtonIsDown = ((Message.wParam & MK_RBUTTON) != 0);
+
               v2 position = Win32GetCursorPosition(Message);
               if (LeftButtonIsDown && position != input.base) {
-                input.angle = AngleBetween(position - input.base, V2i(1, 0));
+                input.angle.z = AngleBetween(position - input.base, V2i(1, 0));
                 input.pointer = position;
+              }
+              if (RightButtonIsDown && position != input.base) {
+                input.base = position;
               }
             } break;
 
@@ -275,6 +293,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
               v2 position = V2i(GET_X_LPARAM(Message.lParam),
                                 GET_Y_LPARAM(Message.lParam));
               int delta = GET_WHEEL_DELTA_WPARAM(Message.wParam) / WHEEL_DELTA;
+              input.scale += 30 * delta;
             } break;
 
             default: {
