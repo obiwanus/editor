@@ -16,7 +16,7 @@ typedef int32_t i32;
 typedef int64_t i64;
 typedef float r32;
 typedef double r64;
-typedef i32 bool32;
+typedef i32 b32;
 typedef unsigned int uint;
 
 #define global static

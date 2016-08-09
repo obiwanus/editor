@@ -16,15 +16,27 @@ struct update_result {
   // empty for now
 };
 
+typedef b32 button_state;
+
 struct user_input {
-  v3 angle;
-  v2 drag_start = {-1, -1};
-  v2 drag_current;
-  v2 base = {300.0f, 300.0f};
-  v2 pointer;
-  int scale = 300;
+  union {
+    button_state buttons[8];
+    struct {
+      button_state up;
+      button_state down;
+      button_state left;
+      button_state right;
+      button_state mouse_left;
+      button_state mouse_middle;
+      button_state mouse_right;
+
+      button_state terminator;
+    };
+  };
+
+  v2 mouse_position;
 };
 
-update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input);
+update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input);
 
 #endif  // EDITOR_CORE_H

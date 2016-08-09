@@ -81,10 +81,11 @@ void DrawLine(pixel_buffer *PixelBuffer, v2 A, v2 B, u32 Color) {
   DrawLine(PixelBuffer, a, b, Color);
 }
 
-update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input) {
+update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   update_result result = {};
 
-  memset(PixelBuffer->memory, 0, PixelBuffer->height * PixelBuffer->width * sizeof(u32));
+  memset(PixelBuffer->memory, 0,
+         PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
   // Unit cube
   v3 points[] = {
@@ -117,35 +118,24 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input Input) {
 
   // Render
   r32 z_depth = 0;
-  int scale = Input.scale;
 
-  v2 base = Input.base;
-  v2 pointer = Input.pointer;
-  v3 angle = Input.angle;
-
-  // Draw the base
-  DrawPixelV2(PixelBuffer, base, 0x00FFFFFF);
-
-  if (pointer != V2i(0, 0)) {
-    DrawLine(PixelBuffer, base, pointer, 0x00FFFFFF);
-  }
+  int scale = 500;
+  v2 base = {500, 500};
+  v3 angle = {3, 0, 0};
 
   m3x3 RotationMatrixX = {
-    1, 0, 0,
-    0, (r32)cos(angle.x), -1 * (r32)sin(angle.x),
-    0, (r32)sin(angle.x), (r32)cos(angle.x),
+      1, 0, 0, 0, (r32)cos(angle.x), -1 * (r32)sin(angle.x), 0,
+      (r32)sin(angle.x), (r32)cos(angle.x),
   };
 
   m3x3 RotationMatrixY = {
-    (r32)cos(angle.y), 0, -1 * (r32)sin(angle.y),
-    0, 1, 0,
-    (r32)sin(angle.y), 0, (r32)cos(angle.y),
+      (r32)cos(angle.y), 0, -1 * (r32)sin(angle.y), 0, 1, 0, (r32)sin(angle.y),
+      0, (r32)cos(angle.y),
   };
 
   m3x3 RotationMatrixZ = {
-    (r32)cos(angle.z), -1 * (r32)sin(angle.z), 0,
-    (r32)sin(angle.z), (r32)cos(angle.z), 0,
-    0, 0, 1,
+      (r32)cos(angle.z), -1 * (r32)sin(angle.z), 0, (r32)sin(angle.z),
+      (r32)cos(angle.z), 0, 0, 0, 1,
   };
 
   int edge_count = COUNT_OF(edges);

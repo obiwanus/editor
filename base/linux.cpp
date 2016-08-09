@@ -150,9 +150,9 @@ int main(int argc, char const *argv[]) {
       KeySym key;
       char buf[256];
       char symbol = 0;
-      bool32 pressed = false;
-      bool32 released = false;
-      bool32 retriggered = false;
+      b32 pressed = false;
+      b32 released = false;
+      b32 retriggered = false;
 
       if (XLookupString(&event.xkey, buf, 255, &key, 0) == 1) {
         symbol = buf[0];

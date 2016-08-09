@@ -220,15 +220,18 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         }
       }
 
-      user_input input = {};
+      user_input inputs[2];
+      user_input *old_input = &inputs[0];
+      user_input *new_input = &inputs[1];
+      *new_input = {};
 
       // Event loop
       while (gRunning) {
         // Process messages
-        MSG Message;
-        while (PeekMessage(&Message, 0, 0, 0, PM_REMOVE)) {
+        MSG message;
+        while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
           // Get keyboard messages
-          switch (Message.message) {
+          switch (message.message) {
             case WM_QUIT: {
               gRunning = false;
             } break;
@@ -237,89 +240,88 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             case WM_SYSKEYUP:
             case WM_KEYDOWN:
             case WM_KEYUP: {
-              u32 VKCode = (u32)Message.wParam;
-              bool32 WasDown = ((Message.lParam & (1 << 30)) != 0);
-              bool32 IsDown = ((Message.lParam & (1 << 31)) == 0);
+              u32 vk_code = (u32)message.wParam;
+              b32 was_down = ((message.lParam & (1 << 30)) != 0);
+              b32 is_down = ((message.lParam & (1 << 31)) == 0);
 
-              bool32 AltKeyWasDown = (Message.lParam & (1 << 29));
-              if ((VKCode == VK_F4) && AltKeyWasDown) {
+              b32 alt_key_was_down = (message.lParam & (1 << 29));
+              if ((vk_code == VK_F4) && alt_key_was_down) {
                 gRunning = false;
               }
-              if (VKCode == VK_ESCAPE) {
+              if (was_down == is_down) {
+                break;  // nothing has changed
+              }
+              if (vk_code == VK_ESCAPE) {
                 gRunning = false;
               }
-              if (VKCode == VK_UP) {
-                input.angle.x -= 0.05f;
+              if (vk_code == VK_UP || vk_code == 'W') {
+                new_input->up = is_down;
               }
-              if (VKCode == VK_DOWN) {
-                input.angle.x += 0.05f;
+              if (vk_code == VK_DOWN || vk_code == 'S') {
+                new_input->down = is_down;
               }
-              if (VKCode == VK_LEFT) {
-                input.angle.y -= 0.05f;
+              if (vk_code == VK_LEFT || vk_code == 'A') {
+                new_input->left = is_down;
               }
-              if (VKCode == VK_RIGHT) {
-                input.angle.y += 0.05f;
+              if (vk_code == VK_RIGHT || vk_code == 'D') {
+                new_input->right = is_down;
               }
             } break;
 
+            // TODO:
+            // - Use the buttons to rotate the cube
+            // - Use the middle mouse button to rotate
+
             case WM_LBUTTONDOWN: {
-              v2 position = Win32GetCursorPosition(Message);
-              input.angle.z = AngleBetween(position - input.base, V2i(1, 0));
-              input.pointer = position;
+              v2 position = Win32GetCursorPosition(message);
+              b32 left_button_is_down = ((message.wParam & MK_LBUTTON) != 0);
+              b32 right_button_is_down = ((message.wParam & MK_RBUTTON) != 0);
+              b32 middle_button_is_down = ((message.wParam & MK_MBUTTON) != 0);
+              if (right_button_is_down) {
+                OutputDebugStringA("right!\n");
+              }
             } break;
 
             case WM_RBUTTONDOWN: {
-              v2 position = Win32GetCursorPosition(Message);
-              input.base = position;
+              v2 position = Win32GetCursorPosition(message);
             } break;
 
             case WM_MOUSEMOVE: {
-              bool LeftButtonIsDown = ((Message.wParam & MK_LBUTTON) != 0);
-              bool RightButtonIsDown = ((Message.wParam & MK_RBUTTON) != 0);
-              bool MiddleButtonIsDown = ((Message.wParam & MK_MBUTTON) != 0);
 
-              v2 position = Win32GetCursorPosition(Message);
+              v2 position = Win32GetCursorPosition(message);
 
-              if (!MiddleButtonIsDown) {
-                input.drag_start = input.drag_current = position;
-              }
-              if (MiddleButtonIsDown) {
-                input.drag_current = position;
-              }
-
-              if (LeftButtonIsDown && position != input.base) {
-                input.angle.z = AngleBetween(position - input.base, V2i(1, 0));
-                input.pointer = position;
-              }
-              if (RightButtonIsDown && position != input.base) {
-                input.base = position;
-              }
+              // if (!MiddleButtonIsDown) {
+              //   input.drag_start = input.drag_current = position;
+              // }
+              // if (MiddleButtonIsDown) {
+              //   input.drag_current = position;
+              // }
             } break;
 
             case WM_MOUSEWHEEL: {
-              v2 position = V2i(GET_X_LPARAM(Message.lParam),
-                                GET_Y_LPARAM(Message.lParam));
-              int delta = GET_WHEEL_DELTA_WPARAM(Message.wParam) / WHEEL_DELTA;
-              input.scale += 30 * delta;
+              v2 position = V2i(GET_X_LPARAM(message.lParam),
+                                GET_Y_LPARAM(message.lParam));
+              int delta = GET_WHEEL_DELTA_WPARAM(message.wParam) / WHEEL_DELTA;
             } break;
 
             default: {
-              TranslateMessage(&Message);
-              DispatchMessageA(&Message);
+              TranslateMessage(&message);
+              DispatchMessageA(&message);
             } break;
           }
         }
 
-        // Determine rotation angles
-        {
-          r32 kRotationSensitivity = 1000;
-          v2 rotation = input.drag_current - input.drag_start;
-          input.angle.y += rotation.x / kRotationSensitivity;
-        }
-
-        UpdateAndRender(&gPixelBuffer, input);
+        UpdateAndRender(&gPixelBuffer, new_input);
 
         Win32UpdateWindow(hdc);
+
+        // Swap inputs
+        user_input *tmp = old_input;
+        old_input = new_input;
+        new_input = tmp;
+
+        // Zero input
+
       }
     }
   } else {
