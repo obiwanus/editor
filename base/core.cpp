@@ -164,5 +164,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     DrawLine(PixelBuffer, Ai, Bi, 0x00FFFFFF);
   }
 
+  DrawLine(PixelBuffer, base, {Input->mouse.x, Input->mouse.y}, 0x00FFFFFF);
+
   return result;
 }

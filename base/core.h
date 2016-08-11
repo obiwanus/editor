@@ -34,7 +34,7 @@ struct user_input {
     };
   };
 
-  v2 mouse_position;
+  v3 mouse;
 };
 
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input);

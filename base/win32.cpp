@@ -118,11 +118,6 @@ Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   return Result;
 }
 
-inline v2 Win32GetCursorPosition(MSG Message) {
-  return V2i(GET_X_LPARAM(Message.lParam),
-             gPixelBuffer.height - GET_Y_LPARAM(Message.lParam));
-}
-
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                      LPSTR lpCmdLine, int nCmdShow) {
   WNDCLASS WindowClass = {};
@@ -272,43 +267,21 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             // - Use the buttons to rotate the cube
             // - Use the middle mouse button to rotate
 
-            case WM_LBUTTONDOWN: {
-              v2 position = Win32GetCursorPosition(message);
-              b32 left_button_is_down = ((message.wParam & MK_LBUTTON) != 0);
-              b32 right_button_is_down = ((message.wParam & MK_RBUTTON) != 0);
-              b32 middle_button_is_down = ((message.wParam & MK_MBUTTON) != 0);
-              if (right_button_is_down) {
-                OutputDebugStringA("right!\n");
-              }
-            } break;
-
-            case WM_RBUTTONDOWN: {
-              v2 position = Win32GetCursorPosition(message);
-            } break;
-
-            case WM_MOUSEMOVE: {
-
-              v2 position = Win32GetCursorPosition(message);
-
-              // if (!MiddleButtonIsDown) {
-              //   input.drag_start = input.drag_current = position;
-              // }
-              // if (MiddleButtonIsDown) {
-              //   input.drag_current = position;
-              // }
-            } break;
-
-            case WM_MOUSEWHEEL: {
-              v2 position = V2i(GET_X_LPARAM(message.lParam),
-                                GET_Y_LPARAM(message.lParam));
-              int delta = GET_WHEEL_DELTA_WPARAM(message.wParam) / WHEEL_DELTA;
-            } break;
-
             default: {
               TranslateMessage(&message);
               DispatchMessageA(&message);
             } break;
           }
+        }
+
+        // Get mouse input
+        {
+          POINT mouse_pointer;
+          GetCursorPos(&mouse_pointer);
+          ScreenToClient(Window, &mouse_pointer);
+
+          new_input->mouse =
+              V3i(mouse_pointer.x, gPixelBuffer.height - mouse_pointer.y, 0);
         }
 
         UpdateAndRender(&gPixelBuffer, new_input);
@@ -321,7 +294,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         new_input = tmp;
 
         // Zero input
+        *new_input = {};
 
+        // Retain the button state
+        for (int i = 0; i < COUNT_OF(new_input->buttons); i++) {
+          new_input->buttons[i] = old_input->buttons[i];
+        }
       }
     }
   } else {
