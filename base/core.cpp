@@ -4,22 +4,6 @@
 #include "base.h"
 #include "editor_math.h"
 
-/*
-TODO:
-- Allocate max size and no more glitches on resize please
-- Think about the features
-
-Features (subject to change):
-- Load models
-- Create models
-- Edit models
-- Multiple viewports/workspaces
-- Ray tracer for rendering
-- Interface panels, dropdowns etc
-- Render fonts
-- 2d editor?
--
-*/
 
 inline void DrawPixel(pixel_buffer *PixelBuffer, v2i Point, u32 Color) {
   int x = Point.x;
@@ -164,7 +148,9 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     DrawLine(PixelBuffer, Ai, Bi, 0x00FFFFFF);
   }
 
-  DrawLine(PixelBuffer, base, {Input->mouse.x, Input->mouse.y}, 0x00FFFFFF);
+  if (Input->mouse_middle) {
+    DrawLine(PixelBuffer, base, {Input->mouse.x, Input->mouse.y}, 0x00FFFFFF);
+  }
 
   return result;
 }

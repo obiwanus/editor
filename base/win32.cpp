@@ -282,6 +282,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
           new_input->mouse =
               V3i(mouse_pointer.x, gPixelBuffer.height - mouse_pointer.y, 0);
+
+          new_input->mouse_left = GetKeyState(VK_LBUTTON) & (1 << 15);
+          new_input->mouse_right = GetKeyState(VK_RBUTTON) & (1 << 15);
+          new_input->mouse_middle = GetKeyState(VK_MBUTTON) & (1 << 15);
         }
 
         UpdateAndRender(&gPixelBuffer, new_input);

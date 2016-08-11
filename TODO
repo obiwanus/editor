@@ -1,0 +1,22 @@
+
+
+- Mouse clicks and releases
+
+- Terminator assert
+- Rename files
+- Allocate max size and no more glitches on resize please
+- Think about the features
+
+
+- Logging
+
+Features (subject to change):
+- Load models
+- Create models
+- Edit models
+- Multiple viewports/workspaces
+- Ray tracer for rendering
+- Interface panels, dropdowns etc
+- Render fonts
+- 2d editor?
+-
