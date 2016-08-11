@@ -2,7 +2,7 @@
 #define EDITOR_MATH_H
 
 #include <math.h>
-#include "base.h"
+#include "ED_base.h"
 
 #define M_PI (r32)acos(-1.0)
 

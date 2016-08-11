@@ -1,4 +1,4 @@
-#include "base.h"
+#include "ED_base.h"
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>

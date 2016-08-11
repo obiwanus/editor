@@ -1,8 +1,8 @@
-#ifndef EDITOR_CORE_H
-#define EDITOR_CORE_H
+#ifndef ED_CORE_H
+#define ED_CORE_H
 
-#include "base.h"
-#include "editor_math.h"
+#include "ED_base.h"
+#include "ED_math.h"
 
 struct pixel_buffer {
   int width;
@@ -39,4 +39,4 @@ struct user_input {
 
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input);
 
-#endif  // EDITOR_CORE_H
+#endif  // ED_CORE_H

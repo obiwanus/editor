@@ -1,5 +1,5 @@
-#ifndef EDITOR_BASE_H
-#define EDITOR_BASE_H
+#ifndef ED_BASE_H
+#define ED_BASE_H
 
 #include <stdint.h>
 #include <stddef.h>
@@ -34,4 +34,4 @@ typedef unsigned int uint;
 #define COUNT_OF(x) \
   ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
-#endif  // EDITOR_BASE_H
+#endif  // ED_BASE_H

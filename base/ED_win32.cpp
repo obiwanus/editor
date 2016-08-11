@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <time.h>
 
-#include "base.h"
-#include "core.h"
+#include "ED_base.h"
+#include "ED_core.h"
 
 #include <windows.h>
 #include <windowsX.h>
@@ -219,6 +219,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       user_input *old_input = &inputs[0];
       user_input *new_input = &inputs[1];
       *new_input = {};
+
+      Assert(&new_input->terminator - &new_input->buttons[0] <
+             COUNT_OF(new_input->buttons));
 
       // Event loop
       while (gRunning) {

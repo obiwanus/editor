@@ -1,8 +1,8 @@
 #include <string.h>
 
-#include "core.h"
-#include "base.h"
-#include "editor_math.h"
+#include "ED_core.h"
+#include "ED_base.h"
+#include "ED_math.h"
 
 
 inline void DrawPixel(pixel_buffer *PixelBuffer, v2i Point, u32 Color) {
