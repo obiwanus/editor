@@ -11,9 +11,6 @@
 #include <limits.h>
 #include <unistd.h>
 
-/*************** TODO *****************
-
-**************************************/
 
 global bool gRunning;
 global void *gLinuxBitmapMemory;
@@ -22,66 +19,6 @@ global const int kWindowWidth = 1024;
 global const int kWindowHeight = 768;
 
 global XImage *gXImage;
-
-
-r32 RandomFloat() {
-  return (r32)rand()/(r32)RAND_MAX;
-}
-
-
-struct Star {
-  static const int kSpeed = 10;
-  static const int kDepth = 1000;
-
-  r32 x;
-  r32 y;
-  r32 z;
-
-  void Init();
-  void Erase();
-  void Draw();
-  void Update();
-
-private:
-  void DrawPixel(u32 Color);
-};
-
-void Star::DrawPixel(u32 Color) {
-  int half_width = kWindowWidth / 2;
-  int half_height = kWindowHeight / 2;
-
-  int x = (this->x / this->z) * (r32)half_width + half_width;
-  int y = (this->y / this->z) * (r32)half_height + half_height;
-
-  if (x < 0 || x >= kWindowWidth || y < 0 || y >= kWindowHeight) {
-    return;
-  }
-
-  u32 *pixel = (u32 *)gLinuxBitmapMemory + x + kWindowWidth * y;
-  *pixel = Color;
-}
-
-void Star::Erase() {
-  this->DrawPixel(0x00000000);
-}
-
-void Star::Draw() {
-  this->DrawPixel(0x00FFFFFF);
-}
-
-void Star::Init() {
-  this->x = 2 * RandomFloat() - 1;
-  this->y = 2 * RandomFloat() - 1;
-  this->z = RandomFloat();
-}
-
-void Star::Update() {
-  if (this->z <= 0) {
-    this->Init();
-    return;
-  }
-  this->z -= (r32)kSpeed / (r32)kDepth;
-}
 
 
 int main(int argc, char const *argv[]) {
@@ -130,13 +67,6 @@ int main(int argc, char const *argv[]) {
     gLinuxBitmapMemory = (void *)gXImage->data;
 
     gc = XCreateGC(display, window, 0, &gcvalues);
-  }
-
-  srand(time(NULL));
-  const int kStarCount = 10000;
-  Star stars[kStarCount];
-  for (int i = 0; i < kStarCount; i++) {
-    stars[i].Init();
   }
 
   gRunning = true;
@@ -196,13 +126,6 @@ int main(int argc, char const *argv[]) {
           gRunning = false;
         }
       }
-    }
-
-    for (int i = 0; i < kStarCount; i++) {
-      Star *star = &stars[i];
-      star->Erase();
-      star->Update();
-      star->Draw();
     }
 
     XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
