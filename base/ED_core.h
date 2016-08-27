@@ -37,6 +37,18 @@ struct user_input {
   v3 mouse;
 };
 
+struct program_state {
+  int scale;
+  v3 angle;
+  v2 base;
+
+  program_state() {
+    scale = 500;
+    angle = {0, 0, 0};
+    base = {500, 500};
+  }
+};
+
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input);
 
 #endif  // ED_CORE_H

@@ -6,6 +6,9 @@
 #include "ED_math.h"
 
 
+global program_state gState = program_state();
+
+
 inline void DrawPixel(pixel_buffer *PixelBuffer, v2i Point, u32 Color) {
   int x = Point.x;
   int y = Point.y;
@@ -72,6 +75,18 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   memset(PixelBuffer->memory, 0,
          PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
+  if (Input->up) {
+    gState.scale += 10;
+  } else if (Input->down) {
+    gState.scale -= 10;
+  }
+
+  if (Input->left) {
+    gState.angle.y += 0.05f;
+  } else if (Input->right) {
+    gState.angle.y -= 0.05f;
+  }
+
   // Unit cube
   v3 points[] = {
       {-0.5f, -0.5f, 2.5f},
@@ -104,9 +119,9 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   // Render
   r32 z_depth = 0;
 
-  int scale = 500;
-  v2 base = {500, 500};
-  v3 angle = {3, 0, 0};
+  int scale = gState.scale;
+  v2 base = gState.base;
+  v3 angle = gState.angle;
 
   m3x3 RotationMatrixX = {
       1, 0, 0, 0, (r32)cos(angle.x), -1 * (r32)sin(angle.x), 0,

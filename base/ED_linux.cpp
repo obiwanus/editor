@@ -101,7 +101,6 @@ int main(int argc, char const *argv[]) {
 
       // Process user input
       if (event.type == KeyPress) {
-        printf("Key pressed\n");
         pressed = true;
       }
 
@@ -113,14 +112,12 @@ int main(int argc, char const *argv[]) {
           if (nev.type == KeyPress && nev.xkey.time == event.xkey.time &&
               nev.xkey.keycode == event.xkey.keycode) {
             // Ignore. Key wasn't actually released
-            printf("Key release ignored\n");
             XNextEvent(display, &event);
             retriggered = true;
           }
         }
 
         if (!retriggered) {
-          printf("Key released\n");
           released = true;
         }
       }
@@ -128,15 +125,23 @@ int main(int argc, char const *argv[]) {
       if (pressed || released) {
         if (key == XK_Escape) {
           gRunning = false;
+        } else if (key == XK_Up) {
+          new_input->up = pressed;
+        } else if (key == XK_Down) {
+          new_input->down = pressed;
+        } else if (key == XK_Left) {
+          new_input->left = pressed;
+        } else if (key == XK_Right) {
+          new_input->right = pressed;
         }
       }
-
       // Close window message
       if (event.type == ClientMessage) {
         if (event.xclient.data.l[0] == wmDeleteMessage) {
           gRunning = false;
         }
       }
+
     }
 
     UpdateAndRender(&gPixelBuffer, new_input);

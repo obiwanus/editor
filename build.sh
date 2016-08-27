@@ -9,3 +9,5 @@ mkdir -p build
 
 g++ $CFLAGS base/ED_linux.cpp base/ED_core.cpp base/ED_math.cpp $LFLAGS -o build/editor
 
+build/editor
+
