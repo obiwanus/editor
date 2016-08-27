@@ -7,8 +7,5 @@ LFLAGS="$(pkg-config --cflags --libs x11) -ldl -lpthread"
 
 mkdir -p build
 
-cd build
+g++ $CFLAGS base/ED_linux.cpp base/ED_core.cpp base/ED_math.cpp $LFLAGS -o build/editor
 
-gcc $CFLAGS ../base/ED_linux.cpp $LFLAGS -o editor
-
-cd ..

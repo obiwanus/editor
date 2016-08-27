@@ -4,10 +4,10 @@
 #include "ED_base.h"
 #include "ED_core.h"
 
+#include <gl/gl.h>
+#include <intrin.h>
 #include <windows.h>
 #include <windowsX.h>
-#include <intrin.h>
-#include <gl/gl.h>
 
 global bool gRunning;
 
@@ -85,8 +85,8 @@ static void Win32ResizeClientWindow(HWND window) {
   gPixelBuffer.height = height;
 }
 
-LRESULT CALLBACK
-Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam, LPARAM lParam) {
+LRESULT CALLBACK Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam,
+                                 LPARAM lParam) {
   LRESULT Result = 0;
 
   switch (uMsg) {
@@ -265,10 +265,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                 new_input->right = is_down;
               }
             } break;
-
-            // TODO:
-            // - Use the buttons to rotate the cube
-            // - Use the middle mouse button to rotate
 
             default: {
               TranslateMessage(&message);

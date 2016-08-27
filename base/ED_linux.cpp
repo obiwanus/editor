@@ -1,25 +1,24 @@
 #include "ED_base.h"
+#include "ED_core.h"
 
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
 #include <X11/Xos.h>
+#include <X11/Xutil.h>
 #include <dlfcn.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
-#include <limits.h>
 #include <unistd.h>
 
-
 global bool gRunning;
-global void *gLinuxBitmapMemory;
+global pixel_buffer gPixelBuffer;
 
-global const int kWindowWidth = 1024;
-global const int kWindowHeight = 768;
+global const int kWindowWidth = 1500;
+global const int kWindowHeight = 1000;
 
 global XImage *gXImage;
-
 
 int main(int argc, char const *argv[]) {
   Display *display;
@@ -64,10 +63,22 @@ int main(int argc, char const *argv[]) {
     gXImage = XGetImage(display, window, 0, 0, kWindowWidth, kWindowHeight,
                         AllPlanes, ZPixmap);
 
-    gLinuxBitmapMemory = (void *)gXImage->data;
+    gPixelBuffer.memory = (void *)gXImage->data;
+    gPixelBuffer.width = kWindowWidth;
+    gPixelBuffer.height = kWindowHeight;
+    gPixelBuffer.max_width = kWindowWidth;
+    gPixelBuffer.max_height = kWindowHeight;
 
     gc = XCreateGC(display, window, 0, &gcvalues);
   }
+
+  user_input inputs[2];
+  user_input *old_input = &inputs[0];
+  user_input *new_input = &inputs[1];
+  *new_input = {};
+
+  Assert(&new_input->terminator - &new_input->buttons[0] <
+         COUNT_OF(new_input->buttons));
 
   gRunning = true;
 
@@ -128,8 +139,24 @@ int main(int argc, char const *argv[]) {
       }
     }
 
+    UpdateAndRender(&gPixelBuffer, new_input);
+
     XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
               kWindowHeight);
+
+    // Swap inputs
+    user_input *tmp = old_input;
+    old_input = new_input;
+    new_input = tmp;
+
+    // Zero input
+    *new_input = {};
+
+    // Retain the button state
+    for (int i = 0; i < COUNT_OF(new_input->buttons); i++) {
+      new_input->buttons[i] = old_input->buttons[i];
+    }
+
     usleep(10000);
   }
 

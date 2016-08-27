@@ -1,4 +1,5 @@
 #include <string.h>
+#include <stdlib.h>
 
 #include "ED_core.h"
 #include "ED_base.h"
