@@ -102,6 +102,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
   v3 center = V3(0, 0, 3.0f);
 
+  // .
   v2i edges[] = {
       {0, 1},
       {1, 2},
