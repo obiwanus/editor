@@ -27,6 +27,7 @@ inline void DrawPixelV2(pixel_buffer *PixelBuffer, v2 Point, u32 Color) {
   DrawPixel(PixelBuffer, point, Color);
 }
 
+// TODO: draw triangles
 void DrawLine(pixel_buffer *PixelBuffer, v2i A, v2i B, u32 Color) {
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
