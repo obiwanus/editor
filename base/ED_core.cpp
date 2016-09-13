@@ -125,6 +125,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   v2 base = gState.base;
   v3 angle = gState.angle;
 
+  // quaternions?
   m3x3 RotationMatrixX = {
       1, 0, 0, 0, (r32)cos(angle.x), -1 * (r32)sin(angle.x), 0,
       (r32)sin(angle.x), (r32)cos(angle.x),
