@@ -162,6 +162,7 @@ int main(int argc, char const *argv[]) {
       new_input->buttons[i] = old_input->buttons[i];
     }
 
+    // TODO: think about something more reliable
     usleep(10000);
   }
 
