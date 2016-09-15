@@ -4,10 +4,10 @@
 #include "ED_base.h"
 #include "ED_core.h"
 
-#include <gl/gl.h>
 #include <intrin.h>
 #include <windows.h>
 #include <windowsX.h>
+#include <gl/gl.h>
 
 global bool gRunning;
 

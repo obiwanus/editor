@@ -19,5 +19,7 @@ set FilesToCompile= ..\base\ED_win32.cpp ..\base\ED_core.cpp ..\base\ED_math.cpp
 
 cl -Feeditor.exe %CommonCompilerFlags% %FilesToCompile% /link %CommonLinkerFlags%
 
+editor.exe
+
 popd
 popd
