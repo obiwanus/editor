@@ -118,6 +118,12 @@ inline v3 V3(v2 XY, r32 Z) {
   return result;
 }
 
+// ========================== scalar operations ====================
+
+inline r32 square(r32 A) {
+  return A * A;
+}
+
 // ========================== v2 operations ========================
 
 inline v2 operator*(r32 A, v2 B) {
@@ -206,6 +212,12 @@ inline v3 operator*(r32 A, v3 B) {
 
 inline v3 operator*(v3 B, r32 A) {
   v3 result = A * B;
+
+  return result;
+}
+
+inline r32 operator*(v3 A, v3 B) {
+  r32 result = A.x * B.x + A.y * B.y + A.z * B.z;
 
   return result;
 }

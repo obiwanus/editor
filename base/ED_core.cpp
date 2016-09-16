@@ -76,17 +76,53 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   memset(PixelBuffer->memory, 0,
          PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
+  // Ray casting
+  v3 e = gState.e;
+  v3 d = {0, 0, -1};
+
   if (Input->up) {
-    gState.scale += 10;
+    gState.e.z += 1;
   } else if (Input->down) {
-    gState.scale -= 10;
+    gState.e.z -= 1;
   }
 
-  if (Input->left) {
-    gState.angle.y += 0.05f;
-  } else if (Input->right) {
-    gState.angle.y -= 0.05f;
+  // Sphere
+  v3 c = {0, 0, 50};
+  r32 R = 10;
+
+  // Screen dimensions
+  int l = -20, r = 20, t = 15, b = -15;
+  int nx = 400;
+  int ny = 300;
+
+  for (int x = 0; x < PixelBuffer->width; x++) {
+    for (int y = 0; y < PixelBuffer->height; y++) {
+      // Get the ray
+      v3 p = {l + (x + 0.5f) * (r - l) / nx, b + (y + 0.5f) * (t - b) / ny, 0};
+      d = p - e;
+
+      // Discriminant
+      r32 D = square(d * (e - c)) - (d * d) * ((e - c) * (e - c) - square(R));
+      if (D >= 0) {
+        // Ray hits the sphere
+        DrawPixel(PixelBuffer, {x, y}, 0x00FFFFFF);
+      } else {
+        // Ray misses the sphere
+      }
+    }
   }
+
+  // if (Input->up) {
+  //   gState.scale += 10;
+  // } else if (Input->down) {
+  //   gState.scale -= 10;
+  // }
+
+  // if (Input->left) {
+  //   gState.angle.y += 0.05f;
+  // } else if (Input->right) {
+  //   gState.angle.y -= 0.05f;
+  // }
 
   // Unit cube
   v3 points[] = {
@@ -102,7 +138,6 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
   v3 center = V3(0, 0, 3.0f);
 
-  // .
   v2i edges[] = {
       {0, 1},
       {1, 2},
@@ -119,57 +154,57 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   };
 
   // Render
-  r32 z_depth = 0;
+  // r32 z_depth = 0;
 
-  int scale = gState.scale;
-  v2 base = gState.base;
-  v3 angle = gState.angle;
+  // int scale = gState.scale;
+  // v2 base = gState.base;
+  // v3 angle = gState.angle;
 
-  // quaternions?
-  m3x3 RotationMatrixX = {
-      1, 0, 0, 0, (r32)cos(angle.x), -1 * (r32)sin(angle.x), 0,
-      (r32)sin(angle.x), (r32)cos(angle.x),
-  };
+  // // quaternions?
+  // m3x3 RotationMatrixX = {
+  //     1, 0, 0, 0, (r32)cos(angle.x), -1 * (r32)sin(angle.x), 0,
+  //     (r32)sin(angle.x), (r32)cos(angle.x),
+  // };
 
-  m3x3 RotationMatrixY = {
-      (r32)cos(angle.y), 0, -1 * (r32)sin(angle.y), 0, 1, 0, (r32)sin(angle.y),
-      0, (r32)cos(angle.y),
-  };
+  // m3x3 RotationMatrixY = {
+  //     (r32)cos(angle.y), 0, -1 * (r32)sin(angle.y), 0, 1, 0, (r32)sin(angle.y),
+  //     0, (r32)cos(angle.y),
+  // };
 
-  m3x3 RotationMatrixZ = {
-      (r32)cos(angle.z), -1 * (r32)sin(angle.z), 0, (r32)sin(angle.z),
-      (r32)cos(angle.z), 0, 0, 0, 1,
-  };
+  // m3x3 RotationMatrixZ = {
+  //     (r32)cos(angle.z), -1 * (r32)sin(angle.z), 0, (r32)sin(angle.z),
+  //     (r32)cos(angle.z), 0, 0, 0, 1,
+  // };
 
-  int edge_count = COUNT_OF(edges);
-  for (int i = 0; i < edge_count; i++) {
-    v2i edge = edges[i];
-    v3 point1 = points[edge.x];
-    v3 point2 = points[edge.y];
+  // int edge_count = COUNT_OF(edges);
+  // for (int i = 0; i < edge_count; i++) {
+  //   v2i edge = edges[i];
+  //   v3 point1 = points[edge.x];
+  //   v3 point2 = points[edge.y];
 
-    point1 = Rotate(RotationMatrixY, point1, center);
-    point2 = Rotate(RotationMatrixY, point2, center);
+  //   point1 = Rotate(RotationMatrixY, point1, center);
+  //   point2 = Rotate(RotationMatrixY, point2, center);
 
-    point1 = Rotate(RotationMatrixX, point1, center);
-    point2 = Rotate(RotationMatrixX, point2, center);
+  //   point1 = Rotate(RotationMatrixX, point1, center);
+  //   point2 = Rotate(RotationMatrixX, point2, center);
 
-    point1 = Rotate(RotationMatrixZ, point1, center);
-    point2 = Rotate(RotationMatrixZ, point2, center);
+  //   point1 = Rotate(RotationMatrixZ, point1, center);
+  //   point2 = Rotate(RotationMatrixZ, point2, center);
 
-    v2 A, B;
-    A.x = (point1.x * scale / (point1.z + z_depth)) + base.x;
-    A.y = (point1.y * scale / (point1.z + z_depth)) + base.y;
-    B.x = (point2.x * scale / (point2.z + z_depth)) + base.x;
-    B.y = (point2.y * scale / (point2.z + z_depth)) + base.y;
+  //   v2 A, B;
+  //   A.x = (point1.x * scale / (point1.z + z_depth)) + base.x;
+  //   A.y = (point1.y * scale / (point1.z + z_depth)) + base.y;
+  //   B.x = (point2.x * scale / (point2.z + z_depth)) + base.x;
+  //   B.y = (point2.y * scale / (point2.z + z_depth)) + base.y;
 
-    v2i Ai = {(int)A.x, (int)A.y};
-    v2i Bi = {(int)B.x, (int)B.y};
-    DrawLine(PixelBuffer, Ai, Bi, 0x00FFFFFF);
-  }
+  //   v2i Ai = {(int)A.x, (int)A.y};
+  //   v2i Bi = {(int)B.x, (int)B.y};
+  //   DrawLine(PixelBuffer, Ai, Bi, 0x00FFFFFF);
+  // }
 
-  if (Input->mouse_middle) {
-    DrawLine(PixelBuffer, base, {Input->mouse.x, Input->mouse.y}, 0x00FFFFFF);
-  }
+  // if (Input->mouse_middle) {
+  //   DrawLine(PixelBuffer, base, {Input->mouse.x, Input->mouse.y}, 0x00FFFFFF);
+  // }
 
   return result;
 }
