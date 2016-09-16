@@ -82,32 +82,38 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
   if (Input->up) {
     gState.e.z += 1;
-  } else if (Input->down) {
+  } else if (Input->down && gState.e.z > 0) {
     gState.e.z -= 1;
   }
 
   // Sphere
-  v3 c = {0, 0, 50};
+  v3 c = {0, 0, -50};
   r32 R = 10;
+
+  // Light source
+  v3 lc = {100, 100, -30};
 
   // Screen dimensions
   int l = -20, r = 20, t = 15, b = -15;
   int nx = 400;
   int ny = 300;
 
+  u32 AMBIENT = 0x00333333;
+
   for (int x = 0; x < PixelBuffer->width; x++) {
     for (int y = 0; y < PixelBuffer->height; y++) {
       // Get the ray
-      v3 p = {l + (x + 0.5f) * (r - l) / nx, b + (y + 0.5f) * (t - b) / ny, 0};
+      v3 p = {l + (r32)(x + 0.5f) * (r32)(r - l) / (r32)nx, b + (r32)(y + 0.5f) * (t - b) / (r32)ny, 0};
       d = p - e;
 
       // Discriminant
       r32 D = square(d * (e - c)) - (d * d) * ((e - c) * (e - c) - square(R));
-      if (D >= 0) {
+      if (D >= 0 && c.z < e.z) {
         // Ray hits the sphere
         DrawPixel(PixelBuffer, {x, y}, 0x00FFFFFF);
       } else {
         // Ray misses the sphere
+        DrawPixel(PixelBuffer, {x, y}, AMBIENT);
       }
     }
   }
