@@ -90,8 +90,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   v3 c = {0, 0, -50};
   r32 R = 10;
 
-  // Light source
-  v3 lc = {100, 100, -30};
+  // Light direction
+  v3 light = {-1, 1, 0};
 
   // Screen dimensions
   int l = -20, r = 20, t = 15, b = -15;
@@ -109,8 +109,18 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
       // Discriminant
       r32 D = square(d * (e - c)) - (d * d) * ((e - c) * (e - c) - square(R));
       if (D >= 0 && c.z < e.z) {
-        // Ray hits the sphere
-        DrawPixel(PixelBuffer, {x, y}, 0x00FFFFFF);
+        // Find the point of intersection
+        // we're only interested in the closest one
+        r32 param = (-d * (e - c) - (r32)sqrt(D)) / (d * d);
+        if (param > 0) {
+          v3 point = e + d * param;
+          v3 normal = point - c;
+
+          r32 brightness = normal * light / 10.0f;
+          u8 component = (u8)(brightness * 100);
+          u32 color = component | component << 8 | component << 16;
+          DrawPixel(PixelBuffer, {x, y}, color);
+        }
       } else {
         // Ray misses the sphere
         DrawPixel(PixelBuffer, {x, y}, AMBIENT);
