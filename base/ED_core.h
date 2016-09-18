@@ -42,14 +42,14 @@ struct program_state {
   v3 angle;
   v2 base;
 
-  v3 e;
+  v3 point;
 
   program_state() {
     scale = 500;
     angle = {0, 0, 0};
     base = {500, 500};
 
-    e = {0, 0, 50};
+    point = {-10, 0, -50};
   }
 };
 

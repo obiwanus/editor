@@ -70,75 +70,102 @@ void DrawLine(pixel_buffer *PixelBuffer, v2 A, v2 B, u32 Color) {
   DrawLine(PixelBuffer, a, b, Color);
 }
 
+struct Sphere {
+  v3 center;
+  r32 radius;
+  u32 color;
+};
+
+struct Ray {
+  v3 origin;
+  v3 direction;
+};
+
+r32 intersect(Ray ray, Sphere sphere) {
+  v3 d = ray.direction;
+  v3 e = ray.origin;
+  v3 c = sphere.center;
+  r32 r = sphere.radius;
+
+  // Discriminant
+  r32 D = square(d * (e - c)) - (d * d) * ((e - c) * (e - c) - square(r));
+
+  if (D < 0 || (c.w + r) >= e.w) {
+    return -1;
+  }
+
+  r32 param = (-d * (e - c) - (r32)sqrt(D)) / (d * d);
+
+  return param;
+}
+
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   update_result result = {};
 
   memset(PixelBuffer->memory, 0,
          PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
-  // Ray casting
-  v3 e = gState.e;
-  v3 d = {0, 0, -1};
-
   if (Input->up) {
-    gState.e.z += 1;
-  } else if (Input->down && gState.e.z > 0) {
-    gState.e.z -= 1;
+    gState.point.v += 1;
+  }
+  if (Input->down) {
+    gState.point.v -= 1;
+  }
+  if (Input->left) {
+    gState.point.w += 1;
+  }
+  if (Input->right) {
+    gState.point.w -= 1;
   }
 
+  // Ray casting
+  Ray ray = {};
+  ray.origin = {0, 0, 50};
+
   // Sphere
-  v3 c = {0, 0, -50};
-  r32 R = 10;
+  const int SPHERE_COUNT = 2;
+  Sphere spheres[SPHERE_COUNT];
+
+  spheres[0].center = {10, 0, -50};
+  spheres[0].radius = 20;
+  spheres[0].color = 0x00FF3333;
+
+  spheres[1].center = gState.point;
+  spheres[1].radius = 20;
+  spheres[1].color = 0x003333FF;
 
   // Light direction
-  v3 light = {-1, 1, 0};
+  v3 light = {-1, -1, 1};
 
   // Screen dimensions
   int l = -20, r = 20, t = 15, b = -15;
   int nx = 400;
   int ny = 300;
 
-  u32 AMBIENT = 0x00333333;
-
   for (int x = 0; x < PixelBuffer->width; x++) {
     for (int y = 0; y < PixelBuffer->height; y++) {
       // Get the ray
-      v3 p = {l + (r32)(x + 0.5f) * (r32)(r - l) / (r32)nx, b + (r32)(y + 0.5f) * (t - b) / (r32)ny, 0};
-      d = p - e;
+      v3 pixel = {l + (x + 0.5f) * (r - l) / nx, b + (y + 0.5f) * (t - b) / ny, 0};
+      ray.direction = pixel - ray.origin;
 
-      // Discriminant
-      r32 D = square(d * (e - c)) - (d * d) * ((e - c) * (e - c) - square(R));
-      if (D >= 0 && c.z < e.z) {
-        // Find the point of intersection
-        // we're only interested in the closest one
-        r32 param = (-d * (e - c) - (r32)sqrt(D)) / (d * d);
-        if (param > 0) {
-          v3 point = e + d * param;
-          v3 normal = point - c;
-
-          r32 brightness = normal * light / 10.0f;
-          u8 component = (u8)(brightness * 100);
-          u32 color = component | component << 8 | component << 16;
-          DrawPixel(PixelBuffer, {x, y}, color);
+      r32 min_hit = 0;
+      b32 hit = false;
+      Sphere hit_sphere = {};
+      for (int i = 0; i < SPHERE_COUNT; i++) {;
+        r32 hit_at = intersect(ray, spheres[i]);
+        if (hit_at > 0 && (hit_at < min_hit || min_hit == 0)) {
+          hit = true;
+          min_hit = hit_at;
+          hit_sphere = spheres[i];
         }
+      }
+      if (hit) {
+        DrawPixel(PixelBuffer, {x, y}, hit_sphere.color);
       } else {
-        // Ray misses the sphere
-        DrawPixel(PixelBuffer, {x, y}, AMBIENT);
+        DrawPixel(PixelBuffer, {x, y}, 0x00333333);  // ambient
       }
     }
   }
-
-  // if (Input->up) {
-  //   gState.scale += 10;
-  // } else if (Input->down) {
-  //   gState.scale -= 10;
-  // }
-
-  // if (Input->left) {
-  //   gState.angle.y += 0.05f;
-  // } else if (Input->right) {
-  //   gState.angle.y -= 0.05f;
-  // }
 
   // Unit cube
   v3 points[] = {
