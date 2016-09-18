@@ -15,8 +15,8 @@
 global bool gRunning;
 global pixel_buffer gPixelBuffer;
 
-global const int kWindowWidth = 1500;
-global const int kWindowHeight = 1000;
+global const int kWindowWidth = 400;
+global const int kWindowHeight = 300;
 
 global XImage *gXImage;
 
