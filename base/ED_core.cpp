@@ -70,18 +70,32 @@ void DrawLine(pixel_buffer *PixelBuffer, v2 A, v2 B, u32 Color) {
   DrawLine(PixelBuffer, a, b, Color);
 }
 
+u32 GetRGB(v3 Color) {
+  u32 result = 0x00000000;
+  u8 R = (u8)(Color.r * 255);
+  u8 G = (u8)(Color.g * 255);
+  u8 B = (u8)(Color.b * 255);
+  result = B << 16 | G << 8 | R;
+  return result;
+}
+
 struct Sphere {
   v3 center;
   r32 radius;
-  u32 color;
+  v3 color;
 };
 
 struct Ray {
   v3 origin;
   v3 direction;
+
+  v3 point_at(r32 t) {
+    v3 result = origin + direction * t;
+    return result;
+  }
 };
 
-r32 intersect(Ray ray, Sphere sphere) {
+r32 Intersect(Ray ray, Sphere sphere) {
   v3 d = ray.direction;
   v3 e = ray.origin;
   v3 c = sphere.center;
@@ -106,16 +120,16 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
          PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
   if (Input->up) {
-    gState.point.v += 1;
+    gState.angle.z += 1;
   }
   if (Input->down) {
-    gState.point.v -= 1;
+    gState.angle.z -= 1;
   }
   if (Input->left) {
-    gState.point.w += 1;
+    gState.angle.y -= 1;
   }
   if (Input->right) {
-    gState.point.w -= 1;
+    gState.angle.y += 1;
   }
 
   // Ray casting
@@ -126,16 +140,39 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   const int SPHERE_COUNT = 2;
   Sphere spheres[SPHERE_COUNT];
 
-  spheres[0].center = {10, 0, -50};
-  spheres[0].radius = 20;
-  spheres[0].color = 0x00FF3333;
+  spheres[0].center = {10, 0, -45};
+  spheres[0].radius = 15;
+  spheres[0].color = {1.0f, 0.2f, 0.2f};
 
   spheres[1].center = gState.point;
   spheres[1].radius = 20;
-  spheres[1].color = 0x003333FF;
+  spheres[1].color = {0.2f, 0.2f, 1.0f};
 
   // Light direction
   v3 light = {-1, -1, 1};
+  light = light.normalized();
+
+  v3 angle = gState.angle;
+
+  m3x3 RotationMatrixX = {
+      1, 0, 0, 0, (r32)cos(angle.x), -1 * (r32)sin(angle.x), 0,
+      (r32)sin(angle.x), (r32)cos(angle.x),
+  };
+
+  m3x3 RotationMatrixY = {
+      (r32)cos(angle.y), 0, -1 * (r32)sin(angle.y), 0, 1, 0, (r32)sin(angle.y),
+      0, (r32)cos(angle.y),
+  };
+
+  m3x3 RotationMatrixZ = {
+      (r32)cos(angle.z), -1 * (r32)sin(angle.z), 0, (r32)sin(angle.z),
+      (r32)cos(angle.z), 0, 0, 0, 1,
+  };
+
+  v3 pivot = {0, 0, 0};
+  light = Rotate(RotationMatrixY, light, pivot);
+  light = Rotate(RotationMatrixX, light, pivot);
+  light = Rotate(RotationMatrixZ, light, pivot);
 
   // Screen dimensions
   int l = -20, r = 20, t = 15, b = -15;
@@ -152,7 +189,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
       b32 hit = false;
       Sphere hit_sphere = {};
       for (int i = 0; i < SPHERE_COUNT; i++) {;
-        r32 hit_at = intersect(ray, spheres[i]);
+        r32 hit_at = Intersect(ray, spheres[i]);
         if (hit_at > 0 && (hit_at < min_hit || min_hit == 0)) {
           hit = true;
           min_hit = hit_at;
@@ -160,7 +197,13 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         }
       }
       if (hit) {
-        DrawPixel(PixelBuffer, {x, y}, hit_sphere.color);
+        v3 normal = ray.point_at(min_hit) - hit_sphere.center;
+        r32 illuminance = -light * normal.normalized();
+        if (illuminance < 0) {
+          illuminance = 0;
+        }
+        v3 color = hit_sphere.color * illuminance;
+        DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
       } else {
         DrawPixel(PixelBuffer, {x, y}, 0x00333333);  // ambient
       }

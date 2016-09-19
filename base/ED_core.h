@@ -46,7 +46,7 @@ struct program_state {
 
   program_state() {
     scale = 500;
-    angle = {0, 0, 0};
+    angle = {};
     base = {500, 500};
 
     point = {-10, 0, -50};

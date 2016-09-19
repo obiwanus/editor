@@ -23,6 +23,7 @@ union v2 {
   r32 E[2];
 
   r32 len();
+  v2 normalized();
 };
 
 union v3 {
@@ -54,6 +55,7 @@ union v3 {
   r32 E[3];
 
   r32 len();
+  v3 normalized();
 };
 
 union m3x3 {
@@ -135,6 +137,15 @@ inline v2 operator*(r32 A, v2 B) {
   return result;
 }
 
+inline v2 operator/(v2 A, r32 B) {
+  v2 result;
+
+  result.x = A.x / B;
+  result.y = A.y / B;
+
+  return result;
+}
+
 inline v2 operator*(v2 B, r32 A) {
   v2 result = A * B;
 
@@ -212,6 +223,17 @@ inline v3 operator*(r32 A, v3 B) {
 
 inline v3 operator*(v3 B, r32 A) {
   v3 result = A * B;
+
+  return result;
+}
+
+
+inline v3 operator/(v3 A, r32 B) {
+  v3 result;
+
+  result.x = A.x / B;
+  result.y = A.y / B;
+  result.z = A.z / B;
 
   return result;
 }

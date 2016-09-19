@@ -8,6 +8,16 @@ r32 v3::len() {
   return (r32)sqrt(x * x + y * y + z * z);
 }
 
+v2 v2::normalized() {
+  v2 result = *this / this->len();
+  return result;
+}
+
+v3 v3::normalized() {
+  v3 result = *this / this->len();
+  return result;
+}
+
 r32 AngleBetween(v2 A, v2 B) {
   r32 cosine = (A * B) / (A.len() * B.len());
   r32 result = (r32)acos(cosine);
