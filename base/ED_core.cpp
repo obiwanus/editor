@@ -77,6 +77,8 @@ u32 GetRGB(v3 Color) {
   return result;
 }
 
+// ---------------------------------------------------------------
+
 struct Sphere {
   v3 center;
   r32 radius;
@@ -104,6 +106,22 @@ struct LightSource {
   v3 color;
 };
 
+// NOTE: temporary
+struct Triangle {
+  v3 a, b, c;
+  v3 color;
+
+  Plane get_plane() {
+    Plane result = {};
+    result.point = a;
+    result.normal = (b - a).cross(c - a).normalized();
+    result.color = color;
+    return result;
+  }
+};
+
+// ---------------------------------------------------------------
+
 r32 Intersect(Ray ray, Sphere sphere) {
   v3 d = ray.direction;
   v3 e = ray.origin;
@@ -127,6 +145,12 @@ r32 Intersect(Ray ray, Plane plane) {
               (ray.direction * plane.normal);
   return param;
 }
+
+r32 Intersect(Ray ray, Triangle triangle) {
+  Plane plane = triangle.get_plane();
+}
+
+// ---------------------------------------------------------------------
 
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   update_result result = {};
@@ -169,9 +193,18 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   plane.normal = {0, 1, 0};
   plane.color = {0.2f, 0.7f, 2.0f};
 
+  // Triangle
+  Triangle triangle = {};
+  triangle.a = {10, 10, -50};
+  triangle.c = {-10, 0, -50};
+  triangle.b = {0, 0, 0};
+  triangle.color = {0.3f, 0.3f, 0.3f};
+
+  plane = triangle.get_plane();
+
   // Light
   LightSource light;
-  light.point = {-30, 50, 100};
+  light.point = gState.point;
 
   // Screen dimensions
   int l = -20, r = 20, t = 15, b = -15;
@@ -199,7 +232,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
       if (hit) {
         v3 normal = ray.point_at(min_hit) - hit_sphere.center;
         v3 light_direction = ray.point_at(min_hit) - light.point;
-        light_direction - light_direction.normalized();
+        light_direction = light_direction.normalized();
         r32 illuminance = -light_direction * normal.normalized();
         if (illuminance < 0) {
           illuminance = 0;
@@ -211,7 +244,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         r32 param = Intersect(ray, plane);
         if (param > 0) {
           v3 light_direction = ray.point_at(param) - light.point;
-          light_direction - light_direction.normalized();
+          light_direction = light_direction.normalized();
           r32 illuminance = -light_direction * plane.normal;
           if (illuminance < 0) {
             illuminance = 0;

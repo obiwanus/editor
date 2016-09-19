@@ -56,6 +56,7 @@ union v3 {
 
   r32 len();
   v3 normalized();
+  v3 cross(v3 Vector);
 };
 
 union m3x3 {

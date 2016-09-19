@@ -18,6 +18,16 @@ v3 v3::normalized() {
   return result;
 }
 
+v3 v3::cross(v3 Vector) {
+  v3 result;
+
+  result.x = y * Vector.z - z * Vector.y;
+  result.y = z * Vector.x - x * Vector.z;
+  result.z = x * Vector.z - y * Vector.x;
+
+  return result;
+}
+
 r32 AngleBetween(v2 A, v2 B) {
   r32 cosine = (A * B) / (A.len() * B.len());
   r32 result = (r32)acos(cosine);
