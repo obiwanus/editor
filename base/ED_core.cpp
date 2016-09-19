@@ -5,9 +5,7 @@
 #include "ED_base.h"
 #include "ED_math.h"
 
-
 global program_state gState = program_state();
-
 
 inline void DrawPixel(pixel_buffer *PixelBuffer, v2i Point, u32 Color) {
   int x = Point.x;
@@ -95,6 +93,12 @@ struct Ray {
   }
 };
 
+struct Plane {
+  v3 point;
+  v3 normal;
+  v3 color;
+};
+
 r32 Intersect(Ray ray, Sphere sphere) {
   v3 d = ray.direction;
   v3 e = ray.origin;
@@ -110,6 +114,12 @@ r32 Intersect(Ray ray, Sphere sphere) {
 
   r32 param = (-d * (e - c) - (r32)sqrt(D)) / (d * d);
 
+  return param;
+}
+
+r32 Intersect(Ray ray, Plane plane) {
+  r32 param = ((plane.point - ray.origin) * plane.normal) /
+              (ray.direction * plane.normal);
   return param;
 }
 
@@ -140,13 +150,19 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   const int SPHERE_COUNT = 2;
   Sphere spheres[SPHERE_COUNT];
 
-  spheres[0].center = {10, 0, -45};
+  spheres[0].center = {10, -5, -35};
   spheres[0].radius = 15;
   spheres[0].color = {1.0f, 0.2f, 0.2f};
 
   spheres[1].center = gState.point;
   spheres[1].radius = 20;
   spheres[1].color = {0.2f, 0.2f, 1.0f};
+
+  // Plane
+  Plane plane = {};
+  plane.point = {0, -20, 0};
+  plane.normal = {0, 1, 0};
+  plane.color = {0.2f, 0.7f, 2.0f};
 
   // Light direction
   v3 light = {-1, -1, 1};
@@ -182,13 +198,15 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   for (int x = 0; x < PixelBuffer->width; x++) {
     for (int y = 0; y < PixelBuffer->height; y++) {
       // Get the ray
-      v3 pixel = {l + (x + 0.5f) * (r - l) / nx, b + (y + 0.5f) * (t - b) / ny, 0};
+      v3 pixel = {l + (x + 0.5f) * (r - l) / nx, b + (y + 0.5f) * (t - b) / ny,
+                  0};
       ray.direction = pixel - ray.origin;
 
       r32 min_hit = 0;
       b32 hit = false;
       Sphere hit_sphere = {};
-      for (int i = 0; i < SPHERE_COUNT; i++) {;
+      for (int i = 0; i < SPHERE_COUNT; i++) {
+        ;
         r32 hit_at = Intersect(ray, spheres[i]);
         if (hit_at > 0 && (hit_at < min_hit || min_hit == 0)) {
           hit = true;
@@ -205,7 +223,18 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         v3 color = hit_sphere.color * illuminance;
         DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
       } else {
-        DrawPixel(PixelBuffer, {x, y}, 0x00333333);  // ambient
+        // It may still hit the plane
+        r32 param = Intersect(ray, plane);
+        if (param > 0) {
+          r32 illuminance = -light * plane.normal;
+          if (illuminance < 0) {
+            illuminance = 0;
+          }
+          v3 color = plane.color * illuminance;
+          DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
+        } else {
+          DrawPixel(PixelBuffer, {x, y}, 0x00333333);  // ambient
+        }
       }
     }
   }
@@ -253,7 +282,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   // };
 
   // m3x3 RotationMatrixY = {
-  //     (r32)cos(angle.y), 0, -1 * (r32)sin(angle.y), 0, 1, 0, (r32)sin(angle.y),
+  //     (r32)cos(angle.y), 0, -1 * (r32)sin(angle.y), 0, 1, 0,
+  //     (r32)sin(angle.y),
   //     0, (r32)cos(angle.y),
   // };
 
@@ -289,7 +319,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   // }
 
   // if (Input->mouse_middle) {
-  //   DrawLine(PixelBuffer, base, {Input->mouse.x, Input->mouse.y}, 0x00FFFFFF);
+  //   DrawLine(PixelBuffer, base, {Input->mouse.x, Input->mouse.y},
+  //   0x00FFFFFF);
   // }
 
   return result;
