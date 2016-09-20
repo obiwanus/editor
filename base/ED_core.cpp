@@ -148,6 +148,7 @@ r32 Intersect(Ray ray, Plane plane) {
 
 r32 Intersect(Ray ray, Triangle triangle) {
   Plane plane = triangle.get_plane();
+  return 0;
 }
 
 // ---------------------------------------------------------------------
@@ -159,16 +160,16 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
          PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
   if (Input->up) {
-    gState.angle.z += 1;
+    gState.point.v += 1;
   }
   if (Input->down) {
-    gState.angle.z -= 1;
+    gState.point.v -= 1;
   }
   if (Input->left) {
-    gState.angle.y -= 1;
+    gState.point.u -= 1;
   }
   if (Input->right) {
-    gState.angle.y += 1;
+    gState.point.u += 1;
   }
 
   // Ray casting
@@ -179,7 +180,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   const int SPHERE_COUNT = 2;
   Sphere spheres[SPHERE_COUNT];
 
-  spheres[0].center = {10, -5, -35};
+  spheres[0].center = {10, -5, -45};
   spheres[0].radius = 15;
   spheres[0].color = {1.0f, 0.2f, 0.2f};
 
@@ -191,20 +192,21 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   Plane plane = {};
   plane.point = {0, -20, 0};
   plane.normal = {0, 1, 0};
-  plane.color = {0.2f, 0.7f, 2.0f};
+  plane.normal = plane.normal.normalized();
+  plane.color = {0.2f, 0.7f, 0.2f};
 
   // Triangle
   Triangle triangle = {};
-  triangle.a = {10, 10, -50};
-  triangle.c = {-10, 0, -50};
+  triangle.a = {-10, 0, -50};
+  triangle.c = {10, 0, -50};
   triangle.b = {0, 0, 0};
   triangle.color = {0.3f, 0.3f, 0.3f};
 
-  plane = triangle.get_plane();
+  // plane = triangle.get_plane();
 
   // Light
   LightSource light;
-  light.point = gState.point;
+  light.point = {130, 0, 100};
 
   // Screen dimensions
   int l = -20, r = 20, t = 15, b = -15;
@@ -218,7 +220,10 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
                   0};
       ray.direction = pixel - ray.origin;
 
-      r32 min_hit = 0;
+      r32 min_hit = Intersect(ray, plane);
+      if (min_hit < 0) {
+        min_hit = 0;
+      }
       b32 hit = false;
       Sphere hit_sphere = {};
       for (int i = 0; i < SPHERE_COUNT; i++) {
@@ -241,9 +246,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
       } else {
         // It may still hit the plane
-        r32 param = Intersect(ray, plane);
-        if (param > 0) {
-          v3 light_direction = ray.point_at(param) - light.point;
+        if (min_hit > 0) {
+          v3 light_direction = ray.point_at(min_hit) - light.point;
           light_direction = light_direction.normalized();
           r32 illuminance = -light_direction * plane.normal;
           if (illuminance < 0) {

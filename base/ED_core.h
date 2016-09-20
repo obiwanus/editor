@@ -49,7 +49,7 @@ struct program_state {
     angle = {};
     base = {500, 500};
 
-    point = {130, 0, 100};
+    point = {-10, 0, -50};
   }
 };
 
