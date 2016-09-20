@@ -69,6 +69,10 @@ void DrawLine(pixel_buffer *PixelBuffer, v2 A, v2 B, u32 Color) {
 }
 
 u32 GetRGB(v3 Color) {
+  Assert(Color.r >= 0 && Color.r <= 1);
+  Assert(Color.g >= 0 && Color.g <= 1);
+  Assert(Color.b >= 0 && Color.b <= 1);
+
   u32 result = 0x00000000;
   u8 R = (u8)(Color.r * 255);
   u8 G = (u8)(Color.g * 255);
@@ -83,6 +87,8 @@ struct Sphere {
   v3 center;
   r32 radius;
   v3 color;
+  v3 specular_color = {0.3f, 0.3f, 0.3f};
+  int phong_exp = 10;
 };
 
 struct Ray {
@@ -99,11 +105,12 @@ struct Plane {
   v3 point;
   v3 normal;
   v3 color;
+  v3 specular_color = {0.5f, 0.5f, 0.5f};
 };
 
 struct LightSource {
-  v3 point;
-  v3 color;
+  v3 source;
+  v3 intensity;
 };
 
 // NOTE: temporary
@@ -160,16 +167,16 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
          PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
   if (Input->up) {
-    gState.point.v += 1;
+    gState.point.v += 10;
   }
   if (Input->down) {
-    gState.point.v -= 1;
+    gState.point.v -= 10;
   }
   if (Input->left) {
-    gState.point.u -= 1;
+    gState.point.u -= 10;
   }
   if (Input->right) {
-    gState.point.u += 1;
+    gState.point.u += 10;
   }
 
   // Ray casting
@@ -183,10 +190,12 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   spheres[0].center = {10, -5, -45};
   spheres[0].radius = 15;
   spheres[0].color = {1.0f, 0.2f, 0.2f};
+  spheres[0].phong_exp = 1000;
 
-  spheres[1].center = gState.point;
+  spheres[1].center = {-10, 0, -50};
   spheres[1].radius = 20;
   spheres[1].color = {0.2f, 0.2f, 1.0f};
+  spheres[0].phong_exp = 50;
 
   // Plane
   Plane plane = {};
@@ -206,7 +215,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
   // Light
   LightSource light;
-  light.point = {130, 0, 100};
+  light.source = gState.point;
+  light.intensity = {0.5f, 0.5f, 0.5f};
 
   // Screen dimensions
   int l = -20, r = 20, t = 15, b = -15;
@@ -235,19 +245,35 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         }
       }
       if (hit) {
-        v3 normal = ray.point_at(min_hit) - hit_sphere.center;
-        v3 light_direction = ray.point_at(min_hit) - light.point;
-        light_direction = light_direction.normalized();
-        r32 illuminance = -light_direction * normal.normalized();
+        v3 hit_point = ray.point_at(min_hit);
+        v3 normal = (hit_point - hit_sphere.center).normalized();
+        v3 light_direction = (hit_point - light.source).normalized();
+        v3 line_of_sight = (pixel - hit_point).normalized();
+
+        v3 V = (-light_direction + line_of_sight).normalized();
+
+        r32 illuminance = -light_direction * normal;
         if (illuminance < 0) {
           illuminance = 0;
         }
-        v3 color = hit_sphere.color * illuminance;
+        v3 color = Hadamard(hit_sphere.color, light.intensity) * illuminance;
+
+        r32 reflection = V * normal;
+        if (reflection < 0) {
+          reflection = 0;
+        }
+        v3 specular_reflection = Hadamard(hit_sphere.specular_color, light.intensity) * (r32)pow(reflection, hit_sphere.phong_exp);
+        color += specular_reflection;
+        for (int i = 0; i < 3; i++) {
+          if (color.e[i] > 1) {
+            color.e[i] = 1;
+          }
+        }
         DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
       } else {
         // It may still hit the plane
         if (min_hit > 0) {
-          v3 light_direction = ray.point_at(min_hit) - light.point;
+          v3 light_direction = ray.point_at(min_hit) - light.source;
           light_direction = light_direction.normalized();
           r32 illuminance = -light_direction * plane.normal;
           if (illuminance < 0) {

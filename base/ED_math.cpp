@@ -65,3 +65,15 @@ v3 Rotate(m3x3 Matrix, v3 Vector, v3 Base) {
 
   return result;
 }
+
+v3 Hadamard(v3 A, v3 B) {
+  v3 result;
+
+  result.x = A.x * B.x;
+  result.y = A.y * B.y;
+  result.z = A.z * B.z;
+
+  return result;
+}
+
+
