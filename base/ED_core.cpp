@@ -135,14 +135,15 @@ r32 Intersect(Ray ray, Sphere sphere) {
   v3 c = sphere.center;
   r32 r = sphere.radius;
 
+  v3 ec = e - c;
   // Discriminant
-  r32 D = square(d * (e - c)) - (d * d) * ((e - c) * (e - c) - square(r));
+  r32 D = square(d * ec) - (d * d) * (ec * ec - square(r));
 
   if (D < 0 || (c.w + r) >= e.w) {
     return -1;
   }
 
-  r32 param = (-d * (e - c) - (r32)sqrt(D)) / (d * d);
+  r32 param = (-d * ec - (r32)sqrt(D)) / (d * d);
 
   return param;
 }
@@ -230,10 +231,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
                   0};
       ray.direction = pixel - ray.origin;
 
-      r32 min_hit = Intersect(ray, plane);
-      if (min_hit < 0) {
-        min_hit = 0;
-      }
+      r32 min_hit = 0;
       b32 hit = false;
       Sphere hit_sphere = {};
       for (int i = 0; i < SPHERE_COUNT; i++) {
@@ -270,20 +268,6 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
           }
         }
         DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
-      } else {
-        // It may still hit the plane
-        if (min_hit > 0) {
-          v3 light_direction = ray.point_at(min_hit) - light.source;
-          light_direction = light_direction.normalized();
-          r32 illuminance = -light_direction * plane.normal;
-          if (illuminance < 0) {
-            illuminance = 0;
-          }
-          v3 color = plane.color * illuminance;
-          DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
-        } else {
-          DrawPixel(PixelBuffer, {x, y}, 0x00333333);  // ambient
-        }
       }
     }
   }
