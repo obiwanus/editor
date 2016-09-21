@@ -163,8 +163,8 @@ r32 Intersect(Ray ray, Triangle triangle) {
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   update_result result = {};
 
-  memset(PixelBuffer->memory, 0,
-         PixelBuffer->height * PixelBuffer->width * sizeof(u32));
+  // memset(PixelBuffer->memory, 0,
+  //        PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
   if (Input->up) {
     gState.point.v += 10;

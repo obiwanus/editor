@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <stdio.h>
 #include <time.h>
 
 #include "ED_base.h"
@@ -10,6 +11,7 @@
 #include <gl/gl.h>
 
 global bool gRunning;
+global LARGE_INTEGER gPerformanceFrequency;
 
 global pixel_buffer gPixelBuffer;
 global GLuint gTextureHandle;
@@ -118,6 +120,20 @@ LRESULT CALLBACK Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam,
   return Result;
 }
 
+inline LARGE_INTEGER Win32GetWallClock() {
+  LARGE_INTEGER Result;
+  QueryPerformanceCounter(&Result);
+
+  return Result;
+}
+
+inline r32 Win32GetMillisecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End) {
+  r32 Result = 1000.0f * (r32)(End.QuadPart - Start.QuadPart) /
+               (r32)gPerformanceFrequency.QuadPart;
+
+  return Result;
+}
+
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                      LPSTR lpCmdLine, int nCmdShow) {
   WNDCLASS WindowClass = {};
@@ -139,6 +155,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     wTimerRes = min(max(tc.wPeriodMin, 1), tc.wPeriodMax);  // 1 ms
     timeBeginPeriod(wTimerRes);
   }
+
+  QueryPerformanceFrequency(&gPerformanceFrequency);
 
   if (RegisterClass(&WindowClass)) {
     // Create window so that its client area is exactly kWindowWidth/Height
@@ -223,6 +241,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       Assert(&new_input->terminator - &new_input->buttons[0] <
              COUNT_OF(new_input->buttons));
 
+      LARGE_INTEGER last_timestamp = Win32GetWallClock();
+
       // Event loop
       while (gRunning) {
         // Process messages
@@ -303,6 +323,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         for (int i = 0; i < COUNT_OF(new_input->buttons); i++) {
           new_input->buttons[i] = old_input->buttons[i];
         }
+
+        r32 ms_elapsed =
+            Win32GetMillisecondsElapsed(last_timestamp, Win32GetWallClock());
+        printf("%.2f - ", ms_elapsed);
+        last_timestamp = Win32GetWallClock();
       }
     }
   } else {
