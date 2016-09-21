@@ -83,12 +83,22 @@ u32 GetRGB(v3 Color) {
 
 // ---------------------------------------------------------------
 
-struct Sphere {
+struct Object {
+  v3 color;
+  v3 specular_color = {{0.3f, 0.3f, 0.3f}};
+  v3 position;
+  int phong_exp = 10;
+}
+
+struct Sphere : Object {
   v3 center;
   r32 radius;
+};
+
+struct Plane : Object {
+  v3 point;
+  v3 normal;
   v3 color;
-  v3 specular_color = {0.3f, 0.3f, 0.3f};
-  int phong_exp = 10;
 };
 
 struct Ray {
@@ -101,16 +111,11 @@ struct Ray {
   }
 };
 
-struct Plane {
-  v3 point;
-  v3 normal;
-  v3 color;
-  v3 specular_color = {0.5f, 0.5f, 0.5f};
-};
+
 
 struct LightSource {
   v3 source;
-  v3 intensity;
+  r32 intensity;
 };
 
 // NOTE: temporary
@@ -217,7 +222,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   // Light
   LightSource light;
   light.source = gState.point;
-  light.intensity = {0.5f, 0.5f, 0.5f};
+  light.intensity = 0.5f;
 
   // Screen dimensions
   int l = -20, r = 20, t = 15, b = -15;
@@ -254,13 +259,13 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         if (illuminance < 0) {
           illuminance = 0;
         }
-        v3 color = Hadamard(hit_sphere.color, light.intensity) * illuminance;
+        v3 color = hit_sphere.color * light.intensity * illuminance;
 
         r32 reflection = V * normal;
         if (reflection < 0) {
           reflection = 0;
         }
-        v3 specular_reflection = Hadamard(hit_sphere.specular_color, light.intensity) * (r32)pow(reflection, hit_sphere.phong_exp);
+        v3 specular_reflection = hit_sphere.specular_color * light.intensity * (r32)pow(reflection, hit_sphere.phong_exp);
         color += specular_reflection;
         for (int i = 0; i < 3; i++) {
           if (color.e[i] > 1) {
