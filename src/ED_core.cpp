@@ -4,6 +4,7 @@
 #include "ED_core.h"
 #include "ED_base.h"
 #include "ED_math.h"
+#include "raytrace/ED_raytrace.h"
 
 global program_state gState = program_state();
 
@@ -81,91 +82,6 @@ u32 GetRGB(v3 Color) {
   return result;
 }
 
-// ---------------------------------------------------------------
-
-struct Object {
-  v3 color;
-  v3 specular_color = {{0.3f, 0.3f, 0.3f}};
-  v3 position;
-  int phong_exp = 10;
-}
-
-struct Sphere : Object {
-  v3 center;
-  r32 radius;
-};
-
-struct Plane : Object {
-  v3 point;
-  v3 normal;
-  v3 color;
-};
-
-struct Ray {
-  v3 origin;
-  v3 direction;
-
-  v3 point_at(r32 t) {
-    v3 result = origin + direction * t;
-    return result;
-  }
-};
-
-
-
-struct LightSource {
-  v3 source;
-  r32 intensity;
-};
-
-// NOTE: temporary
-struct Triangle {
-  v3 a, b, c;
-  v3 color;
-
-  Plane get_plane() {
-    Plane result = {};
-    result.point = a;
-    result.normal = (b - a).cross(c - a).normalized();
-    result.color = color;
-    return result;
-  }
-};
-
-// ---------------------------------------------------------------
-
-r32 Intersect(Ray ray, Sphere sphere) {
-  v3 d = ray.direction;
-  v3 e = ray.origin;
-  v3 c = sphere.center;
-  r32 r = sphere.radius;
-
-  v3 ec = e - c;
-  // Discriminant
-  r32 D = square(d * ec) - (d * d) * (ec * ec - square(r));
-
-  if (D < 0 || (c.w + r) >= e.w) {
-    return -1;
-  }
-
-  r32 param = (-d * ec - (r32)sqrt(D)) / (d * d);
-
-  return param;
-}
-
-r32 Intersect(Ray ray, Plane plane) {
-  r32 param = ((plane.point - ray.origin) * plane.normal) /
-              (ray.direction * plane.normal);
-  return param;
-}
-
-r32 Intersect(Ray ray, Triangle triangle) {
-  Plane plane = triangle.get_plane();
-  return 0;
-}
-
-// ---------------------------------------------------------------------
-
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   update_result result = {};
 
@@ -240,7 +156,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
       b32 hit = false;
       Sphere hit_sphere = {};
       for (int i = 0; i < SPHERE_COUNT; i++) {
-        r32 hit_at = Intersect(ray, spheres[i]);
+        r32 hit_at = ray.intersects_with(&spheres[i]);
         if (hit_at > 0 && (hit_at < min_hit || min_hit == 0)) {
           hit = true;
           min_hit = hit_at;
@@ -265,7 +181,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         if (reflection < 0) {
           reflection = 0;
         }
-        v3 specular_reflection = hit_sphere.specular_color * light.intensity * (r32)pow(reflection, hit_sphere.phong_exp);
+        v3 specular_reflection = hit_sphere.specular_color * light.intensity *
+                                 (r32)pow(reflection, hit_sphere.phong_exp);
         color += specular_reflection;
         for (int i = 0; i < 3; i++) {
           if (color.e[i] > 1) {
