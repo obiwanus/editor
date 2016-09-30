@@ -3,6 +3,7 @@
 
 #include "ED_base.h"
 #include "ED_math.h"
+#include "raytrace/ED_raytrace.h"
 
 struct pixel_buffer {
   int width;
@@ -38,18 +39,20 @@ struct user_input {
 };
 
 struct program_state {
-  int scale;
-  v3 angle;
-  v2 base;
+  b32 initialized;
 
-  v3 point;
+  Ray *ray;
+  RayScreen *screen;
+
+  Sphere *spheres;
+  Plane *planes;
+  Triangle *triangles;
+  RayObject **ray_objects;
+
+  LightSource *light;
 
   program_state() {
-    scale = 500;
-    angle = {};
-    base = {500, 500};
 
-    point = {130, 0, 100};
   }
 };
 

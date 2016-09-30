@@ -7,27 +7,38 @@
 
 struct Ray;
 
-struct Object {
+struct RayObject {
   v3 color;
   v3 specular_color = {{0.3f, 0.3f, 0.3f}};
   int phong_exp = 10;
 
-  virtual r32 hit_by(Ray *ray);
+  virtual r32 hit_by(Ray *ray) = 0;
+  virtual v3 get_normal(v3 hit_point) = 0;
 };
 
-struct Sphere : Object {
+struct Sphere : RayObject {
   v3 center;
   r32 radius;
 
   r32 hit_by(Ray *ray) override;
+  v3 get_normal(v3 hit_point) override;
 };
 
-struct Plane : Object {
+struct Plane : RayObject {
   v3 point;
   v3 normal;
   v3 color;
 
   r32 hit_by(Ray *ray) override;
+  v3 get_normal(v3 hit_point) override;
+};
+
+struct Triangle : RayObject {
+  v3 a, b, c;
+
+  r32 hit_by(Ray *ray) override;
+  v3 get_normal(v3 hit_point) override;
+  Plane get_plane();
 };
 
 struct Ray {
@@ -40,16 +51,19 @@ struct Ray {
   }
 };
 
+struct RayScreen {
+  int left;
+  int right;
+  int top;
+  int bottom;
+
+  int x_pixel_count;
+  int y_pixel_count;
+};
+
 struct LightSource {
   v3 source;
   r32 intensity;
-};
-
-struct Triangle : Object {
-  v3 a, b, c;
-
-  r32 hit_by(Ray *ray) override;
-  Plane get_plane();
 };
 
 #endif  // __ED_RAYTRACE_H__

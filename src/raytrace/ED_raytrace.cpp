@@ -24,20 +24,36 @@ r32 Sphere::hit_by(Ray *ray) {
   return t;
 }
 
+v3 Sphere::get_normal(v3 hit_point) {
+  v3 result = (hit_point - this->center).normalized();
+  return result;
+}
+
 r32 Plane::hit_by(Ray *ray) {
   r32 t = ((this->point - ray->origin) * this->normal) /
           (ray->direction * this->normal);
   return t;
 }
 
+v3 Plane::get_normal(v3 hit_point) {
+  // Yeah we don't need hit point I know
+  return this->normal;
+}
+
 r32 Triangle::hit_by(Ray *ray) {
   return 0;
 }
 
-Plane get_plane() {
-    Plane result = {};
-    result.point = a;
-    result.normal = (b - a).cross(c - a).normalized();
-    result.color = color;
-    return result;
-  }
+v3 Triangle::get_normal(v3 hit_point) {
+  // Yeah yeah
+  v3 result = (b - a).cross(c - a).normalized();
+  return result;
+}
+
+Plane Triangle::get_plane() {
+  Plane result = {};
+  result.point = a;
+  result.normal = (b - a).cross(c - a).normalized();
+  result.color = color;
+  return result;
+}

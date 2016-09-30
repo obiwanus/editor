@@ -85,88 +85,157 @@ u32 GetRGB(v3 Color) {
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   update_result result = {};
 
+  // TODO:
+  // Init stuff only once
+
   // memset(PixelBuffer->memory, 0,
   //        PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
+  const int SPHERE_COUNT = 2;
+  const int PLANE_COUNT = 1;
+  const int TRI_COUNT = 1;
+  const int RAY_OBJ_COUNT = SPHERE_COUNT + PLANE_COUNT + TRI_COUNT;
+
+  if (!gState.initialized) {
+    gState.initialized = true;
+
+    // Ray
+    Ray *ray = (Ray *)calloc(1, sizeof(Ray));
+    *ray = {};
+    ray->origin = {0, 0, 50};
+
+    // Spheres
+    Sphere *spheres = (Sphere *)calloc(SPHERE_COUNT, sizeof(Sphere));
+
+    spheres[0].center = {10, -5, -45};
+    spheres[0].radius = 15;
+    spheres[0].color = {1.0f, 0.2f, 0.2f};
+    spheres[0].phong_exp = 100;
+
+    spheres[1].center = {-10, 0, -50};
+    spheres[1].radius = 20;
+    spheres[1].color = {0.2f, 0.2f, 1.0f};
+    spheres[1].phong_exp = 50;
+
+    // Planes
+    Plane *planes = (Plane *)calloc(PLANE_COUNT, sizeof(Plane));
+
+    planes[0].point = {0, -20, 0};
+    planes[0].normal = {0, 1, 0};
+    planes[0].normal = planes[0].normal.normalized();
+    planes[0].color = {0.2f, 0.7f, 0.2f};
+
+    // Triangles
+    Triangle *triangles = (Triangle *)calloc(TRI_COUNT, sizeof(Triangle));
+
+    triangles[0].a = {-10, 0, -50};
+    triangles[0].c = {10, 0, -50};
+    triangles[0].b = {0, 0, 0};
+    triangles[0].color = {0.3f, 0.3f, 0.3f};
+
+
+
+
+
+
+    // TODO:
+    // Try to allocate the rayobject list in stack
+
+
+
+
+
+
+
+    // Get a list of all objects
+    RayObject **ray_objects =
+        (RayObject **)calloc(RAY_OBJ_COUNT, sizeof(RayObject *));
+    {
+      RayObject **ro_pointer = ray_objects;
+      for (int i = 0; i < SPHERE_COUNT; i++) {
+        *ro_pointer++ = &spheres[i];
+      }
+      for (int i = 0; i < PLANE_COUNT; i++) {
+        *ro_pointer++ = &planes[i];
+      }
+      for (int i = 0; i < TRI_COUNT; i++) {
+        *ro_pointer++ = &triangles[i];
+      }
+    }
+
+    // Light
+    LightSource *light = (LightSource *)calloc(1, sizeof(LightSource));
+    light->intensity = 0.5f;
+    light->source = {130, 0, 100};
+
+    // Screen dimensions
+    RayScreen *screen = (RayScreen *)calloc(1, sizeof(RayScreen));
+    screen->left = -20;
+    screen->right = 20;
+    screen->top = 15;
+    screen->bottom = -15;
+    screen->x_pixel_count = 400;
+    screen->y_pixel_count = 300;
+
+    gState.ray = ray;
+    gState.screen = screen;
+
+    gState.spheres = spheres;
+    gState.planes = planes;
+    gState.triangles = triangles;
+
+    gState.ray_objects = ray_objects;
+
+    gState.light = light;
+  }
+
+  Ray *ray = gState.ray;
+  RayScreen *screen = gState.screen;
+  RayObject **ray_objects = gState.ray_objects;
+  LightSource *light = gState.light;
+
   if (Input->up) {
-    gState.point.v += 10;
+    gState.light->source.v += 10;
   }
   if (Input->down) {
-    gState.point.v -= 10;
+    gState.light->source.v -= 10;
   }
   if (Input->left) {
-    gState.point.u -= 10;
+    gState.light->source.u -= 10;
   }
   if (Input->right) {
-    gState.point.u += 10;
+    gState.light->source.u += 10;
   }
-
-  // Ray casting
-  Ray ray = {};
-  ray.origin = {0, 0, 50};
-
-  // Sphere
-  const int SPHERE_COUNT = 2;
-  Sphere spheres[SPHERE_COUNT];
-
-  spheres[0].center = {10, -5, -45};
-  spheres[0].radius = 15;
-  spheres[0].color = {1.0f, 0.2f, 0.2f};
-  spheres[0].phong_exp = 1000;
-
-  spheres[1].center = {-10, 0, -50};
-  spheres[1].radius = 20;
-  spheres[1].color = {0.2f, 0.2f, 1.0f};
-  spheres[0].phong_exp = 50;
-
-  // Plane
-  Plane plane = {};
-  plane.point = {0, -20, 0};
-  plane.normal = {0, 1, 0};
-  plane.normal = plane.normal.normalized();
-  plane.color = {0.2f, 0.7f, 0.2f};
-
-  // Triangle
-  Triangle triangle = {};
-  triangle.a = {-10, 0, -50};
-  triangle.c = {10, 0, -50};
-  triangle.b = {0, 0, 0};
-  triangle.color = {0.3f, 0.3f, 0.3f};
-
-  // plane = triangle.get_plane();
-
-  // Light
-  LightSource light;
-  light.source = gState.point;
-  light.intensity = 0.5f;
-
-  // Screen dimensions
-  int l = -20, r = 20, t = 15, b = -15;
-  int nx = 400;
-  int ny = 300;
 
   for (int x = 0; x < PixelBuffer->width; x++) {
     for (int y = 0; y < PixelBuffer->height; y++) {
       // Get the ray
-      v3 pixel = {l + (x + 0.5f) * (r - l) / nx, b + (y + 0.5f) * (t - b) / ny,
+      v3 pixel = {screen->left +
+                      (x + 0.5f) * (screen->right - screen->left) /
+                          screen->x_pixel_count,
+                  screen->bottom +
+                      (y + 0.5f) * (screen->top - screen->bottom) /
+                          screen->y_pixel_count,
                   0};
-      ray.direction = pixel - ray.origin;
+      ray->direction = pixel - ray->origin;
 
       r32 min_hit = 0;
       b32 hit = false;
-      Sphere hit_sphere = {};
-      for (int i = 0; i < SPHERE_COUNT; i++) {
-        r32 hit_at = ray.intersects_with(&spheres[i]);
+
+      RayObject *ray_obj_hit = 0;
+      for (int i = 0; i < RAY_OBJ_COUNT; i++) {
+        RayObject *current_object = ray_objects[i];
+        r32 hit_at = current_object->hit_by(ray);
         if (hit_at > 0 && (hit_at < min_hit || min_hit == 0)) {
           hit = true;
           min_hit = hit_at;
-          hit_sphere = spheres[i];
+          ray_obj_hit = current_object;
         }
       }
       if (hit) {
-        v3 hit_point = ray.point_at(min_hit);
-        v3 normal = (hit_point - hit_sphere.center).normalized();
-        v3 light_direction = (hit_point - light.source).normalized();
+        v3 hit_point = ray->point_at(min_hit);
+        v3 normal = ray_obj_hit->get_normal(hit_point);
+        v3 light_direction = (hit_point - light->source).normalized();
         v3 line_of_sight = (pixel - hit_point).normalized();
 
         v3 V = (-light_direction + line_of_sight).normalized();
@@ -175,14 +244,15 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         if (illuminance < 0) {
           illuminance = 0;
         }
-        v3 color = hit_sphere.color * light.intensity * illuminance;
+        v3 color = ray_obj_hit->color * light->intensity * illuminance;
 
         r32 reflection = V * normal;
         if (reflection < 0) {
           reflection = 0;
         }
-        v3 specular_reflection = hit_sphere.specular_color * light.intensity *
-                                 (r32)pow(reflection, hit_sphere.phong_exp);
+        v3 specular_reflection = ray_obj_hit->specular_color *
+                                 light->intensity *
+                                 (r32)pow(reflection, ray_obj_hit->phong_exp);
         color += specular_reflection;
         for (int i = 0; i < 3; i++) {
           if (color.e[i] > 1) {
