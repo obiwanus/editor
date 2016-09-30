@@ -27,7 +27,6 @@ struct Sphere : RayObject {
 struct Plane : RayObject {
   v3 point;
   v3 normal;
-  v3 color;
 
   r32 hit_by(Ray *ray) override;
   v3 get_normal(v3 hit_point) override;

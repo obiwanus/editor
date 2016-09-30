@@ -100,12 +100,12 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     gState.initialized = true;
 
     // Ray
-    Ray *ray = (Ray *)calloc(1, sizeof(Ray));
+    Ray *ray = new Ray;
     *ray = {};
     ray->origin = {0, 0, 50};
 
     // Spheres
-    Sphere *spheres = (Sphere *)calloc(SPHERE_COUNT, sizeof(Sphere));
+    Sphere *spheres = new Sphere[SPHERE_COUNT];
 
     spheres[0].center = {10, -5, -45};
     spheres[0].radius = 15;
@@ -118,7 +118,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     spheres[1].phong_exp = 50;
 
     // Planes
-    Plane *planes = (Plane *)calloc(PLANE_COUNT, sizeof(Plane));
+    Plane *planes = new Plane[PLANE_COUNT];
 
     planes[0].point = {0, -20, 0};
     planes[0].normal = {0, 1, 0};
@@ -126,43 +126,28 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     planes[0].color = {0.2f, 0.7f, 0.2f};
 
     // Triangles
-    Triangle *triangles = (Triangle *)calloc(TRI_COUNT, sizeof(Triangle));
+    Triangle *triangles = new Triangle[TRI_COUNT];
 
     triangles[0].a = {-10, 0, -50};
     triangles[0].c = {10, 0, -50};
     triangles[0].b = {0, 0, 0};
     triangles[0].color = {0.3f, 0.3f, 0.3f};
 
-
-
-
-
-
-    // TODO:
-    // Find out how you're supposed to create objects
-    // so that they dont lose they virtual function pointers
-
-
-
-
-
-
-
     // Get a list of all objects
-    // RayObject **ray_objects =
-    //     (RayObject **)calloc(RAY_OBJ_COUNT, sizeof(RayObject *));
-    // {
-    //   RayObject **ro_pointer = ray_objects;
-    //   for (int i = 0; i < SPHERE_COUNT; i++) {
-    //     *ro_pointer++ = &spheres[i];
-    //   }
-    //   for (int i = 0; i < PLANE_COUNT; i++) {
-    //     *ro_pointer++ = &planes[i];
-    //   }
-    //   for (int i = 0; i < TRI_COUNT; i++) {
-    //     *ro_pointer++ = &triangles[i];
-    //   }
-    // }
+    RayObject **ray_objects =
+        (RayObject **)malloc(RAY_OBJ_COUNT * sizeof(RayObject *));
+    {
+      RayObject **ro_pointer = ray_objects;
+      for (int i = 0; i < SPHERE_COUNT; i++) {
+        *ro_pointer++ = &spheres[i];
+      }
+      for (int i = 0; i < PLANE_COUNT; i++) {
+        *ro_pointer++ = &planes[i];
+      }
+      for (int i = 0; i < TRI_COUNT; i++) {
+        *ro_pointer++ = &triangles[i];
+      }
+    }
 
     // Light
     LightSource *light = (LightSource *)calloc(1, sizeof(LightSource));
@@ -193,21 +178,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   Ray *ray = gState.ray;
   RayScreen *screen = gState.screen;
   LightSource *light = gState.light;
-
-  // Stack
-  RayObject *ray_objects[RAY_OBJ_COUNT];
-  {
-    RayObject **ro_pointer = ray_objects;
-    for (int i = 0; i < SPHERE_COUNT; i++) {
-      *ro_pointer++ = &gState.spheres[i];
-    }
-    for (int i = 0; i < PLANE_COUNT; i++) {
-      *ro_pointer++ = &gState.planes[i];
-    }
-    for (int i = 0; i < TRI_COUNT; i++) {
-      *ro_pointer++ = &gState.triangles[i];
-    }
-  }
+  RayObject **ray_objects = gState.ray_objects;
 
   if (Input->up) {
     gState.light->source.v += 10;
