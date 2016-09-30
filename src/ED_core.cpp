@@ -139,7 +139,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
 
     // TODO:
-    // Try to allocate the rayobject list in stack
+    // Find out how you're supposed to create objects
+    // so that they dont lose they virtual function pointers
 
 
 
@@ -148,20 +149,20 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
 
     // Get a list of all objects
-    RayObject **ray_objects =
-        (RayObject **)calloc(RAY_OBJ_COUNT, sizeof(RayObject *));
-    {
-      RayObject **ro_pointer = ray_objects;
-      for (int i = 0; i < SPHERE_COUNT; i++) {
-        *ro_pointer++ = &spheres[i];
-      }
-      for (int i = 0; i < PLANE_COUNT; i++) {
-        *ro_pointer++ = &planes[i];
-      }
-      for (int i = 0; i < TRI_COUNT; i++) {
-        *ro_pointer++ = &triangles[i];
-      }
-    }
+    // RayObject **ray_objects =
+    //     (RayObject **)calloc(RAY_OBJ_COUNT, sizeof(RayObject *));
+    // {
+    //   RayObject **ro_pointer = ray_objects;
+    //   for (int i = 0; i < SPHERE_COUNT; i++) {
+    //     *ro_pointer++ = &spheres[i];
+    //   }
+    //   for (int i = 0; i < PLANE_COUNT; i++) {
+    //     *ro_pointer++ = &planes[i];
+    //   }
+    //   for (int i = 0; i < TRI_COUNT; i++) {
+    //     *ro_pointer++ = &triangles[i];
+    //   }
+    // }
 
     // Light
     LightSource *light = (LightSource *)calloc(1, sizeof(LightSource));
@@ -191,8 +192,22 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
   Ray *ray = gState.ray;
   RayScreen *screen = gState.screen;
-  RayObject **ray_objects = gState.ray_objects;
   LightSource *light = gState.light;
+
+  // Stack
+  RayObject *ray_objects[RAY_OBJ_COUNT];
+  {
+    RayObject **ro_pointer = ray_objects;
+    for (int i = 0; i < SPHERE_COUNT; i++) {
+      *ro_pointer++ = &gState.spheres[i];
+    }
+    for (int i = 0; i < PLANE_COUNT; i++) {
+      *ro_pointer++ = &gState.planes[i];
+    }
+    for (int i = 0; i < TRI_COUNT; i++) {
+      *ro_pointer++ = &gState.triangles[i];
+    }
+  }
 
   if (Input->up) {
     gState.light->source.v += 10;
