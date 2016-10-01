@@ -49,7 +49,7 @@ struct program_state {
   Triangle *triangles;
   RayObject **ray_objects;
 
-  LightSource *light;
+  LightSource *lights;
 
   program_state() {
 
