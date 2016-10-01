@@ -164,8 +164,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     RECT WindowRect = {};
 
     // TODO: get monitor size
-    const int kWindowWidth = 400;
-    const int kWindowHeight = 300;
+    const int kWindowWidth = 1500;
+    const int kWindowHeight = 1000;
 
     WindowRect.right = kWindowWidth;
     WindowRect.bottom = kWindowHeight;
