@@ -16,7 +16,7 @@ r32 Sphere::hit_by(Ray *ray) {
   // Discriminant
   r32 D = square(d * ec) - dd * (ec * ec - square(r));
 
-  if (D < 0 || (c.w + r) >= e.w) {
+  if (D < 0) {
     return -1;
   }
 
