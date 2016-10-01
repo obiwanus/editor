@@ -90,7 +90,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
   const int kSphereCount = 2;
   const int kPlaneCount = 1;
-  const int kTriangleCount = 1;
+  const int kTriangleCount = 0;
   const int kRayObjCount = kSphereCount + kPlaneCount + kTriangleCount;
 
   const int kLightCount = 3;
@@ -100,19 +100,19 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
     // Ray
     Ray *ray = new Ray;
-    ray->origin = {0, 0, 500};
+    ray->origin = {0, 0, 1000};
 
     // Spheres
     Sphere *spheres = new Sphere[kSphereCount];
 
-    spheres[0].center = {300, 0, -500};
+    spheres[0].center = {350, 0, -500};
     spheres[0].radius = 300;
-    spheres[0].color = {1.0f, 0.2f, 0.2f};
-    spheres[0].phong_exp = 150;
+    spheres[0].color = {0.7f, 0.7f, 0.7f};
+    spheres[0].phong_exp = 1;
 
     spheres[1].center = {-400, 100, -500};
     spheres[1].radius = 400;
-    spheres[1].color = {0.2f, 0.2f, 1.0f};
+    spheres[1].color = {0.2f, 0.2f, 0.2f};
     spheres[1].phong_exp = 100;
 
     // Planes
@@ -121,17 +121,17 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     planes[0].point = {0, -500, 0};
     planes[0].normal = {0, 1, 0.3f};
     planes[0].normal = planes[0].normal.normalized();
-    planes[0].color = {0.1f, 0.3f, 0.2f};
+    planes[0].color = {0.4f, 0.3f, 0.2f};
     planes[0].phong_exp = 10;
 
     // Triangles
-    Triangle *triangles = new Triangle[kTriangleCount];
+    // Triangle *triangles = new Triangle[kTriangleCount];
 
-    triangles[0].a = {480, -250, -100};
-    triangles[0].b = {0, 150, -700};
-    triangles[0].c = {-300, -50, -10};
-    triangles[0].color = {0.3f, 0.3f, 0.1f};
-    triangles[0].phong_exp = 10;
+    // triangles[0].a = {480, -250, -100};
+    // triangles[0].b = {0, 150, -700};
+    // triangles[0].c = {-300, -50, -10};
+    // triangles[0].color = {0.3f, 0.3f, 0.1f};
+    // triangles[0].phong_exp = 10;
 
     // Get a list of all objects
     RayObject **ray_objects =
@@ -144,25 +144,22 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
       for (int i = 0; i < kPlaneCount; i++) {
         *ro_pointer++ = &planes[i];
       }
-      for (int i = 0; i < kTriangleCount; i++) {
-        *ro_pointer++ = &triangles[i];
-      }
+      // for (int i = 0; i < kTriangleCount; i++) {
+      //   *ro_pointer++ = &triangles[i];
+      // }
     }
 
     // Light
     LightSource *lights = new LightSource[kLightCount];
 
-    // lights[0].intensity = 0.7f;
-    // lights[0].source = {1000, 0, -500};
-
     lights[0].intensity = 0.7f;
-    lights[0].source = {530, 200, 100};
+    lights[0].source = {730, 700, -200};
 
-    lights[1].intensity = 0.2f;
-    lights[1].source = {-230, 100, -100};
+    lights[1].intensity = 0.4f;
+    lights[1].source = {-300, 800, 0};
 
-    lights[2].intensity = 0.3f;
-    lights[2].source = {-700, 400, 100};
+    lights[2].intensity = 1;
+    lights[2].source = {-700, 100, 100};
 
     // Screen dimensions
     RayScreen *screen = new RayScreen;
@@ -178,7 +175,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
     gState.spheres = spheres;
     gState.planes = planes;
-    gState.triangles = triangles;
+    // gState.triangles = triangles;
 
     gState.ray_objects = ray_objects;
 
@@ -273,6 +270,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
             }
             color += ray_obj_hit->color * light->intensity * illuminance;
 
+            // Calculate specular reflection
             r32 reflection = V * normal;
             if (reflection < 0) {
               reflection = 0;
@@ -281,6 +279,27 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
                 ray_obj_hit->specular_color * light->intensity *
                 (r32)pow(reflection, ray_obj_hit->phong_exp);
             color += specular_reflection;
+
+            // // Calculate mirror reflection
+            // {
+            //   // Cast reflection ray
+            //   Ray reflection_ray = Ray();
+            //   reflection_ray.origin = hit_point;
+            //   reflection_ray.direction =
+            //       light->source - hit_point;  // not normalizing on purpose
+
+            //   for (int j = 0; j < kRayObjCount; j++) {
+            //     RayObject *current_object = ray_objects[j];
+            //     if (ray_obj_hit == current_object) {
+            //       continue;
+            //     }
+            //     r32 hit_at = current_object->hit_by(&reflection_ray);
+            //     if (hit_at >= 0 && hit_at <= 1) {
+            //       point_in_shadow = true;
+            //       break;
+            //     }
+            //   }
+            // }
           }
         }
 
