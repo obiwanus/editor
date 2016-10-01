@@ -124,7 +124,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     // Triangles
     Triangle *triangles = new Triangle[TRI_COUNT];
 
-    triangles[0].a = {180, -150, -10};
+    triangles[0].a = {180, -350, -10};
     triangles[0].b = {0, 150, -500};
     triangles[0].c = {-300, 0, -10};
     triangles[0].color = {0.3f, 0.3f, 0.3f};
@@ -209,7 +209,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
       for (int i = 0; i < RAY_OBJ_COUNT; i++) {
         RayObject *current_object = ray_objects[i];
         r32 hit_at = current_object->hit_by(ray);
-        if (hit_at > 0 && (hit_at < min_hit || min_hit == 0)) {
+        if (hit_at >= 1 && (hit_at < min_hit || min_hit == 0)) {
           hit = true;
           min_hit = hit_at;
           ray_obj_hit = current_object;
@@ -223,11 +223,16 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
         v3 V = (-light_direction + line_of_sight).normalized();
 
+        const v3 ambient_color = {0.05f, 0.05f, 0.5f};
+        const r32 ambient_light_intensity = 0.1f;
+
+        v3 color = ambient_color * ambient_light_intensity;
+
         r32 illuminance = -light_direction * normal;
         if (illuminance < 0) {
           illuminance = 0;
         }
-        v3 color = ray_obj_hit->color * light->intensity * illuminance;
+        color += ray_obj_hit->color * light->intensity * illuminance;
 
         r32 reflection = V * normal;
         if (reflection < 0) {
@@ -245,6 +250,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
       }
       else {
+        // Background color
         DrawPixel(PixelBuffer, {x, y}, 0x00111111);
       }
     }
