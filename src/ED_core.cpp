@@ -85,14 +85,11 @@ u32 GetRGB(v3 Color) {
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   update_result result = {};
 
-  // TODO:
-  // Init stuff only once
-
   // memset(PixelBuffer->memory, 0,
   //        PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
   const int SPHERE_COUNT = 2;
-  const int PLANE_COUNT = 1;
+  const int PLANE_COUNT = 0;
   const int TRI_COUNT = 1;
   const int RAY_OBJ_COUNT = SPHERE_COUNT + PLANE_COUNT + TRI_COUNT;
 
@@ -101,7 +98,6 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
     // Ray
     Ray *ray = new Ray;
-    *ray = {};
     ray->origin = {0, 0, 50};
 
     // Spheres
@@ -117,21 +113,22 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     spheres[1].color = {0.2f, 0.2f, 1.0f};
     spheres[1].phong_exp = 50;
 
-    // Planes
-    Plane *planes = new Plane[PLANE_COUNT];
+    // // Planes
+    // Plane *planes = new Plane[PLANE_COUNT];
 
-    planes[0].point = {0, -20, 0};
-    planes[0].normal = {0, 1, 0};
-    planes[0].normal = planes[0].normal.normalized();
-    planes[0].color = {0.2f, 0.7f, 0.2f};
+    // planes[0].point = {0, -20, 0};
+    // planes[0].normal = {0, 1, 0};
+    // planes[0].normal = planes[0].normal.normalized();
+    // planes[0].color = {0.2f, 0.7f, 0.2f};
 
     // Triangles
     Triangle *triangles = new Triangle[TRI_COUNT];
 
-    triangles[0].a = {-10, 0, -50};
-    triangles[0].c = {10, 0, -50};
-    triangles[0].b = {0, 0, 0};
+    triangles[0].a = {20, 0, -70};
+    triangles[0].b = {0, 60, -10};
+    triangles[0].c = {-30, -20, -10};
     triangles[0].color = {0.3f, 0.3f, 0.3f};
+    triangles[0].phong_exp = 10;
 
     // Get a list of all objects
     RayObject **ray_objects =
@@ -141,21 +138,21 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
       for (int i = 0; i < SPHERE_COUNT; i++) {
         *ro_pointer++ = &spheres[i];
       }
-      for (int i = 0; i < PLANE_COUNT; i++) {
-        *ro_pointer++ = &planes[i];
-      }
+      // for (int i = 0; i < PLANE_COUNT; i++) {
+      //   *ro_pointer++ = &planes[i];
+      // }
       for (int i = 0; i < TRI_COUNT; i++) {
         *ro_pointer++ = &triangles[i];
       }
     }
 
     // Light
-    LightSource *light = (LightSource *)calloc(1, sizeof(LightSource));
+    LightSource *light = new LightSource;
     light->intensity = 0.5f;
     light->source = {130, 0, 100};
 
     // Screen dimensions
-    RayScreen *screen = (RayScreen *)calloc(1, sizeof(RayScreen));
+    RayScreen *screen = new RayScreen;
     screen->left = -20;
     screen->right = 20;
     screen->top = 15;
@@ -167,7 +164,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     gState.screen = screen;
 
     gState.spheres = spheres;
-    gState.planes = planes;
+    // gState.planes = planes;
     gState.triangles = triangles;
 
     gState.ray_objects = ray_objects;
@@ -241,8 +238,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
                                  (r32)pow(reflection, ray_obj_hit->phong_exp);
         color += specular_reflection;
         for (int i = 0; i < 3; i++) {
-          if (color.e[i] > 1) {
-            color.e[i] = 1;
+          if (color.E[i] > 1) {
+            color.E[i] = 1;
           }
         }
         DrawPixel(PixelBuffer, {x, y}, GetRGB(color));

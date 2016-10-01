@@ -1,12 +1,8 @@
 #include "ED_math.h"
 
-r32 v2::len() {
-  return (r32)sqrt(x * x + y * y);
-}
+r32 v2::len() { return (r32)sqrt(x * x + y * y); }
 
-r32 v3::len() {
-  return (r32)sqrt(x * x + y * y + z * z);
-}
+r32 v3::len() { return (r32)sqrt(x * x + y * y + z * z); }
 
 v2 v2::normalized() {
   v2 result = *this / this->len();
@@ -28,11 +24,34 @@ v3 v3::cross(v3 Vector) {
   return result;
 }
 
+r32 m2x2::determinant() {
+  r32 result = a * b - c * d;
+
+  return result;
+}
+
+r32 m3x3::determinant() {
+  r32 result =
+      a * e * i - a * h * f - b * d * i + b * f * g + c * d * h - c * e * g;
+
+  return result;
+}
+
+m3x3 m3x3::replace_column(int number, v3 column) {
+  m3x3 result = *this;
+
+  result.E[number + 0] = column.E[0];
+  result.E[number + 3] = column.E[1];
+  result.E[number + 6] = column.E[2];
+
+  return result;
+}
+
 r32 AngleBetween(v2 A, v2 B) {
   r32 cosine = (A * B) / (A.len() * B.len());
   r32 result = (r32)acos(cosine);
   if (A.y <= B.y) {
-    result = 2* M_PI - result;
+    result = 2 * M_PI - result;
   }
   return result;
 }
@@ -75,5 +94,3 @@ v3 Hadamard(v3 A, v3 B) {
 
   return result;
 }
-
-

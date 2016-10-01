@@ -20,7 +20,7 @@ union v2 {
   struct {
     r32 u, v;
   };
-  r32 e[2];
+  r32 E[2];
 
   r32 len();
   v2 normalized();
@@ -52,18 +52,39 @@ union v3 {
     r32 _ignored3;
     v2 vw;
   };
-  r32 e[3];
+  r32 E[3];
 
   r32 len();
   v3 normalized();
   v3 cross(v3 Vector);
 };
 
+union m2x2 {
+  struct {
+    v2 rows[2];
+  };
+  struct {
+    r32 a, b;
+    r32 c, d;
+  };
+  r32 E[4];
+
+  r32 determinant();
+};
+
 union m3x3 {
   struct {
     v3 rows[3];
   };
-  r32 e[9];
+  struct {
+    r32 a, b, c;
+    r32 d, e, f;
+    r32 g, h, i;
+  };
+  r32 E[9];
+
+  r32 determinant();
+  m3x3 replace_column(int number, v3 column);
 };
 
 // ==================== Construction ======================
