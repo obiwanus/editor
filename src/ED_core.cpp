@@ -8,6 +8,15 @@
 
 global program_state gState = program_state();
 
+global const int kMaxRecursion = 10;
+
+global const int kSphereCount = 2;
+global const int kPlaneCount = 1;
+global const int kTriangleCount = 0;
+global const int kRayObjCount = kSphereCount + kPlaneCount + kTriangleCount;
+
+global const int kLightCount = 3;
+
 inline void DrawPixel(pixel_buffer *PixelBuffer, v2i Point, u32 Color) {
   int x = Point.x;
   int y = Point.y;
@@ -82,18 +91,96 @@ u32 GetRGB(v3 Color) {
   return result;
 }
 
+v3 GetRayColor(Ray *ray, int RecurseFurther) {
+  v3 color = {};
+
+  r32 min_hit = 0;
+  b32 hit = false;
+  RayObject *ray_obj_hit = 0;
+  for (int i = 0; i < kRayObjCount; i++) {
+    RayObject *current_object = gState.ray_objects[i];
+    r32 hit_at = current_object->hit_by(ray);
+    if (hit_at >= 1 && (hit_at < min_hit || min_hit == 0)) {
+      hit = true;
+      min_hit = hit_at;
+      ray_obj_hit = current_object;
+    }
+  }
+  if (hit) {
+    v3 hit_point = ray->point_at(min_hit);
+    v3 normal = ray_obj_hit->get_normal(hit_point);
+    v3 line_of_sight = -ray->direction.normalized();
+
+    for (int i = 0; i < kLightCount; i++) {
+      LightSource *light = &gState.lights[i];
+
+      v3 light_direction = (hit_point - light->source).normalized();
+
+      b32 point_in_shadow = false;
+      {
+        // Cast shadow ray
+        Ray shadow_ray = Ray();
+        shadow_ray.origin = hit_point;
+        shadow_ray.direction =
+            light->source - hit_point;  // not normalizing on purpose
+
+        for (int j = 0; j < kRayObjCount; j++) {
+          RayObject *current_object = gState.ray_objects[j];
+          if (ray_obj_hit == current_object) {
+            continue;
+          }
+          r32 hit_at = current_object->hit_by(&shadow_ray);
+          if (hit_at >= 0 && hit_at <= 1) {
+            point_in_shadow = true;
+            break;
+          }
+        }
+      }
+
+      if (!point_in_shadow) {
+        v3 V = (-light_direction + line_of_sight).normalized();
+
+        r32 illuminance = -light_direction * normal;
+        if (illuminance < 0) {
+          illuminance = 0;
+        }
+        color += ray_obj_hit->color * light->intensity * illuminance;
+
+        // Calculate specular reflection
+        r32 reflection = V * normal;
+        if (reflection < 0) {
+          reflection = 0;
+        }
+        v3 specular_reflection = ray_obj_hit->specular_color *
+                                 light->intensity *
+                                 (r32)pow(reflection, ray_obj_hit->phong_exp);
+        color += specular_reflection;
+      }
+    }
+
+    // Calculate mirror reflection
+    if (RecurseFurther) {
+      Ray reflection_ray = {};
+      reflection_ray.origin = hit_point;
+      reflection_ray.direction =
+          ray->direction - 2 * (ray->direction * normal) * normal;
+
+      // color += Hadamard({0.4f, 0.4f, 0.4f},
+      //                   GetRayColor(&reflection_ray, RecurseFurther - 1));
+      // color += GetRayColor(&reflection_ray, RecurseFurther - 1);
+    }
+  } else {
+    // Background color
+    color = {0.05f, 0.05f, 0.05f};
+  }
+  return color;
+}
+
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   update_result result = {};
 
   // memset(PixelBuffer->memory, 0,
   //        PixelBuffer->height * PixelBuffer->width * sizeof(u32));
-
-  const int kSphereCount = 2;
-  const int kPlaneCount = 1;
-  const int kTriangleCount = 0;
-  const int kRayObjCount = kSphereCount + kPlaneCount + kTriangleCount;
-
-  const int kLightCount = 3;
 
   if (!gState.initialized) {
     gState.initialized = true;
@@ -105,12 +192,12 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     // Spheres
     Sphere *spheres = new Sphere[kSphereCount];
 
-    spheres[0].center = {350, 0, -500};
+    spheres[0].center = {350, 0, -1500};
     spheres[0].radius = 300;
     spheres[0].color = {0.7f, 0.7f, 0.7f};
     spheres[0].phong_exp = 1;
 
-    spheres[1].center = {-400, 100, -500};
+    spheres[1].center = {-400, 100, -1500};
     spheres[1].radius = 400;
     spheres[1].color = {0.2f, 0.2f, 0.2f};
     spheres[1].phong_exp = 100;
@@ -119,7 +206,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     Plane *planes = new Plane[kPlaneCount];
 
     planes[0].point = {0, -500, 0};
-    planes[0].normal = {0, 1, 0.3f};
+    planes[0].normal = {0, 1, 0.1f};
     planes[0].normal = planes[0].normal.normalized();
     planes[0].color = {0.4f, 0.3f, 0.2f};
     planes[0].phong_exp = 10;
@@ -212,193 +299,24 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
                   0};
       ray->direction = pixel - ray->origin;
 
-      r32 min_hit = 0;
-      b32 hit = false;
-
       const v3 ambient_color = {0.2f, 0.2f, 0.2f};
       const r32 ambient_light_intensity = 0.3f;
 
       v3 color = ambient_color * ambient_light_intensity;
 
-      RayObject *ray_obj_hit = 0;
-      for (int i = 0; i < kRayObjCount; i++) {
-        RayObject *current_object = ray_objects[i];
-        r32 hit_at = current_object->hit_by(ray);
-        if (hit_at >= 1 && (hit_at < min_hit || min_hit == 0)) {
-          hit = true;
-          min_hit = hit_at;
-          ray_obj_hit = current_object;
+      color += GetRayColor(ray, kMaxRecursion);
+
+      // Crop
+      for (int i = 0; i < 3; i++) {
+        if (color.E[i] > 1) {
+          color.E[i] = 1;
         }
       }
-      if (hit) {
-        v3 hit_point = ray->point_at(min_hit);
-        v3 normal = ray_obj_hit->get_normal(hit_point);
-        v3 line_of_sight = (pixel - hit_point).normalized();
 
-        for (int i = 0; i < kLightCount; i++) {
-          LightSource *light = &lights[i];
-
-          v3 light_direction = (hit_point - light->source).normalized();
-
-          b32 point_in_shadow = false;
-          {
-            // Cast shadow ray
-            Ray shadow_ray = Ray();
-            shadow_ray.origin = hit_point;
-            shadow_ray.direction =
-                light->source - hit_point;  // not normalizing on purpose
-
-            for (int j = 0; j < kRayObjCount; j++) {
-              RayObject *current_object = ray_objects[j];
-              if (ray_obj_hit == current_object) {
-                continue;
-              }
-              r32 hit_at = current_object->hit_by(&shadow_ray);
-              if (hit_at >= 0 && hit_at <= 1) {
-                point_in_shadow = true;
-                break;
-              }
-            }
-          }
-
-          if (!point_in_shadow) {
-            v3 V = (-light_direction + line_of_sight).normalized();
-
-            r32 illuminance = -light_direction * normal;
-            if (illuminance < 0) {
-              illuminance = 0;
-            }
-            color += ray_obj_hit->color * light->intensity * illuminance;
-
-            // Calculate specular reflection
-            r32 reflection = V * normal;
-            if (reflection < 0) {
-              reflection = 0;
-            }
-            v3 specular_reflection =
-                ray_obj_hit->specular_color * light->intensity *
-                (r32)pow(reflection, ray_obj_hit->phong_exp);
-            color += specular_reflection;
-
-            // // Calculate mirror reflection
-            // {
-            //   // Cast reflection ray
-            //   Ray reflection_ray = Ray();
-            //   reflection_ray.origin = hit_point;
-            //   reflection_ray.direction =
-            //       light->source - hit_point;  // not normalizing on purpose
-
-            //   for (int j = 0; j < kRayObjCount; j++) {
-            //     RayObject *current_object = ray_objects[j];
-            //     if (ray_obj_hit == current_object) {
-            //       continue;
-            //     }
-            //     r32 hit_at = current_object->hit_by(&reflection_ray);
-            //     if (hit_at >= 0 && hit_at <= 1) {
-            //       point_in_shadow = true;
-            //       break;
-            //     }
-            //   }
-            // }
-          }
-        }
-
-        for (int i = 0; i < 3; i++) {
-          if (color.E[i] > 1) {
-            color.E[i] = 1;
-          }
-        }
-      } else {
-        // Background color
-        color = {0.05f, 0.05f, 0.05f};
-      }
       DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
     }
   }
 
-  // Unit cube
-  v3 points[] = {
-      {-0.5f, -0.5f, 2.5f},
-      {0.5f, -0.5f, 2.5f},
-      {0.5f, 0.5f, 2.5f},
-      {-0.5f, 0.5f, 2.5f},
-      {-0.5f, -0.5f, 3.5f},
-      {0.5f, -0.5f, 3.5f},
-      {0.5f, 0.5f, 3.5f},
-      {-0.5f, 0.5f, 3.5f},
-  };
-
-  v3 center = V3(0, 0, 3.0f);
-
-  v2i edges[] = {
-      {0, 1},
-      {1, 2},
-      {2, 3},
-      {3, 0},
-      {4, 5},
-      {5, 6},
-      {6, 7},
-      {7, 4},
-      {0, 4},
-      {1, 5},
-      {2, 6},
-      {3, 7},
-  };
-
-  // Render
-  // r32 z_depth = 0;
-
-  // int scale = gState.scale;
-  // v2 base = gState.base;
-  // v3 angle = gState.angle;
-
-  // // quaternions?
-  // m3x3 RotationMatrixX = {
-  //     1, 0, 0, 0, (r32)cos(angle.x), -1 * (r32)sin(angle.x), 0,
-  //     (r32)sin(angle.x), (r32)cos(angle.x),
-  // };
-
-  // m3x3 RotationMatrixY = {
-  //     (r32)cos(angle.y), 0, -1 * (r32)sin(angle.y), 0, 1, 0,
-  //     (r32)sin(angle.y),
-  //     0, (r32)cos(angle.y),
-  // };
-
-  // m3x3 RotationMatrixZ = {
-  //     (r32)cos(angle.z), -1 * (r32)sin(angle.z), 0, (r32)sin(angle.z),
-  //     (r32)cos(angle.z), 0, 0, 0, 1,
-  // };
-
-  // int edge_count = COUNT_OF(edges);
-  // for (int i = 0; i < edge_count; i++) {
-  //   v2i edge = edges[i];
-  //   v3 point1 = points[edge.x];
-  //   v3 point2 = points[edge.y];
-
-  //   point1 = Rotate(RotationMatrixY, point1, center);
-  //   point2 = Rotate(RotationMatrixY, point2, center);
-
-  //   point1 = Rotate(RotationMatrixX, point1, center);
-  //   point2 = Rotate(RotationMatrixX, point2, center);
-
-  //   point1 = Rotate(RotationMatrixZ, point1, center);
-  //   point2 = Rotate(RotationMatrixZ, point2, center);
-
-  //   v2 A, B;
-  //   A.x = (point1.x * scale / (point1.z + z_depth)) + base.x;
-  //   A.y = (point1.y * scale / (point1.z + z_depth)) + base.y;
-  //   B.x = (point2.x * scale / (point2.z + z_depth)) + base.x;
-  //   B.y = (point2.y * scale / (point2.z + z_depth)) + base.y;
-
-  //   v2i Ai = {(int)A.x, (int)A.y};
-  //   v2i Bi = {(int)B.x, (int)B.y};
-  //   DrawLine(PixelBuffer, Ai, Bi, 0x00FFFFFF);
-  // }
-
-  // if (Input->mouse_middle) {
-  //   DrawLine(PixelBuffer, base, {Input->mouse.x, Input->mouse.y},
-  //   0x00FFFFFF);
-  // }
 
   return result;
 }
