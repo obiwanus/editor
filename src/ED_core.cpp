@@ -8,6 +8,9 @@
 
 global program_state gState = program_state();
 
+global const int kWindowWidth = 1500;
+global const int kWindowHeight = 1000;
+
 global const int kMaxRecursion = 10;
 
 global const int kSphereCount = 2;
@@ -91,7 +94,7 @@ u32 GetRGB(v3 Color) {
   return result;
 }
 
-v3 GetRayColor(Ray *ray, int RecurseFurther) {
+v3 GetRayColor(Ray *ray, RayObject *reflected_from, int recurse_further) {
   v3 color = {};
 
   r32 min_hit = 0;
@@ -99,8 +102,12 @@ v3 GetRayColor(Ray *ray, int RecurseFurther) {
   RayObject *ray_obj_hit = 0;
   for (int i = 0; i < kRayObjCount; i++) {
     RayObject *current_object = gState.ray_objects[i];
+    if (current_object == reflected_from) {
+      // NOTE: won't work for complex shapes
+      continue;
+    }
     r32 hit_at = current_object->hit_by(ray);
-    if (hit_at >= 1 && (hit_at < min_hit || min_hit == 0)) {
+    if (hit_at >= 0 && (hit_at < min_hit || min_hit == 0)) {
       hit = true;
       min_hit = hit_at;
       ray_obj_hit = current_object;
@@ -159,17 +166,22 @@ v3 GetRayColor(Ray *ray, int RecurseFurther) {
     }
 
     // Calculate mirror reflection
-    if (RecurseFurther) {
+    if (recurse_further) {
       Ray reflection_ray = {};
       reflection_ray.origin = hit_point;
       reflection_ray.direction =
           ray->direction - 2 * (ray->direction * normal) * normal;
 
-      // color += Hadamard({0.4f, 0.4f, 0.4f},
-      //                   GetRayColor(&reflection_ray, RecurseFurther - 1));
-      // color += GetRayColor(&reflection_ray, RecurseFurther - 1);
+      const r32 max_k = 0.3f;
+      r32 k = ray_obj_hit->phong_exp * 0.005f;
+      if (k > max_k) {
+        k = max_k;
+      }
+      color +=
+          k * GetRayColor(&reflection_ray, ray_obj_hit, recurse_further - 1);
+      // color += GetRayColor(&reflection_ray, recurse_further - 1);
     }
-  } else {
+  } else if (recurse_further == kMaxRecursion) {
     // Background color
     color = {0.05f, 0.05f, 0.05f};
   }
@@ -192,10 +204,10 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     // Spheres
     Sphere *spheres = new Sphere[kSphereCount];
 
-    spheres[0].center = {350, 0, -1500};
+    spheres[0].center = {350, 0, -1300};
     spheres[0].radius = 300;
     spheres[0].color = {0.7f, 0.7f, 0.7f};
-    spheres[0].phong_exp = 1;
+    spheres[0].phong_exp = 10;
 
     spheres[1].center = {-400, 100, -1500};
     spheres[1].radius = 400;
@@ -205,11 +217,11 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     // Planes
     Plane *planes = new Plane[kPlaneCount];
 
-    planes[0].point = {0, -500, 0};
-    planes[0].normal = {0, 1, 0.1f};
+    planes[0].point = {0, -300, 0};
+    planes[0].normal = {0, 1, 0};
     planes[0].normal = planes[0].normal.normalized();
     planes[0].color = {0.4f, 0.3f, 0.2f};
-    planes[0].phong_exp = 10;
+    planes[0].phong_exp = 1000;
 
     // Triangles
     // Triangle *triangles = new Triangle[kTriangleCount];
@@ -240,22 +252,21 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     LightSource *lights = new LightSource[kLightCount];
 
     lights[0].intensity = 0.7f;
-    lights[0].source = {730, 700, -200};
+    lights[0].source = {1730, 600, -200};
 
     lights[1].intensity = 0.4f;
-    lights[1].source = {-300, 800, 0};
+    lights[1].source = {-300, 1000, -100};
 
-    lights[2].intensity = 1;
-    lights[2].source = {-700, 100, 100};
+    lights[2].intensity = 0.4f;
+    lights[2].source = {-1700, 300, 100};
 
     // Screen dimensions
     RayScreen *screen = new RayScreen;
-    screen->left = -750;
-    screen->right = 750;
-    screen->top = 500;
-    screen->bottom = -500;
-    screen->x_pixel_count = 1500;
-    screen->y_pixel_count = 1000;
+    screen->pixel_count = {kWindowWidth, kWindowHeight};
+    screen->left = -screen->pixel_count.x / 2;
+    screen->right = screen->pixel_count.x / 2;
+    screen->bottom = -screen->pixel_count.y / 2;
+    screen->top = screen->pixel_count.y / 2;
 
     gState.ray = ray;
     gState.screen = screen;
@@ -292,10 +303,10 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
       // Get the ray
       v3 pixel = {screen->left +
                       (x + 0.5f) * (screen->right - screen->left) /
-                          screen->x_pixel_count,
+                          screen->pixel_count.x,
                   screen->bottom +
                       (y + 0.5f) * (screen->top - screen->bottom) /
-                          screen->y_pixel_count,
+                          screen->pixel_count.y,
                   0};
       ray->direction = pixel - ray->origin;
 
@@ -304,19 +315,21 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
 
       v3 color = ambient_color * ambient_light_intensity;
 
-      color += GetRayColor(ray, kMaxRecursion);
+      color += GetRayColor(ray, 0, kMaxRecursion);
 
       // Crop
       for (int i = 0; i < 3; i++) {
         if (color.E[i] > 1) {
           color.E[i] = 1;
         }
+        if (color.E[i] < 0) {
+          color.E[i] = 0;
+        }
       }
 
       DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
     }
   }
-
 
   return result;
 }

@@ -7,7 +7,19 @@ LFLAGS="$(pkg-config --cflags --libs x11) -ldl -lpthread"
 
 mkdir -p build
 
-g++ --std=c++11 -Isrc/ $CFLAGS src/ED_linux.cpp src/ED_core.cpp src/ED_math.cpp $LFLAGS -o build/editor
+FILES_TO_COMPILE="src/ED_linux.cpp \
+    src/ED_core.cpp \
+    src/ED_math.cpp \
+    src/raytrace/ED_raytrace.cpp \
+    "
+
+OPTIMIZE=true
+
+if $OPTIMIZE; then
+    CFLAGS="$CFLAGS -O2"
+fi
+
+g++ --std=c++11 -Isrc/ $CFLAGS $FILES_TO_COMPILE $LFLAGS -o build/editor
 
 build/editor
 

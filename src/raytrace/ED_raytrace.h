@@ -56,8 +56,9 @@ struct RayScreen {
   int top;
   int bottom;
 
-  int x_pixel_count;
-  int y_pixel_count;
+  v2i pixel_count;
+
+
 };
 
 struct LightSource {

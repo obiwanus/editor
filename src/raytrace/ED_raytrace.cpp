@@ -4,6 +4,7 @@
 r32 Sphere::hit_by(Ray *ray) {
   // Returns the value of parameter t of the ray,
   // or -1 if no hit for positive t-s
+  r32 t = -1;
 
   v3 d = ray->direction;
   v3 e = ray->origin;
@@ -20,7 +21,7 @@ r32 Sphere::hit_by(Ray *ray) {
     return -1;
   }
 
-  r32 t = (-d * ec - (r32)sqrt(D)) / dd;
+  t = (-d * ec - (r32)sqrt(D)) / dd;
 
   return t;
 }

@@ -15,8 +15,8 @@
 global bool gRunning;
 global pixel_buffer gPixelBuffer;
 
-global const int kWindowWidth = 400;
-global const int kWindowHeight = 300;
+global const int kWindowWidth = 1500;
+global const int kWindowHeight = 1000;
 
 global XImage *gXImage;
 
@@ -65,7 +65,7 @@ int main(int argc, char const *argv[]) {
 
     gPixelBuffer.memory = (void *)gXImage->data;
     gPixelBuffer.width = kWindowWidth;
-    gPixelBuffer.height = kWindowHeight;
+    gPixelBuffer.height = kWindowHeight - 1;
     gPixelBuffer.max_width = kWindowWidth;
     gPixelBuffer.max_height = kWindowHeight;
 
