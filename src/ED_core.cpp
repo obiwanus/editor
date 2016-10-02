@@ -13,7 +13,7 @@ global const int kWindowHeight = 1000;
 
 global const int kMaxRecursion = 10;
 
-global const int kSphereCount = 2;
+global const int kSphereCount = 3;
 global const int kPlaneCount = 1;
 global const int kTriangleCount = 0;
 global const int kRayObjCount = kSphereCount + kPlaneCount + kTriangleCount;
@@ -173,7 +173,7 @@ v3 GetRayColor(Ray *ray, RayObject *reflected_from, int recurse_further) {
           ray->direction - 2 * (ray->direction * normal) * normal;
 
       const r32 max_k = 0.3f;
-      r32 k = ray_obj_hit->phong_exp * 0.005f;
+      r32 k = ray_obj_hit->phong_exp * 0.001f;
       if (k > max_k) {
         k = max_k;
       }
@@ -212,7 +212,12 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     spheres[1].center = {-400, 100, -1500};
     spheres[1].radius = 400;
     spheres[1].color = {0.2f, 0.2f, 0.2f};
-    spheres[1].phong_exp = 100;
+    spheres[1].phong_exp = 500;
+
+    spheres[2].center = {-500, -200, -1000};
+    spheres[2].radius = 100;
+    spheres[2].color = {0.2f, 0.2f, 0.3f};
+    spheres[2].phong_exp = 1000;
 
     // Planes
     Plane *planes = new Plane[kPlaneCount];
