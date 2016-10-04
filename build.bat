@@ -25,8 +25,9 @@ pushd build
 
 set FilesToCompile= ..\src\ED_win32.cpp ..\src\ED_core.cpp ..\src\ED_math.cpp ..\src\raytrace\ED_raytrace.cpp
 
-cl -Feeditor.exe -I..\src %OptimizeFlags% %CommonCompilerFlags% %FilesToCompile% /link %CommonLinkerFlags%
+set run_compilation= cl -Feeditor.exe -I..\src %OptimizeFlags% %CommonCompilerFlags% %FilesToCompile% /link %CommonLinkerFlags%
 
+%run_compilation% || exit /b
 
 editor.exe
 

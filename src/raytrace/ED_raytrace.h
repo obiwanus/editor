@@ -4,8 +4,8 @@
 #include "ED_base.h"
 #include "ED_math.h"
 
-
 struct Ray;
+struct ProgramState;
 
 struct RayObject {
   v3 color;
@@ -68,5 +68,8 @@ struct LightSource {
   v3 source;
   r32 intensity;
 };
+
+v3 GetRayColor(ProgramState *state, Ray *ray, RayObject *reflected_from,
+               int recurse_further);
 
 #endif  // __ED_RAYTRACE_H__

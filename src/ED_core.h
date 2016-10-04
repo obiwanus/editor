@@ -38,7 +38,7 @@ struct user_input {
   v3 mouse;
 };
 
-struct program_state {
+struct ProgramState {
   b32 initialized;
 
   Ray *ray;
@@ -51,9 +51,17 @@ struct program_state {
 
   LightSource *lights;
 
-  program_state() {
+  // Some constants
+  int kWindowWidth;
+  int kWindowHeight;
+  int kMaxRecursion;
+  int kSphereCount;
+  int kPlaneCount;
+  int kTriangleCount;
+  int kRayObjCount;
+  int kLightCount;
 
-  }
+  ProgramState() {};
 };
 
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input);
