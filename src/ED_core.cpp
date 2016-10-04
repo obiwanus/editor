@@ -94,97 +94,104 @@ u32 GetRGB(v3 Color) {
   return result;
 }
 
-v3 GetRayColor(Ray *ray, RayObject *reflected_from, int recurse_further) {
-  v3 color = {};
-
+RayHit GetObjectHitByRay(Ray *ray, r32 tmin, r32 tmax,
+                         RayObject *ignore_object = NULL, b32 any = false) {
+  RayHit ray_hit = {};
   r32 min_hit = 0;
-  b32 hit = false;
-  RayObject *ray_obj_hit = 0;
+
   for (int i = 0; i < kRayObjCount; i++) {
     RayObject *current_object = gState.ray_objects[i];
-    if (current_object == reflected_from) {
-      // NOTE: won't work for complex shapes
+    if (current_object == ignore_object) {
+      // NOTE: won't work for reflections on non-convex shapes
       continue;
     }
     r32 hit_at = current_object->hit_by(ray);
-    if (hit_at >= 0 && (hit_at < min_hit || min_hit == 0)) {
-      hit = true;
+    if (tmin <= hit_at && hit_at <= tmax &&
+        (hit_at < min_hit || min_hit == 0)) {
+      ray_hit.object = current_object;
+      ray_hit.at = hit_at;
       min_hit = hit_at;
-      ray_obj_hit = current_object;
+
+      if (any) {
+        return ray_hit;  // don't care about the closest one
+      }
     }
   }
-  if (hit) {
-    v3 hit_point = ray->point_at(min_hit);
-    v3 normal = ray_obj_hit->get_normal(hit_point);
-    v3 line_of_sight = -ray->direction.normalized();
 
-    for (int i = 0; i < kLightCount; i++) {
-      LightSource *light = &gState.lights[i];
+  return ray_hit;
+}
 
-      v3 light_direction = (hit_point - light->source).normalized();
+v3 GetRayColor(Ray *ray, RayObject *reflected_from, int recurse_further) {
+  v3 color = {};
 
-      b32 point_in_shadow = false;
-      {
-        // Cast shadow ray
-        Ray shadow_ray = Ray();
-        shadow_ray.origin = hit_point;
-        shadow_ray.direction =
-            light->source - hit_point;  // not normalizing on purpose
+  RayHit ray_hit = GetObjectHitByRay(ray, 0, INFINITY, reflected_from);
 
-        for (int j = 0; j < kRayObjCount; j++) {
-          RayObject *current_object = gState.ray_objects[j];
-          if (ray_obj_hit == current_object) {
-            continue;
-          }
-          r32 hit_at = current_object->hit_by(&shadow_ray);
-          if (hit_at >= 0 && hit_at <= 1) {
-            point_in_shadow = true;
-            break;
-          }
-        }
-      }
-
-      if (!point_in_shadow) {
-        v3 V = (-light_direction + line_of_sight).normalized();
-
-        r32 illuminance = -light_direction * normal;
-        if (illuminance < 0) {
-          illuminance = 0;
-        }
-        color += ray_obj_hit->color * light->intensity * illuminance;
-
-        // Calculate specular reflection
-        r32 reflection = V * normal;
-        if (reflection < 0) {
-          reflection = 0;
-        }
-        v3 specular_reflection = ray_obj_hit->specular_color *
-                                 light->intensity *
-                                 (r32)pow(reflection, ray_obj_hit->phong_exp);
-        color += specular_reflection;
-      }
-    }
-
-    // Calculate mirror reflection
-    if (recurse_further) {
-      Ray reflection_ray = {};
-      reflection_ray.origin = hit_point;
-      reflection_ray.direction =
-          ray->direction - 2 * (ray->direction * normal) * normal;
-
-      const r32 max_k = 0.3f;
-      r32 k = ray_obj_hit->phong_exp * 0.001f;
-      if (k > max_k) {
-        k = max_k;
-      }
-      color +=
-          k * GetRayColor(&reflection_ray, ray_obj_hit, recurse_further - 1);
-      // color += GetRayColor(&reflection_ray, recurse_further - 1);
-    }
-  } else if (recurse_further == kMaxRecursion) {
-    // Background color
-    color = {0.05f, 0.05f, 0.05f};
+  if (ray_hit.object == NULL) {
+    color = {0.05f, 0.05f, 0.05f};  // background color
+    return color;
   }
+
+  v3 hit_point = ray->point_at(ray_hit.at);
+  v3 normal = ray_hit.object->get_normal(hit_point);
+  v3 line_of_sight = -ray->direction.normalized();
+
+  for (int i = 0; i < kLightCount; i++) {
+    LightSource *light = &gState.lights[i];
+
+    v3 light_direction = (hit_point - light->source).normalized();
+
+    b32 point_in_shadow = false;
+    {
+      // Cast shadow ray
+      Ray shadow_ray = Ray();
+      shadow_ray.origin = hit_point;
+      shadow_ray.direction =
+          light->source - hit_point;  // not normalizing on purpose
+
+      RayHit shadow_ray_hit =
+          GetObjectHitByRay(&shadow_ray, 0, 1, ray_hit.object, true);
+      if (shadow_ray_hit.object != NULL) {
+        point_in_shadow = true;
+      }
+    }
+
+    if (!point_in_shadow) {
+      v3 V = (-light_direction + line_of_sight).normalized();
+
+      r32 illuminance = -light_direction * normal;
+      if (illuminance < 0) {
+        illuminance = 0;
+      }
+      color += ray_hit.object->color * light->intensity * illuminance;
+
+      // Calculate specular reflection
+      r32 reflection = V * normal;
+      if (reflection < 0) {
+        reflection = 0;
+      }
+      v3 specular_reflection = ray_hit.object->specular_color *
+                               light->intensity *
+                               (r32)pow(reflection, ray_hit.object->phong_exp);
+      color += specular_reflection;
+    }
+  }
+
+  // Calculate mirror reflection
+  if (recurse_further) {
+    Ray reflection_ray = {};
+    reflection_ray.origin = hit_point;
+    reflection_ray.direction =
+        ray->direction - 2 * (ray->direction * normal) * normal;
+
+    const r32 max_k = 0.3f;
+    r32 k = ray_hit.object->phong_exp * 0.001f;
+    if (k > max_k) {
+      k = max_k;
+    }
+    color +=
+        k * GetRayColor(&reflection_ray, ray_hit.object, recurse_further - 1);
+  }
+
   return color;
 }
 

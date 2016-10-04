@@ -50,6 +50,11 @@ struct Ray {
   }
 };
 
+struct RayHit {
+  r32 at;
+  RayObject *object;
+};
+
 struct RayScreen {
   int left;
   int right;
@@ -57,8 +62,6 @@ struct RayScreen {
   int bottom;
 
   v2i pixel_count;
-
-
 };
 
 struct LightSource {
