@@ -21,7 +21,7 @@ inline void DrawPixel(pixel_buffer *PixelBuffer, v2i Point, u32 Color) {
   *pixel = Color;
 }
 
-inline void DrawPixelV2(pixel_buffer *PixelBuffer, v2 Point, u32 Color) {
+inline void DrawPixel(pixel_buffer *PixelBuffer, v2 Point, u32 Color) {
   // A v2 version
   v2i point = {(int)Point.x, (int)Point.y};
   DrawPixel(PixelBuffer, point, Color);
@@ -52,9 +52,9 @@ void DrawLine(pixel_buffer *PixelBuffer, v2i A, v2i B, u32 Color) {
   int y = A.y;
   for (int x = A.x; x <= B.x; x++) {
     if (!swapped) {
-      DrawPixel(PixelBuffer, {x, y}, Color);
+      DrawPixel(PixelBuffer, V2i(x, y), Color);
     } else {
-      DrawPixel(PixelBuffer, {y, x}, Color);
+      DrawPixel(PixelBuffer, V2i(y, x), Color);
     }
     error += sign * dy;
     if (error > 0) {
@@ -70,7 +70,7 @@ void DrawLine(pixel_buffer *PixelBuffer, v2 A, v2 B, u32 Color) {
   DrawLine(PixelBuffer, a, b, Color);
 }
 
-u32 GetRGB(v3 Color) {
+inline u32 GetRGB(v3 Color) {
   Assert(Color.r >= 0 && Color.r <= 1);
   Assert(Color.g >= 0 && Color.g <= 1);
   Assert(Color.b >= 0 && Color.b <= 1);
@@ -79,15 +79,32 @@ u32 GetRGB(v3 Color) {
   u8 R = (u8)(Color.r * 255);
   u8 G = (u8)(Color.g * 255);
   u8 B = (u8)(Color.b * 255);
-  result = B << 16 | G << 8 | R;
+  result = R << 16 | G << 8 | B;
   return result;
+}
+
+void DrawRect(pixel_buffer *PixelBuffer, v2i point1, v2i point2, v3 color) {
+  u32 rgb = GetRGB(color);
+
+  int x_start = (point1.x < point2.x) ? point1.x : point2.x;
+  int x_end = (point1.x > point2.x) ? point1.x : point2.x;
+  int y_start = (point1.y < point2.y) ? point1.y : point2.y;
+  int y_end = (point1.y > point2.y) ? point1.y : point2.y;
+
+  for (int x = x_start; x < x_end; x++) {
+    for (int y = PixelBuffer->height - y_end; y < PixelBuffer->height - y_start; y++) {
+      // Don't care about performance
+      DrawPixel(PixelBuffer, V2i(x, y), rgb);
+    }
+  }
 }
 
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   update_result result = {};
 
-  // memset(PixelBuffer->memory, 0,
-  //        PixelBuffer->height * PixelBuffer->width * sizeof(u32));
+  DrawRect(PixelBuffer, {10, 10}, {500, 500}, V3(0.1f, 0.2f, 0.3f));
+
+#if 0
 
   RayCamera *camera = &gState.camera;
 
@@ -234,9 +251,11 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         }
       }
 
-      DrawPixel(PixelBuffer, {x, y}, GetRGB(color));
+      DrawPixel(PixelBuffer, V2i(x, y), GetRGB(color));
     }
   }
+
+#endif  // if 0
 
   return result;
 }
