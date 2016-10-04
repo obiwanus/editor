@@ -40,6 +40,11 @@ struct Triangle : RayObject {
   Plane get_plane();
 };
 
+struct RayHit {
+  r32 at;
+  RayObject *object;
+};
+
 struct Ray {
   v3 origin;
   v3 direction;
@@ -48,28 +53,28 @@ struct Ray {
     v3 result = origin + direction * t;
     return result;
   }
+
+  v3 get_color(ProgramState *state, RayObject *reflected_from,
+               int recurse_further);
+  RayHit Ray::get_object_hit(ProgramState *state, r32 tmin, r32 tmax,
+                             RayObject *ignore_object = NULL, b32 any = false);
 };
 
-struct RayHit {
-  r32 at;
-  RayObject *object;
-};
-
-struct RayScreen {
+struct RayCamera {
   int left;
   int right;
   int top;
   int bottom;
 
   v2i pixel_count;
+  v3 origin;
+
+  Ray get_ray_through_pixel(int x, int y);
 };
 
 struct LightSource {
   v3 source;
   r32 intensity;
 };
-
-v3 GetRayColor(ProgramState *state, Ray *ray, RayObject *reflected_from,
-               int recurse_further);
 
 #endif  // __ED_RAYTRACE_H__

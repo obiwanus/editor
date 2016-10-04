@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "ED_core.h"
 #include "ED_base.h"
@@ -88,6 +89,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   // memset(PixelBuffer->memory, 0,
   //        PixelBuffer->height * PixelBuffer->width * sizeof(u32));
 
+  RayCamera *camera = &gState.camera;
+
   if (!gState.initialized) {
     gState.initialized = true;
 
@@ -101,10 +104,6 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     gState.kRayObjCount =
         gState.kSphereCount + gState.kPlaneCount + gState.kTriangleCount;
     gState.kLightCount = 3;
-
-    // Ray
-    Ray *ray = new Ray;
-    ray->origin = {0, 0, 1000};
 
     // Spheres
     Sphere *spheres = new Sphere[gState.kSphereCount];
@@ -170,16 +169,13 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     lights[2].intensity = 0.4f;
     lights[2].source = {-1700, 300, 100};
 
-    // Screen dimensions
-    RayScreen *screen = new RayScreen;
-    screen->pixel_count = {gState.kWindowWidth, gState.kWindowHeight};
-    screen->left = -screen->pixel_count.x / 2;
-    screen->right = screen->pixel_count.x / 2;
-    screen->bottom = -screen->pixel_count.y / 2;
-    screen->top = screen->pixel_count.y / 2;
-
-    gState.ray = ray;
-    gState.screen = screen;
+    // Camera dimensions
+    camera->origin = {0, 0, 1000};
+    camera->pixel_count = {gState.kWindowWidth, gState.kWindowHeight};
+    camera->left = -camera->pixel_count.x / 2;
+    camera->right = camera->pixel_count.x / 2;
+    camera->bottom = -camera->pixel_count.y / 2;
+    camera->top = camera->pixel_count.y / 2;
 
     gState.spheres = spheres;
     gState.planes = planes;
@@ -190,8 +186,6 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     gState.lights = lights;
   }
 
-  Ray *ray = gState.ray;
-  RayScreen *screen = gState.screen;
   LightSource *lights = gState.lights;
   RayObject **ray_objects = gState.ray_objects;
 
@@ -208,24 +202,27 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     gState.lights[0].source.u += 100;
   }
 
+  if (Input->mouse_left) {
+    Ray pointer_ray =
+        camera->get_ray_through_pixel((int)Input->mouse.x, (int)Input->mouse.y);
+
+    RayHit pointer_hit =
+        pointer_ray.get_object_hit(&gState, 0, INFINITY, NULL);
+    if (pointer_hit.object != NULL) {
+      pointer_hit.object->color.x += 0.1f;
+    }
+  }
+
   for (int x = 0; x < PixelBuffer->width; x++) {
     for (int y = 0; y < PixelBuffer->height; y++) {
-      // Get the ray
-      v3 pixel = {screen->left +
-                      (x + 0.5f) * (screen->right - screen->left) /
-                          screen->pixel_count.x,
-                  screen->bottom +
-                      (y + 0.5f) * (screen->top - screen->bottom) /
-                          screen->pixel_count.y,
-                  0};
-      ray->direction = pixel - ray->origin;
+      Ray ray = camera->get_ray_through_pixel(x, y);
 
       const v3 ambient_color = {0.2f, 0.2f, 0.2f};
       const r32 ambient_light_intensity = 0.3f;
 
       v3 color = ambient_color * ambient_light_intensity;
 
-      color += GetRayColor(&gState, ray, 0, gState.kMaxRecursion);
+      color += ray.get_color(&gState, 0, gState.kMaxRecursion);
 
       // Crop
       for (int i = 0; i < 3; i++) {

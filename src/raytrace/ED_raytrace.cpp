@@ -1,7 +1,6 @@
 #include "ED_raytrace.h"
 #include "ED_core.h"
 
-
 r32 Sphere::hit_by(Ray *ray) {
   // Returns the value of parameter t of the ray,
   // or -1 if no hit for positive t-s
@@ -90,8 +89,22 @@ Plane Triangle::get_plane() {
   return result;
 }
 
-RayHit GetObjectHitByRay(ProgramState *state, Ray *ray, r32 tmin, r32 tmax,
-                         RayObject *ignore_object = NULL, b32 any = false) {
+Ray RayCamera::get_ray_through_pixel(int x, int y) {
+  Ray result;
+
+  v3 pixel = {left + (x + 0.5f) * (right - left) / pixel_count.x,
+              bottom + (y + 0.5f) * (top - bottom) / pixel_count.y, 0};
+
+  result.origin = origin;
+  result.direction = pixel - origin;
+
+  return result;
+}
+
+RayHit Ray::get_object_hit(ProgramState *state, r32 tmin, r32 tmax,
+                           RayObject *ignore_object, b32 any) {
+  Ray *ray = this;
+
   RayHit ray_hit = {};
   r32 min_hit = 0;
 
@@ -117,10 +130,13 @@ RayHit GetObjectHitByRay(ProgramState *state, Ray *ray, r32 tmin, r32 tmax,
   return ray_hit;
 }
 
-v3 GetRayColor(ProgramState *state, Ray *ray, RayObject *reflected_from, int recurse_further) {
+v3 Ray::get_color(ProgramState *state, RayObject *reflected_from,
+                  int recurse_further) {
+  Ray *ray = this;
+
   v3 color = {};
 
-  RayHit ray_hit = GetObjectHitByRay(state, ray, 0, INFINITY, reflected_from);
+  RayHit ray_hit = ray->get_object_hit(state, 0, INFINITY, reflected_from);
 
   if (ray_hit.object == NULL) {
     color = {0.05f, 0.05f, 0.05f};  // background color
@@ -145,7 +161,7 @@ v3 GetRayColor(ProgramState *state, Ray *ray, RayObject *reflected_from, int rec
           light->source - hit_point;  // not normalizing on purpose
 
       RayHit shadow_ray_hit =
-          GetObjectHitByRay(state, &shadow_ray, 0, 1, ray_hit.object, true);
+          shadow_ray.get_object_hit(state, 0, 1, ray_hit.object, true);
       if (shadow_ray_hit.object != NULL) {
         point_in_shadow = true;
       }
@@ -185,7 +201,8 @@ v3 GetRayColor(ProgramState *state, Ray *ray, RayObject *reflected_from, int rec
       k = max_k;
     }
     color +=
-        k * GetRayColor(state, &reflection_ray, ray_hit.object, recurse_further - 1);
+        k *
+        reflection_ray.get_color(state, ray_hit.object, recurse_further - 1);
   }
 
   return color;

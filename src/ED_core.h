@@ -41,15 +41,14 @@ struct user_input {
 struct ProgramState {
   b32 initialized;
 
-  Ray *ray;
-  RayScreen *screen;
-
   Sphere *spheres;
   Plane *planes;
   Triangle *triangles;
   RayObject **ray_objects;
 
   LightSource *lights;
+
+  RayCamera camera;
 
   // Some constants
   int kWindowWidth;
