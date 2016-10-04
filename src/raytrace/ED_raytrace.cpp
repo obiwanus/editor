@@ -1,3 +1,5 @@
+#include <stdio.h>
+
 #include "ED_raytrace.h"
 #include "ED_core.h"
 

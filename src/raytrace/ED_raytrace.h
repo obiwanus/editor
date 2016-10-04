@@ -7,6 +7,13 @@
 struct Ray;
 struct ProgramState;
 
+typedef enum {
+  RayObject_Type_Invalid = 0,
+  RayObject_Type_Sphere,
+  RayObject_Type_Plane,
+  RayObject_Type_Triangle,
+} RayObject_Type;
+
 struct RayObject {
   v3 color;
   v3 specular_color = {{0.3f, 0.3f, 0.3f}};
@@ -14,6 +21,7 @@ struct RayObject {
 
   virtual r32 hit_by(Ray *ray) = 0;
   virtual v3 get_normal(v3 hit_point) = 0;
+  virtual RayObject_Type get_type() { return RayObject_Type_Invalid; }
 };
 
 struct Sphere : RayObject {
@@ -22,6 +30,7 @@ struct Sphere : RayObject {
 
   r32 hit_by(Ray *ray) override;
   v3 get_normal(v3 hit_point) override;
+  RayObject_Type get_type() override { return RayObject_Type_Sphere; }
 };
 
 struct Plane : RayObject {
@@ -30,6 +39,7 @@ struct Plane : RayObject {
 
   r32 hit_by(Ray *ray) override;
   v3 get_normal(v3 hit_point) override;
+  RayObject_Type get_type() override { return RayObject_Type_Plane; }
 };
 
 struct Triangle : RayObject {
@@ -37,6 +47,7 @@ struct Triangle : RayObject {
 
   r32 hit_by(Ray *ray) override;
   v3 get_normal(v3 hit_point) override;
+  RayObject_Type get_type() override { return RayObject_Type_Triangle; }
   Plane get_plane();
 };
 
