@@ -91,6 +91,11 @@ void DrawRect(pixel_buffer *PixelBuffer, v2i point1, v2i point2, v3 color) {
   int y_start = (point1.y < point2.y) ? point1.y : point2.y;
   int y_end = (point1.y > point2.y) ? point1.y : point2.y;
 
+  if (x_start < 0) x_start = 0;
+  if (y_start < 0) y_start = 0;
+  if (x_end > PixelBuffer->width) x_end = PixelBuffer->width;
+  if (y_end > PixelBuffer->height) y_end = PixelBuffer->height;
+
   for (int x = x_start; x < x_end; x++) {
     for (int y = PixelBuffer->height - y_end; y < PixelBuffer->height - y_start; y++) {
       // Don't care about performance
@@ -99,10 +104,18 @@ void DrawRect(pixel_buffer *PixelBuffer, v2i point1, v2i point2, v3 color) {
   }
 }
 
+void DrawRect(pixel_buffer *PixelBuffer, v2i topleft, int width, int height, v3 color) {
+  DrawRect(PixelBuffer, topleft, {topleft.x + width, topleft.y + height}, color);
+}
+
+void DrawRect(pixel_buffer *PixelBuffer, int width, int height, v2i bottomright, v3 color) {
+  DrawRect(PixelBuffer, bottomright, {bottomright.x - width, bottomright.y - height}, color);
+}
+
 update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
   update_result result = {};
 
-  DrawRect(PixelBuffer, {10, 10}, {500, 500}, V3(0.1f, 0.2f, 0.3f));
+  DrawRect(PixelBuffer, {-100, 100}, {500, 500}, V3(0.1f, 0.2f, 0.3f));
 
 #if 0
 
