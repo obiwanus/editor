@@ -83,56 +83,33 @@ inline u32 GetRGB(v3 Color) {
   return result;
 }
 
-void draw_rect(Pixel_Buffer *pixel_buffer, v2i point1, v2i point2, v3 color) {
+void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
   u32 rgb = GetRGB(color);
 
-  int x_start = (point1.x < point2.x) ? point1.x : point2.x;
-  int x_end = (point1.x > point2.x) ? point1.x : point2.x;
-  int y_start = (point1.y < point2.y) ? point1.y : point2.y;
-  int y_end = (point1.y > point2.y) ? point1.y : point2.y;
+  if (rect.left < 0) rect.left = 0;
+  if (rect.bottom < 0) rect.bottom = 0;
+  if (rect.right > pixel_buffer->width) rect.right = pixel_buffer->width;
+  if (rect.top > pixel_buffer->height) rect.top = pixel_buffer->height;
 
-  if (x_start < 0) x_start = 0;
-  if (y_start < 0) y_start = 0;
-  if (x_end > pixel_buffer->width) x_end = pixel_buffer->width;
-  if (y_end > pixel_buffer->height) y_end = pixel_buffer->height;
-
-  for (int x = x_start; x < x_end; x++) {
-    for (int y = y_start; y < y_end; y++) {
+  for (int x = rect.left; x < rect.right; x++) {
+    for (int y = rect.bottom; y < rect.top; y++) {
       // Don't care about performance
       draw_pixel(pixel_buffer, V2i(x, y), rgb);
     }
   }
 }
 
-void draw_rect(Pixel_Buffer *pixel_buffer, v2i topleft, int width, int height,
-               v3 color) {
-  draw_rect(pixel_buffer, topleft, {topleft.x + width, topleft.y + height},
-            color);
-}
-
-void draw_rect(Pixel_Buffer *pixel_buffer, int width, int height,
-               v2i bottomright, v3 color) {
-  draw_rect(pixel_buffer, bottomright,
-            {bottomright.x - width, bottomright.y - height}, color);
-}
-
 Area::Area(v2i p1, v2i p2, v3 color) {
-  this->p1.x = (p1.x < p2.x) ? p1.x : p2.x;
-  this->p1.y = (p1.y < p2.y) ? p1.y : p2.y;
-  this->p2.x = (p1.x < p2.x) ? p2.x : p1.x;
-  this->p2.y = (p1.y < p2.y) ? p2.y : p1.y;
+  this->rect.left = p1.x < p2.x ? p1.x : p2.x;
+  this->rect.right = p1.x < p2.x ? p2.x : p1.x;
+  this->rect.bottom = p1.y < p2.y ? p1.y : p2.y;
+  this->rect.top = p1.y < p2.y ? p2.y : p1.y;
+
   this->color = color;
 }
 
 void Area::draw(Pixel_Buffer *pixel_buffer) {
-  draw_rect(pixel_buffer, this->p1, this->p2, this->color);
-  draw_rect(pixel_buffer, {this->p2.x - 15, this->p1.y + 15},
-            {this->p2.x, this->p1.y}, {0.4f, 0.4f, 0.4f});
-}
-
-void Area::resize(v2i mouse) {
-  this->p2.x = mouse.x + 5;
-  this->p1.y = mouse.y - 5;
+  draw_rect(pixel_buffer, this->rect, this->color);
 }
 
 // TODO: don't make gState global?

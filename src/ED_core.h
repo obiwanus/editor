@@ -38,13 +38,16 @@ struct user_input {
   v2i mouse;
 };
 
-struct Area {
-  // Multi-purpose editor area
+struct Rect {
   int left;
   int right;
   int top;
   int bottom;
+};
 
+struct Area {
+  // Multi-purpose editor area
+  Rect rect;
   v3 color;
   b32 being_resized;
 
@@ -75,10 +78,9 @@ struct ProgramState {
   int kRayObjCount;
   int kLightCount;
 
-  Area panel1;
+  Area area1;
 
   ProgramState() {
-    // panel1 = {};
   };
 };
 
