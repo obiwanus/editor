@@ -13,20 +13,20 @@
 global bool gRunning;
 global LARGE_INTEGER gPerformanceFrequency;
 
-global pixel_buffer gPixelBuffer;
+global Pixel_Buffer g_pixel_buffer;
 global GLuint gTextureHandle;
 
 static void Win32UpdateWindow(HDC hdc) {
-  if (!gPixelBuffer.memory) return;
+  if (!g_pixel_buffer.memory) return;
 
-  glViewport(0, 0, gPixelBuffer.width, gPixelBuffer.height);
+  glViewport(0, 0, g_pixel_buffer.width, g_pixel_buffer.height);
 
   glEnable(GL_TEXTURE_2D);
 
   glBindTexture(GL_TEXTURE_2D, gTextureHandle);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, gPixelBuffer.width,
-               gPixelBuffer.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE,
-               gPixelBuffer.memory);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, g_pixel_buffer.width,
+               g_pixel_buffer.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE,
+               g_pixel_buffer.memory);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -69,22 +69,22 @@ static void Win32UpdateWindow(HDC hdc) {
 }
 
 static void Win32ResizeClientWindow(HWND window) {
-  if (!gPixelBuffer.memory) return;  // no buffer yet
+  if (!g_pixel_buffer.memory) return;  // no buffer yet
 
   RECT client_rect;
   GetClientRect(window, &client_rect);
   int width = client_rect.right - client_rect.left;
   int height = client_rect.bottom - client_rect.top;
 
-  if (width > gPixelBuffer.max_width) {
-    width = gPixelBuffer.max_width;
+  if (width > g_pixel_buffer.max_width) {
+    width = g_pixel_buffer.max_width;
   }
-  if (height > gPixelBuffer.max_height) {
-    height = gPixelBuffer.max_height;
+  if (height > g_pixel_buffer.max_height) {
+    height = g_pixel_buffer.max_height;
   }
 
-  gPixelBuffer.width = width;
-  gPixelBuffer.height = height;
+  g_pixel_buffer.width = width;
+  g_pixel_buffer.height = height;
 }
 
 LRESULT CALLBACK Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam,
@@ -183,10 +183,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       gRunning = true;
 
       // Init pixel buffer
-      gPixelBuffer.max_width = 3000;
-      gPixelBuffer.max_height = 3000;
-      gPixelBuffer.memory = VirtualAlloc(
-          0, gPixelBuffer.max_width * gPixelBuffer.max_height * sizeof(u32),
+      g_pixel_buffer.max_width = 3000;
+      g_pixel_buffer.max_height = 3000;
+      g_pixel_buffer.memory = VirtualAlloc(
+          0, g_pixel_buffer.max_width * g_pixel_buffer.max_height * sizeof(u32),
           MEM_COMMIT, PAGE_READWRITE);
 
       // Set proper buffer values based on actual client size
@@ -300,14 +300,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
           ScreenToClient(Window, &mouse_pointer);
 
           new_input->mouse =
-              V3i(mouse_pointer.x, gPixelBuffer.height - mouse_pointer.y, 0);
+              {mouse_pointer.x, g_pixel_buffer.height - mouse_pointer.y};
 
           new_input->mouse_left = GetKeyState(VK_LBUTTON) & (1 << 15);
           new_input->mouse_right = GetKeyState(VK_RBUTTON) & (1 << 15);
           new_input->mouse_middle = GetKeyState(VK_MBUTTON) & (1 << 15);
         }
 
-        UpdateAndRender(&gPixelBuffer, new_input);
+        UpdateAndRender(&g_pixel_buffer, new_input);
 
         Win32UpdateWindow(hdc);
 

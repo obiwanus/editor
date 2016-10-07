@@ -5,7 +5,7 @@
 #include "ED_math.h"
 #include "raytrace/ED_raytrace.h"
 
-struct pixel_buffer {
+struct Pixel_Buffer {
   int width;
   int height;
   int max_width;
@@ -35,7 +35,22 @@ struct user_input {
     };
   };
 
-  v3 mouse;
+  v2i mouse;
+};
+
+struct Area {
+  // Multi-purpose editor area
+  int left;
+  int right;
+  int top;
+  int bottom;
+
+  v3 color;
+  b32 being_resized;
+
+  Area() {};
+  Area(v2i p1, v2i p2, v3 color);
+  void draw(Pixel_Buffer *);
 };
 
 struct ProgramState {
@@ -60,9 +75,13 @@ struct ProgramState {
   int kRayObjCount;
   int kLightCount;
 
-  ProgramState() {};
+  Area panel1;
+
+  ProgramState() {
+    // panel1 = {};
+  };
 };
 
-update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input);
+update_result UpdateAndRender(Pixel_Buffer *pixel_buffer, user_input *Input);
 
 #endif  // ED_CORE_H

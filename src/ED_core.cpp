@@ -9,26 +9,26 @@
 
 global ProgramState gState = ProgramState();
 
-inline void DrawPixel(pixel_buffer *PixelBuffer, v2i Point, u32 Color) {
+inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2i Point, u32 Color) {
   int x = Point.x;
   int y = Point.y;
 
-  if (x < 0 || x > PixelBuffer->width || y < 0 || y > PixelBuffer->height) {
+  if (x < 0 || x > pixel_buffer->width || y < 0 || y > pixel_buffer->height) {
     return;
   }
-  y = PixelBuffer->height - y;  // Origin in bottom-left
-  u32 *pixel = (u32 *)PixelBuffer->memory + x + y * PixelBuffer->width;
+  y = pixel_buffer->height - y;  // Origin in bottom-left
+  u32 *pixel = (u32 *)pixel_buffer->memory + x + y * pixel_buffer->width;
   *pixel = Color;
 }
 
-inline void DrawPixel(pixel_buffer *PixelBuffer, v2 Point, u32 Color) {
+inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2 Point, u32 Color) {
   // A v2 version
   v2i point = {(int)Point.x, (int)Point.y};
-  DrawPixel(PixelBuffer, point, Color);
+  draw_pixel(pixel_buffer, point, Color);
 }
 
 // TODO: draw triangles
-void DrawLine(pixel_buffer *PixelBuffer, v2i A, v2i B, u32 Color) {
+void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 Color) {
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
     int tmp = A.x;
@@ -52,9 +52,9 @@ void DrawLine(pixel_buffer *PixelBuffer, v2i A, v2i B, u32 Color) {
   int y = A.y;
   for (int x = A.x; x <= B.x; x++) {
     if (!swapped) {
-      DrawPixel(PixelBuffer, V2i(x, y), Color);
+      draw_pixel(pixel_buffer, V2i(x, y), Color);
     } else {
-      DrawPixel(PixelBuffer, V2i(y, x), Color);
+      draw_pixel(pixel_buffer, V2i(y, x), Color);
     }
     error += sign * dy;
     if (error > 0) {
@@ -64,10 +64,10 @@ void DrawLine(pixel_buffer *PixelBuffer, v2i A, v2i B, u32 Color) {
   }
 }
 
-void DrawLine(pixel_buffer *PixelBuffer, v2 A, v2 B, u32 Color) {
+void draw_line(Pixel_Buffer *pixel_buffer, v2 A, v2 B, u32 Color) {
   v2i a = {(int)A.x, (int)A.y};
   v2i b = {(int)B.x, (int)B.y};
-  DrawLine(PixelBuffer, a, b, Color);
+  draw_line(pixel_buffer, a, b, Color);
 }
 
 inline u32 GetRGB(v3 Color) {
@@ -83,7 +83,7 @@ inline u32 GetRGB(v3 Color) {
   return result;
 }
 
-void DrawRect(pixel_buffer *PixelBuffer, v2i point1, v2i point2, v3 color) {
+void draw_rect(Pixel_Buffer *pixel_buffer, v2i point1, v2i point2, v3 color) {
   u32 rgb = GetRGB(color);
 
   int x_start = (point1.x < point2.x) ? point1.x : point2.x;
@@ -93,29 +93,65 @@ void DrawRect(pixel_buffer *PixelBuffer, v2i point1, v2i point2, v3 color) {
 
   if (x_start < 0) x_start = 0;
   if (y_start < 0) y_start = 0;
-  if (x_end > PixelBuffer->width) x_end = PixelBuffer->width;
-  if (y_end > PixelBuffer->height) y_end = PixelBuffer->height;
+  if (x_end > pixel_buffer->width) x_end = pixel_buffer->width;
+  if (y_end > pixel_buffer->height) y_end = pixel_buffer->height;
 
   for (int x = x_start; x < x_end; x++) {
-    for (int y = PixelBuffer->height - y_end; y < PixelBuffer->height - y_start; y++) {
+    for (int y = y_start; y < y_end; y++) {
       // Don't care about performance
-      DrawPixel(PixelBuffer, V2i(x, y), rgb);
+      draw_pixel(pixel_buffer, V2i(x, y), rgb);
     }
   }
 }
 
-void DrawRect(pixel_buffer *PixelBuffer, v2i topleft, int width, int height, v3 color) {
-  DrawRect(PixelBuffer, topleft, {topleft.x + width, topleft.y + height}, color);
+void draw_rect(Pixel_Buffer *pixel_buffer, v2i topleft, int width, int height,
+               v3 color) {
+  draw_rect(pixel_buffer, topleft, {topleft.x + width, topleft.y + height},
+            color);
 }
 
-void DrawRect(pixel_buffer *PixelBuffer, int width, int height, v2i bottomright, v3 color) {
-  DrawRect(PixelBuffer, bottomright, {bottomright.x - width, bottomright.y - height}, color);
+void draw_rect(Pixel_Buffer *pixel_buffer, int width, int height,
+               v2i bottomright, v3 color) {
+  draw_rect(pixel_buffer, bottomright,
+            {bottomright.x - width, bottomright.y - height}, color);
 }
 
-update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
+Area::Area(v2i p1, v2i p2, v3 color) {
+  this->p1.x = (p1.x < p2.x) ? p1.x : p2.x;
+  this->p1.y = (p1.y < p2.y) ? p1.y : p2.y;
+  this->p2.x = (p1.x < p2.x) ? p2.x : p1.x;
+  this->p2.y = (p1.y < p2.y) ? p2.y : p1.y;
+  this->color = color;
+}
+
+void Area::draw(Pixel_Buffer *pixel_buffer) {
+  draw_rect(pixel_buffer, this->p1, this->p2, this->color);
+  draw_rect(pixel_buffer, {this->p2.x - 15, this->p1.y + 15},
+            {this->p2.x, this->p1.y}, {0.4f, 0.4f, 0.4f});
+}
+
+void Area::resize(v2i mouse) {
+  this->p2.x = mouse.x + 5;
+  this->p1.y = mouse.y - 5;
+}
+
+// TODO: don't make gState global?
+
+update_result UpdateAndRender(Pixel_Buffer *pixel_buffer, user_input *Input) {
   update_result result = {};
 
-  DrawRect(PixelBuffer, {-100, 100}, {500, 500}, V3(0.1f, 0.2f, 0.3f));
+  // Clear
+  memset(pixel_buffer->memory, 0,
+         pixel_buffer->width * pixel_buffer->height * 4);
+
+  if (!gState.initialized) {
+    gState.initialized = true;
+    gState.panel1 = Area({10, 10}, {500, 500}, V3(0.1f, 0.2f, 0.3f));
+  }
+
+  Area *Area = &gState.panel1;
+
+
 
 #if 0
 
@@ -243,8 +279,8 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
     }
   }
 
-  for (int x = 0; x < PixelBuffer->width; x++) {
-    for (int y = 0; y < PixelBuffer->height; y++) {
+  for (int x = 0; x < pixel_buffer->width; x++) {
+    for (int y = 0; y < pixel_buffer->height; y++) {
       Ray ray = camera->get_ray_through_pixel(x, y);
 
       const v3 ambient_color = {0.2f, 0.2f, 0.2f};
@@ -264,7 +300,7 @@ update_result UpdateAndRender(pixel_buffer *PixelBuffer, user_input *Input) {
         }
       }
 
-      DrawPixel(PixelBuffer, V2i(x, y), GetRGB(color));
+      draw_pixel(pixel_buffer, V2i(x, y), GetRGB(color));
     }
   }
 
