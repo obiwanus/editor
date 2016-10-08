@@ -123,11 +123,11 @@ update_result UpdateAndRender(Pixel_Buffer *pixel_buffer, user_input *Input) {
 
   if (!gState.initialized) {
     gState.initialized = true;
-    gState.panel1 = Area({10, 10}, {500, 500}, V3(0.1f, 0.2f, 0.3f));
+    gState.area1 = Area({10, 10}, {500, 500}, V3(0.1f, 0.2f, 0.3f));
   }
 
-  Area *Area = &gState.panel1;
-
+  Area *area1 = &gState.area1;
+  area1->draw(pixel_buffer);
 
 
 #if 0

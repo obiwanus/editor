@@ -45,6 +45,10 @@ struct Rect {
   int bottom;
 };
 
+struct Area_Splitter {
+
+};
+
 struct Area {
   // Multi-purpose editor area
   Rect rect;

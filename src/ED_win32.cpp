@@ -87,8 +87,8 @@ static void Win32ResizeClientWindow(HWND window) {
   g_pixel_buffer.height = height;
 }
 
-LRESULT CALLBACK Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam,
-                                 LPARAM lParam) {
+LRESULT CALLBACK
+Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam, LPARAM lParam) {
   LRESULT Result = 0;
 
   switch (uMsg) {
@@ -158,181 +158,188 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
   QueryPerformanceFrequency(&gPerformanceFrequency);
 
-  if (RegisterClass(&WindowClass)) {
-    // Create window so that its client area is exactly kWindowWidth/Height
-    DWORD WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
-    RECT WindowRect = {};
+  if (!RegisterClass(&WindowClass)) {
+    // TODO: logging
+    printf("Couldn't register window class\n");
+    exit(1);
+  }
 
-    // TODO: get monitor size
-    const int kWindowWidth = 1000;
-    const int kWindowHeight = 700;
+  // Create window so that its client area is exactly kWindowWidth/Height
+  DWORD WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
+  RECT WindowRect = {};
 
-    WindowRect.right = kWindowWidth;
-    WindowRect.bottom = kWindowHeight;
-    AdjustWindowRect(&WindowRect, WindowStyle, 0);
-    int WindowWidth = WindowRect.right - WindowRect.left;
-    int WindowHeight = WindowRect.bottom - WindowRect.top;
-    HWND Window = CreateWindow(WindowClass.lpszClassName, 0, WindowStyle,
-                               CW_USEDEFAULT, CW_USEDEFAULT, WindowWidth,
-                               WindowHeight, 0, 0, hInstance, 0);
+  // TODO: get monitor size
+  const int kWindowWidth = 1000;
+  const int kWindowHeight = 700;
 
-    if (Window) {
-      // We're not going to release it as we use CS_OWNDC
-      HDC hdc = GetDC(Window);
+  WindowRect.right = kWindowWidth;
+  WindowRect.bottom = kWindowHeight;
+  AdjustWindowRect(&WindowRect, WindowStyle, 0);
+  int WindowWidth = WindowRect.right - WindowRect.left;
+  int WindowHeight = WindowRect.bottom - WindowRect.top;
+  HWND Window = CreateWindow(WindowClass.lpszClassName, 0, WindowStyle,
+                             CW_USEDEFAULT, CW_USEDEFAULT, WindowWidth,
+                             WindowHeight, 0, 0, hInstance, 0);
 
-      gRunning = true;
+  if (!Window) {
+    printf("Couldn't create window\n");
+    exit(1);
+  }
 
-      // Init pixel buffer
-      g_pixel_buffer.max_width = 3000;
-      g_pixel_buffer.max_height = 3000;
-      g_pixel_buffer.memory = VirtualAlloc(
-          0, g_pixel_buffer.max_width * g_pixel_buffer.max_height * sizeof(u32),
-          MEM_COMMIT, PAGE_READWRITE);
+  // We're not going to release it as we use CS_OWNDC
+  HDC hdc = GetDC(Window);
 
-      // Set proper buffer values based on actual client size
-      Win32ResizeClientWindow(Window);
+  gRunning = true;
 
-      // Init OpenGL
-      {
-        PIXELFORMATDESCRIPTOR DesiredPixelFormat = {};
-        DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
-        DesiredPixelFormat.nVersion = 1;
-        DesiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
-        DesiredPixelFormat.dwFlags =
-            PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
-        DesiredPixelFormat.cColorBits = 32;
-        DesiredPixelFormat.cAlphaBits = 8;
-        DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
+  // Allocate program memory
+  void *program_memory = malloc(1024 * 1024);  // 1 Gb
+  // TODO: add checks for overflow when allocating
 
-        int SuggestedPixelFormatIndex =
-            ChoosePixelFormat(hdc, &DesiredPixelFormat);
-        PIXELFORMATDESCRIPTOR SuggestedPixelFormat;
-        DescribePixelFormat(hdc, SuggestedPixelFormatIndex,
-                            sizeof(SuggestedPixelFormat),
-                            &SuggestedPixelFormat);
+  // Init pixel buffer
+  g_pixel_buffer.max_width = 3000;
+  g_pixel_buffer.max_height = 3000;
+  g_pixel_buffer.memory = malloc(g_pixel_buffer.max_width *
+                                 g_pixel_buffer.max_height * sizeof(u32));
 
-        SetPixelFormat(hdc, SuggestedPixelFormatIndex, &SuggestedPixelFormat);
+  // Set proper buffer values based on actual client size
+  Win32ResizeClientWindow(Window);
 
-        HGLRC OpenGLRC = wglCreateContext(hdc);
-        if (wglMakeCurrent(hdc, OpenGLRC)) {
-          // Success
-          glGenTextures(1, &gTextureHandle);
+  // Init OpenGL
+  {
+    PIXELFORMATDESCRIPTOR DesiredPixelFormat = {};
+    DesiredPixelFormat.nSize = sizeof(DesiredPixelFormat);
+    DesiredPixelFormat.nVersion = 1;
+    DesiredPixelFormat.iPixelType = PFD_TYPE_RGBA;
+    DesiredPixelFormat.dwFlags =
+        PFD_SUPPORT_OPENGL | PFD_DRAW_TO_WINDOW | PFD_DOUBLEBUFFER;
+    DesiredPixelFormat.cColorBits = 32;
+    DesiredPixelFormat.cAlphaBits = 8;
+    DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
 
-          typedef BOOL WINAPI wgl_swap_interval_ext(int interval);
-          wgl_swap_interval_ext *wglSwapInterval =
-              (wgl_swap_interval_ext *)wglGetProcAddress("wglSwapIntervalEXT");
-          if (wglSwapInterval) {
-            wglSwapInterval(1);
-          } else {
-            // VSync not enabled or not supported
-            Assert(false);
-          }
-        } else {
-          // Something's wrong
-          Assert(false);
-        }
+    int SuggestedPixelFormatIndex =
+        ChoosePixelFormat(hdc, &DesiredPixelFormat);
+    PIXELFORMATDESCRIPTOR SuggestedPixelFormat;
+    DescribePixelFormat(hdc, SuggestedPixelFormatIndex,
+                        sizeof(SuggestedPixelFormat),
+                        &SuggestedPixelFormat);
+
+    SetPixelFormat(hdc, SuggestedPixelFormatIndex, &SuggestedPixelFormat);
+
+    HGLRC OpenGLRC = wglCreateContext(hdc);
+    if (wglMakeCurrent(hdc, OpenGLRC)) {
+      // Success
+      glGenTextures(1, &gTextureHandle);
+
+      typedef BOOL WINAPI wgl_swap_interval_ext(int interval);
+      wgl_swap_interval_ext *wglSwapInterval =
+          (wgl_swap_interval_ext *)wglGetProcAddress("wglSwapIntervalEXT");
+      if (wglSwapInterval) {
+        wglSwapInterval(1);
+      } else {
+        // VSync not enabled or not supported
+        Assert(false);
       }
+    } else {
+      // Something's wrong
+      Assert(false);
+    }
+  }
 
-      user_input inputs[2];
-      user_input *old_input = &inputs[0];
-      user_input *new_input = &inputs[1];
-      *new_input = {};
+  user_input inputs[2];
+  user_input *old_input = &inputs[0];
+  user_input *new_input = &inputs[1];
+  *new_input = {};
 
-      Assert(&new_input->terminator - &new_input->buttons[0] <
-             COUNT_OF(new_input->buttons));
+  Assert(&new_input->terminator - &new_input->buttons[0] <
+         COUNT_OF(new_input->buttons));
 
-      LARGE_INTEGER last_timestamp = Win32GetWallClock();
+  LARGE_INTEGER last_timestamp = Win32GetWallClock();
 
-      // Event loop
-      while (gRunning) {
-        // Process messages
-        MSG message;
-        while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
-          // Get keyboard messages
-          switch (message.message) {
-            case WM_QUIT: {
-              gRunning = false;
-            } break;
+  // Event loop
+  while (gRunning) {
+    // Process messages
+    MSG message;
+    while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
+      // Get keyboard messages
+      switch (message.message) {
+        case WM_QUIT: {
+          gRunning = false;
+        } break;
 
-            case WM_SYSKEYDOWN:
-            case WM_SYSKEYUP:
-            case WM_KEYDOWN:
-            case WM_KEYUP: {
-              u32 vk_code = (u32)message.wParam;
-              b32 was_down = ((message.lParam & (1 << 30)) != 0);
-              b32 is_down = ((message.lParam & (1 << 31)) == 0);
+        case WM_SYSKEYDOWN:
+        case WM_SYSKEYUP:
+        case WM_KEYDOWN:
+        case WM_KEYUP: {
+          u32 vk_code = (u32)message.wParam;
+          b32 was_down = ((message.lParam & (1 << 30)) != 0);
+          b32 is_down = ((message.lParam & (1 << 31)) == 0);
 
-              b32 alt_key_was_down = (message.lParam & (1 << 29));
-              if ((vk_code == VK_F4) && alt_key_was_down) {
-                gRunning = false;
-              }
-              if (was_down == is_down) {
-                break;  // nothing has changed
-              }
-              if (vk_code == VK_ESCAPE) {
-                gRunning = false;
-              }
-              if (vk_code == VK_UP || vk_code == 'W') {
-                new_input->up = is_down;
-              }
-              if (vk_code == VK_DOWN || vk_code == 'S') {
-                new_input->down = is_down;
-              }
-              if (vk_code == VK_LEFT || vk_code == 'A') {
-                new_input->left = is_down;
-              }
-              if (vk_code == VK_RIGHT || vk_code == 'D') {
-                new_input->right = is_down;
-              }
-            } break;
-
-            default: {
-              TranslateMessage(&message);
-              DispatchMessageA(&message);
-            } break;
+          b32 alt_key_was_down = (message.lParam & (1 << 29));
+          if ((vk_code == VK_F4) && alt_key_was_down) {
+            gRunning = false;
           }
-        }
+          if (was_down == is_down) {
+            break;  // nothing has changed
+          }
+          if (vk_code == VK_ESCAPE) {
+            gRunning = false;
+          }
+          if (vk_code == VK_UP || vk_code == 'W') {
+            new_input->up = is_down;
+          }
+          if (vk_code == VK_DOWN || vk_code == 'S') {
+            new_input->down = is_down;
+          }
+          if (vk_code == VK_LEFT || vk_code == 'A') {
+            new_input->left = is_down;
+          }
+          if (vk_code == VK_RIGHT || vk_code == 'D') {
+            new_input->right = is_down;
+          }
+        } break;
 
-        // Get mouse input
-        {
-          POINT mouse_pointer;
-          GetCursorPos(&mouse_pointer);
-          ScreenToClient(Window, &mouse_pointer);
-
-          new_input->mouse =
-              {mouse_pointer.x, g_pixel_buffer.height - mouse_pointer.y};
-
-          new_input->mouse_left = GetKeyState(VK_LBUTTON) & (1 << 15);
-          new_input->mouse_right = GetKeyState(VK_RBUTTON) & (1 << 15);
-          new_input->mouse_middle = GetKeyState(VK_MBUTTON) & (1 << 15);
-        }
-
-        UpdateAndRender(&g_pixel_buffer, new_input);
-
-        Win32UpdateWindow(hdc);
-
-        // Swap inputs
-        user_input *tmp = old_input;
-        old_input = new_input;
-        new_input = tmp;
-
-        // Zero input
-        *new_input = {};
-
-        // Retain the button state
-        for (int i = 0; i < COUNT_OF(new_input->buttons); i++) {
-          new_input->buttons[i] = old_input->buttons[i];
-        }
-
-        r32 ms_elapsed =
-            Win32GetMillisecondsElapsed(last_timestamp, Win32GetWallClock());
-        printf("%.2f - ", ms_elapsed);
-        last_timestamp = Win32GetWallClock();
+        default: {
+          TranslateMessage(&message);
+          DispatchMessageA(&message);
+        } break;
       }
     }
-  } else {
-    // TODO: logging
-    OutputDebugStringA("Couldn't register window class");
+
+    // Get mouse input
+    {
+      POINT mouse_pointer;
+      GetCursorPos(&mouse_pointer);
+      ScreenToClient(Window, &mouse_pointer);
+
+      new_input->mouse = {mouse_pointer.x,
+                          g_pixel_buffer.height - mouse_pointer.y};
+
+      new_input->mouse_left = GetKeyState(VK_LBUTTON) & (1 << 15);
+      new_input->mouse_right = GetKeyState(VK_RBUTTON) & (1 << 15);
+      new_input->mouse_middle = GetKeyState(VK_MBUTTON) & (1 << 15);
+    }
+
+    UpdateAndRender(&g_pixel_buffer, new_input);
+
+    Win32UpdateWindow(hdc);
+
+    // Swap inputs
+    user_input *tmp = old_input;
+    old_input = new_input;
+    new_input = tmp;
+
+    // Zero input
+    *new_input = {};
+
+    // Retain the button state
+    for (int i = 0; i < COUNT_OF(new_input->buttons); i++) {
+      new_input->buttons[i] = old_input->buttons[i];
+    }
+
+    r32 ms_elapsed =
+        Win32GetMillisecondsElapsed(last_timestamp, Win32GetWallClock());
+    printf("%.2f - ", ms_elapsed);
+    last_timestamp = Win32GetWallClock();
   }
 
   return 0;
