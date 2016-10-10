@@ -5,6 +5,8 @@
 #include "ED_math.h"
 #include "raytrace/ED_raytrace.h"
 
+#define MAX_INTERNAL_MEMORY_SIZE (1024 * 1024)
+
 struct Pixel_Buffer {
   int width;
   int height;
@@ -13,7 +15,7 @@ struct Pixel_Buffer {
   void *memory;
 };
 
-struct update_result {
+struct Update_Result {
   // empty for now
 };
 
@@ -72,6 +74,8 @@ struct ProgramState {
 
   RayCamera camera;
 
+  Area area1;
+
   // Some constants
   int kWindowWidth;
   int kWindowHeight;
@@ -81,13 +85,8 @@ struct ProgramState {
   int kTriangleCount;
   int kRayObjCount;
   int kLightCount;
-
-  Area area1;
-
-  ProgramState() {
-  };
 };
 
-update_result UpdateAndRender(Pixel_Buffer *pixel_buffer, user_input *Input);
+Update_Result update_and_render(void *, Pixel_Buffer *, user_input *);
 
 #endif  // ED_CORE_H

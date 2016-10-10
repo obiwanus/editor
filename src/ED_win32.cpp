@@ -14,6 +14,7 @@ global bool gRunning;
 global LARGE_INTEGER gPerformanceFrequency;
 
 global Pixel_Buffer g_pixel_buffer;
+global void *g_program_memory;
 global GLuint gTextureHandle;
 
 static void Win32UpdateWindow(HDC hdc) {
@@ -192,7 +193,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   gRunning = true;
 
   // Allocate program memory
-  void *program_memory = malloc(1024 * 1024);  // 1 Gb
+  g_program_memory = malloc(1024 * 1024);  // 1 Gb
   // TODO: add checks for overflow when allocating
 
   // Init pixel buffer
@@ -319,7 +320,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       new_input->mouse_middle = GetKeyState(VK_MBUTTON) & (1 << 15);
     }
 
-    UpdateAndRender(&g_pixel_buffer, new_input);
+    update_and_render(g_program_memory, &g_pixel_buffer, new_input);
 
     Win32UpdateWindow(hdc);
 

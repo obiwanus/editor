@@ -7,7 +7,21 @@
 #include "ED_math.h"
 #include "raytrace/ED_raytrace.h"
 
-global ProgramState gState = ProgramState();
+global void *_free_memory;  // for the allocator
+global size_t _allocated;
+
+global ProgramState *gState;
+
+void *Allocate(size_t size) {
+  // Deallocation is not intended
+  void *result;
+  if (_allocated + size > MAX_INTERNAL_MEMORY_SIZE) {
+    return NULL;
+  }
+  result = _free_memory;
+  _free_memory += size;
+  return result;
+}
 
 inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2i Point, u32 Color) {
   int x = Point.x;
@@ -71,9 +85,9 @@ void draw_line(Pixel_Buffer *pixel_buffer, v2 A, v2 B, u32 Color) {
 }
 
 inline u32 GetRGB(v3 Color) {
-  Assert(Color.r >= 0 && Color.r <= 1);
-  Assert(Color.g >= 0 && Color.g <= 1);
-  Assert(Color.b >= 0 && Color.b <= 1);
+  assert(Color.r >= 0 && Color.r <= 1);
+  assert(Color.g >= 0 && Color.g <= 1);
+  assert(Color.b >= 0 && Color.b <= 1);
 
   u32 result = 0x00000000;
   u8 R = (u8)(Color.r * 255);
@@ -112,10 +126,9 @@ void Area::draw(Pixel_Buffer *pixel_buffer) {
   draw_rect(pixel_buffer, this->rect, this->color);
 }
 
-// TODO: don't make gState global?
-
-update_result UpdateAndRender(Pixel_Buffer *pixel_buffer, user_input *Input) {
-  update_result result = {};
+Update_Result update_and_render(void *program_memory,
+                                Pixel_Buffer *pixel_buffer, user_input *Input) {
+  Update_Result result = {};
 
   // Clear
   memset(pixel_buffer->memory, 0,
@@ -129,7 +142,6 @@ update_result UpdateAndRender(Pixel_Buffer *pixel_buffer, user_input *Input) {
   Area *area1 = &gState.area1;
   area1->draw(pixel_buffer);
 
-
 #if 0
 
   RayCamera *camera = &gState.camera;
@@ -137,7 +149,6 @@ update_result UpdateAndRender(Pixel_Buffer *pixel_buffer, user_input *Input) {
   if (!gState.initialized) {
     gState.initialized = true;
 
-    // Important constants
     gState.kWindowWidth = 1000;
     gState.kWindowHeight = 700;
     gState.kMaxRecursion = 3;

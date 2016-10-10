@@ -23,12 +23,12 @@ typedef unsigned int uint;
 #define local_persist static
 
 #if BUILD_SLOW
-#define Assert(Expression) \
+#define assert(Expression) \
   if (!(Expression)) {     \
     *(int *)0 = 0;         \
   }
 #else
-#define Assert(Expression)
+#define assert(Expression)
 #endif
 
 #define COUNT_OF(x) \
