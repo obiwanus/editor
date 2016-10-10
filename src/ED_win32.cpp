@@ -112,7 +112,7 @@ Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     case WM_SYSKEYUP:
     case WM_KEYDOWN:
     case WM_KEYUP: {
-      Assert(!"Keyboard input came in through a non-dispatch message!");
+      assert(!"Keyboard input came in through a non-dispatch message!");
     } break;
 
     default: { Result = DefWindowProc(Window, uMsg, wParam, lParam); } break;
@@ -238,11 +238,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         wglSwapInterval(1);
       } else {
         // VSync not enabled or not supported
-        Assert(false);
+        assert(false);
       }
     } else {
       // Something's wrong
-      Assert(false);
+      assert(false);
     }
   }
 
@@ -251,7 +251,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   user_input *new_input = &inputs[1];
   *new_input = {};
 
-  Assert(&new_input->terminator - &new_input->buttons[0] <
+  assert(&new_input->terminator - &new_input->buttons[0] <
          COUNT_OF(new_input->buttons));
 
   LARGE_INTEGER last_timestamp = Win32GetWallClock();

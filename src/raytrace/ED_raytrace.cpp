@@ -103,7 +103,7 @@ Ray RayCamera::get_ray_through_pixel(int x, int y) {
   return result;
 }
 
-RayHit Ray::get_object_hit(ProgramState *state, r32 tmin, r32 tmax,
+RayHit Ray::get_object_hit(Program_State *state, r32 tmin, r32 tmax,
                            RayObject *ignore_object, b32 any) {
   Ray *ray = this;
 
@@ -132,7 +132,7 @@ RayHit Ray::get_object_hit(ProgramState *state, r32 tmin, r32 tmax,
   return ray_hit;
 }
 
-v3 Ray::get_color(ProgramState *state, RayObject *reflected_from,
+v3 Ray::get_color(Program_State *state, RayObject *reflected_from,
                   int recurse_further) {
   Ray *ray = this;
 

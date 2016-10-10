@@ -5,7 +5,7 @@
 #include "ED_math.h"
 
 struct Ray;
-struct ProgramState;
+struct Program_State;
 
 typedef enum {
   RayObject_Type_Invalid = 0,
@@ -65,9 +65,9 @@ struct Ray {
     return result;
   }
 
-  v3 get_color(ProgramState *state, RayObject *reflected_from,
+  v3 get_color(Program_State *state, RayObject *reflected_from,
                int recurse_further);
-  RayHit Ray::get_object_hit(ProgramState *state, r32 tmin, r32 tmax,
+  RayHit Ray::get_object_hit(Program_State *state, r32 tmin, r32 tmax,
                              RayObject *ignore_object = NULL, b32 any = false);
 };
 

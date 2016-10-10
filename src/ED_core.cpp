@@ -10,16 +10,16 @@
 global void *_free_memory;  // for the allocator
 global size_t _allocated;
 
-global ProgramState *gState;
+global Program_State *gState;
 
-void *Allocate(size_t size) {
+void *allocate(size_t size) {
   // Deallocation is not intended
   void *result;
   if (_allocated + size > MAX_INTERNAL_MEMORY_SIZE) {
     return NULL;
   }
   result = _free_memory;
-  _free_memory += size;
+  _free_memory = (void *)((u8 *)_free_memory + size);
   return result;
 }
 
@@ -84,7 +84,7 @@ void draw_line(Pixel_Buffer *pixel_buffer, v2 A, v2 B, u32 Color) {
   draw_line(pixel_buffer, a, b, Color);
 }
 
-inline u32 GetRGB(v3 Color) {
+inline u32 get_rgb_u32(v3 Color) {
   assert(Color.r >= 0 && Color.r <= 1);
   assert(Color.g >= 0 && Color.g <= 1);
   assert(Color.b >= 0 && Color.b <= 1);
@@ -98,7 +98,7 @@ inline u32 GetRGB(v3 Color) {
 }
 
 void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
-  u32 rgb = GetRGB(color);
+  u32 rgb = get_rgb_u32(color);
 
   if (rect.left < 0) rect.left = 0;
   if (rect.bottom < 0) rect.bottom = 0;
@@ -130,16 +130,17 @@ Update_Result update_and_render(void *program_memory,
                                 Pixel_Buffer *pixel_buffer, user_input *Input) {
   Update_Result result = {};
 
+  if (gState == NULL) {
+    _free_memory = program_memory;
+    gState = (Program_State *)allocate(sizeof(Program_State));
+    gState->area1 = Area({10, 10}, {500, 500}, V3(0.1f, 0.2f, 0.3f));
+  }
+
   // Clear
   memset(pixel_buffer->memory, 0,
          pixel_buffer->width * pixel_buffer->height * 4);
 
-  if (!gState.initialized) {
-    gState.initialized = true;
-    gState.area1 = Area({10, 10}, {500, 500}, V3(0.1f, 0.2f, 0.3f));
-  }
-
-  Area *area1 = &gState.area1;
+  Area *area1 = &gState->area1;
   area1->draw(pixel_buffer);
 
 #if 0
@@ -288,7 +289,7 @@ Update_Result update_and_render(void *program_memory,
         }
       }
 
-      draw_pixel(pixel_buffer, V2i(x, y), GetRGB(color));
+      draw_pixel(pixel_buffer, V2i(x, y), get_rgb_u32(color));
     }
   }
 

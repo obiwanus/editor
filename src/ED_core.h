@@ -62,9 +62,7 @@ struct Area {
   void draw(Pixel_Buffer *);
 };
 
-struct ProgramState {
-  b32 initialized;
-
+struct Program_State {
   Sphere *spheres;
   Plane *planes;
   Triangle *triangles;
