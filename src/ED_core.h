@@ -47,19 +47,27 @@ struct Rect {
   int bottom;
 };
 
-struct Area_Splitter {
-
-};
-
 struct Area {
   // Multi-purpose editor area
   Rect rect;
   v3 color;
-  b32 being_resized;
 
   Area() {};
   Area(v2i p1, v2i p2, v3 color);
   void draw(Pixel_Buffer *);
+};
+
+#define AREA_SPLITTER_MAX_AREAS 5
+
+struct Area_Splitter {
+  bool being_moved;
+  int left_count;
+  int right_count;
+  Area *left_areas[AREA_SPLITTER_MAX_AREAS];
+  Area *right_areas[AREA_SPLITTER_MAX_AREAS];
+
+  bool is_mouse_over(v2i mouse);
+  void resize_areas(v2i mouse);
 };
 
 struct Program_State {
@@ -73,6 +81,9 @@ struct Program_State {
   RayCamera camera;
 
   Area area1;
+  Area area2;
+
+  Area_Splitter splitter1;
 
   // Some constants
   int kWindowWidth;

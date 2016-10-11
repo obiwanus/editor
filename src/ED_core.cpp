@@ -10,7 +10,7 @@
 global void *_free_memory;  // for the allocator
 global size_t _allocated;
 
-global Program_State *gState;
+global Program_State *g_state;
 
 void *allocate(size_t size) {
   // Deallocation is not intended
@@ -30,7 +30,7 @@ inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2i Point, u32 Color) {
   if (x < 0 || x > pixel_buffer->width || y < 0 || y > pixel_buffer->height) {
     return;
   }
-  y = pixel_buffer->height - y;  // Origin in bottom-left
+  // y = pixel_buffer->height - y;  // Origin in bottom-left
   u32 *pixel = (u32 *)pixel_buffer->memory + x + y * pixel_buffer->width;
   *pixel = Color;
 }
@@ -126,42 +126,77 @@ void Area::draw(Pixel_Buffer *pixel_buffer) {
   draw_rect(pixel_buffer, this->rect, this->color);
 }
 
+bool Area_Splitter::is_mouse_over(v2i mouse) {
+  return true;
+}
+
+void Area_Splitter::resize_areas(v2i mouse) {
+  for (int i = 0; i < this->left_count; i++) {
+    this->left_areas[i]->rect.right = mouse.x;
+  }
+  for (int i = 0; i < this->right_count; i++) {
+    this->right_areas[i]->rect.left = mouse.x;
+  }
+}
+
 Update_Result update_and_render(void *program_memory,
-                                Pixel_Buffer *pixel_buffer, user_input *Input) {
+                                Pixel_Buffer *pixel_buffer, user_input *input) {
   Update_Result result = {};
 
-  if (gState == NULL) {
+  if (g_state == NULL) {
     _free_memory = program_memory;
-    gState = (Program_State *)allocate(sizeof(Program_State));
-    gState->area1 = Area({10, 10}, {500, 500}, V3(0.1f, 0.2f, 0.3f));
+    g_state = (Program_State *)allocate(sizeof(Program_State));
+
+    g_state->kWindowWidth = 1000;
+    g_state->kWindowHeight = 700;
+    g_state->kMaxRecursion = 3;
+    g_state->kSphereCount = 3;
+    g_state->kPlaneCount = 1;
+    g_state->kTriangleCount = 0;
+    g_state->kRayObjCount =
+        g_state->kSphereCount + g_state->kPlaneCount + g_state->kTriangleCount;
+    g_state->kLightCount = 3;
+
+    // TMP
+    g_state->area1 =
+        Area({0, 0}, {500, g_state->kWindowHeight}, V3(0.1f, 0.2f, 0.3f));
+    g_state->area2 =
+        Area({500, 0}, {1000, g_state->kWindowHeight}, V3(0.05f, 0.15f, 0.2f));
+    g_state->splitter1 = {};
+    g_state->splitter1.left_count = 1;
+    g_state->splitter1.left_areas[0] = &g_state->area1;
+    g_state->splitter1.right_count = 1;
+    g_state->splitter1.right_areas[0] = &g_state->area2;
+  }
+
+  if (input->mouse_left) {
+    // Find if the mouse is above a splitter
+    if (g_state->splitter1.is_mouse_over(input->mouse)) {
+      g_state->splitter1.being_moved = true;
+    }
+    if (g_state->splitter1.being_moved) {
+      g_state->splitter1.resize_areas(input->mouse);
+    }
+  } else {
+    g_state->splitter1.being_moved = false;
   }
 
   // Clear
   memset(pixel_buffer->memory, 0,
          pixel_buffer->width * pixel_buffer->height * 4);
 
-  Area *area1 = &gState->area1;
-  area1->draw(pixel_buffer);
+  g_state->area1.draw(pixel_buffer);
+  g_state->area2.draw(pixel_buffer);
 
 #if 0
 
-  RayCamera *camera = &gState.camera;
+  RayCamera *camera = &g_state->camera;
 
-  if (!gState.initialized) {
-    gState.initialized = true;
-
-    gState.kWindowWidth = 1000;
-    gState.kWindowHeight = 700;
-    gState.kMaxRecursion = 3;
-    gState.kSphereCount = 3;
-    gState.kPlaneCount = 1;
-    gState.kTriangleCount = 0;
-    gState.kRayObjCount =
-        gState.kSphereCount + gState.kPlaneCount + gState.kTriangleCount;
-    gState.kLightCount = 3;
+  if (!g_state->initialized) {
+    g_state->initialized = true;
 
     // Spheres
-    Sphere *spheres = new Sphere[gState.kSphereCount];
+    Sphere *spheres = new Sphere[g_state->kSphereCount];
 
     spheres[0].center = {350, 0, -1300};
     spheres[0].radius = 300;
@@ -179,7 +214,7 @@ Update_Result update_and_render(void *program_memory,
     spheres[2].phong_exp = 1000;
 
     // Planes
-    Plane *planes = new Plane[gState.kPlaneCount];
+    Plane *planes = new Plane[g_state->kPlaneCount];
 
     planes[0].point = {0, -300, 0};
     planes[0].normal = {0, 1, 0};
@@ -198,13 +233,13 @@ Update_Result update_and_render(void *program_memory,
 
     // Get a list of all objects
     RayObject **ray_objects =
-        (RayObject **)malloc(gState.kRayObjCount * sizeof(RayObject *));
+        (RayObject **)malloc(g_state->kRayObjCount * sizeof(RayObject *));
     {
       RayObject **ro_pointer = ray_objects;
-      for (int i = 0; i < gState.kSphereCount; i++) {
+      for (int i = 0; i < g_state->kSphereCount; i++) {
         *ro_pointer++ = &spheres[i];
       }
-      for (int i = 0; i < gState.kPlaneCount; i++) {
+      for (int i = 0; i < g_state->kPlaneCount; i++) {
         *ro_pointer++ = &planes[i];
       }
       // for (int i = 0; i < kTriangleCount; i++) {
@@ -213,7 +248,7 @@ Update_Result update_and_render(void *program_memory,
     }
 
     // Light
-    LightSource *lights = new LightSource[gState.kLightCount];
+    LightSource *lights = new LightSource[g_state->kLightCount];
 
     lights[0].intensity = 0.7f;
     lights[0].source = {1730, 600, -200};
@@ -226,43 +261,43 @@ Update_Result update_and_render(void *program_memory,
 
     // Camera dimensions
     camera->origin = {0, 0, 1000};
-    camera->pixel_count = {gState.kWindowWidth, gState.kWindowHeight};
+    camera->pixel_count = {g_state->kWindowWidth, g_state->kWindowHeight};
     camera->left = -camera->pixel_count.x / 2;
     camera->right = camera->pixel_count.x / 2;
     camera->bottom = -camera->pixel_count.y / 2;
     camera->top = camera->pixel_count.y / 2;
 
-    gState.spheres = spheres;
-    gState.planes = planes;
-    // gState.triangles = triangles;
+    g_state->spheres = spheres;
+    g_state->planes = planes;
+    // g_state->triangles = triangles;
 
-    gState.ray_objects = ray_objects;
+    g_state->ray_objects = ray_objects;
 
-    gState.lights = lights;
+    g_state->lights = lights;
   }
 
-  LightSource *lights = gState.lights;
-  RayObject **ray_objects = gState.ray_objects;
+  LightSource *lights = g_state->lights;
+  RayObject **ray_objects = g_state->ray_objects;
 
-  if (Input->up) {
-    gState.lights[0].source.v += 100;
+  if (input->up) {
+    g_state->lights[0].source.v += 100;
   }
-  if (Input->down) {
-    gState.lights[0].source.v -= 100;
+  if (input->down) {
+    g_state->lights[0].source.v -= 100;
   }
-  if (Input->left) {
-    gState.lights[0].source.u -= 100;
+  if (input->left) {
+    g_state->lights[0].source.u -= 100;
   }
-  if (Input->right) {
-    gState.lights[0].source.u += 100;
+  if (input->right) {
+    g_state->lights[0].source.u += 100;
   }
 
-  if (Input->mouse_left) {
+  if (input->mouse_left) {
     Ray pointer_ray =
-        camera->get_ray_through_pixel((int)Input->mouse.x, (int)Input->mouse.y);
+        camera->get_ray_through_pixel((int)input->mouse.x, (int)input->mouse.y);
 
     RayHit pointer_hit =
-        pointer_ray.get_object_hit(&gState, 0, INFINITY, NULL);
+        pointer_ray.get_object_hit(&g_state, 0, INFINITY, NULL);
     if (pointer_hit.object != NULL) {
       pointer_hit.object->color.x += 0.1f;
     }
@@ -277,7 +312,7 @@ Update_Result update_and_render(void *program_memory,
 
       v3 color = ambient_color * ambient_light_intensity;
 
-      color += ray.get_color(&gState, 0, gState.kMaxRecursion);
+      color += ray.get_color(&g_state, 0, g_state->kMaxRecursion);
 
       // Crop
       for (int i = 0; i < 3; i++) {
