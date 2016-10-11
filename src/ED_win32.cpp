@@ -84,8 +84,13 @@ static void Win32ResizeClientWindow(HWND window) {
     height = g_pixel_buffer.max_height;
   }
 
+  if (!g_pixel_buffer.was_resized) {
+    g_pixel_buffer.prev_width = g_pixel_buffer.width;
+    g_pixel_buffer.prev_height = g_pixel_buffer.height;
+  }
   g_pixel_buffer.width = width;
   g_pixel_buffer.height = height;
+  g_pixel_buffer.was_resized = true;
 }
 
 LRESULT CALLBACK
@@ -342,6 +347,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     printf("%.2f - ", ms_elapsed);
     last_timestamp = Win32GetWallClock();
 #endif
+
   }
 
   return 0;

@@ -12,6 +12,11 @@ struct Pixel_Buffer {
   int height;
   int max_width;
   int max_height;
+
+  int prev_width;
+  int prev_height;
+  bool was_resized;
+
   void *memory;
 };
 
@@ -42,37 +47,47 @@ struct user_input {
 
 struct Rect {
   int left;
-  int right;
   int top;
+  int right;
   int bottom;
 
   bool is_within(v2i point);
 };
 
+struct Area_Splitter;  // damned C++
+
 struct Area {
   // Multi-purpose editor area
   Rect rect;
   v3 color;
+  Area_Splitter *splitter = NULL;
 
-  Area() {};
-  Area(v2i p1, v2i p2, v3 color);
   void draw(Pixel_Buffer *);
+  void resize(int, int);
 };
-
-#define AREA_SPLITTER_MAX_AREAS 5
 
 struct Area_Splitter {
   int position;
   bool being_moved;
   bool is_vertical;
-  int one_side_count;
-  int other_side_count;
-  Area *one_side_areas[AREA_SPLITTER_MAX_AREAS];
-  Area *other_side_areas[AREA_SPLITTER_MAX_AREAS];
+
+  Area *parent_area;
+  Area *areas[2];  // it always splits an area in 2
 
   Rect get_rect();
   bool is_mouse_over(v2i mouse);
   void move(v2i mouse);
+};
+
+#define EDITOR_MAX_AREA_COUNT 30
+
+struct User_Interface {
+  int num_areas;
+  int num_splitters;
+  Area areas[EDITOR_MAX_AREA_COUNT];
+  Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
+
+  Area *create_area(Rect, v3);
 };
 
 struct Program_State {
@@ -85,12 +100,7 @@ struct Program_State {
 
   RayCamera camera;
 
-  Area area1;
-  Area area2;
-  Area area3;
-
-  static const int kNumSplitters = 2;
-  Area_Splitter splitter[kNumSplitters];
+  User_Interface UI;
 
   // Some constants
   int kWindowWidth;
