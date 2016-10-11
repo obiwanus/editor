@@ -60,14 +60,16 @@ struct Area {
 #define AREA_SPLITTER_MAX_AREAS 5
 
 struct Area_Splitter {
+  int position;
   bool being_moved;
-  int left_count;
-  int right_count;
-  Area *left_areas[AREA_SPLITTER_MAX_AREAS];
-  Area *right_areas[AREA_SPLITTER_MAX_AREAS];
+  bool is_vertical;
+  int one_side_count;
+  int other_side_count;
+  Area *one_side_areas[AREA_SPLITTER_MAX_AREAS];
+  Area *other_side_areas[AREA_SPLITTER_MAX_AREAS];
 
   bool is_mouse_over(v2i mouse);
-  void resize_areas(v2i mouse);
+  void move(v2i mouse);
 };
 
 struct Program_State {

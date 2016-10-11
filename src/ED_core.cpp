@@ -127,15 +127,29 @@ void Area::draw(Pixel_Buffer *pixel_buffer) {
 }
 
 bool Area_Splitter::is_mouse_over(v2i mouse) {
-  return true;
+  const int sensitivity = 5;
+  int value = this->is_vertical ? mouse.x : mouse.y;
+  return (this->position - sensitivity < value) &&
+         (value < this->position + sensitivity);
 }
 
-void Area_Splitter::resize_areas(v2i mouse) {
-  for (int i = 0; i < this->left_count; i++) {
-    this->left_areas[i]->rect.right = mouse.x;
-  }
-  for (int i = 0; i < this->right_count; i++) {
-    this->right_areas[i]->rect.left = mouse.x;
+void Area_Splitter::move(v2i mouse) {
+  if (this->is_vertical) {
+    this->position = mouse.x;
+    for (int i = 0; i < this->one_side_count; i++) {
+      this->one_side_areas[i]->rect.right = this->position;
+    }
+    for (int i = 0; i < this->other_side_count; i++) {
+      this->other_side_areas[i]->rect.left = this->position;
+    }
+  } else {
+    this->position = mouse.y;
+    for (int i = 0; i < this->one_side_count; i++) {
+      this->one_side_areas[i]->rect.bottom = this->position;
+    }
+    for (int i = 0; i < this->other_side_count; i++) {
+      this->other_side_areas[i]->rect.top = this->position;
+    }
   }
 }
 
@@ -163,10 +177,12 @@ Update_Result update_and_render(void *program_memory,
     g_state->area2 =
         Area({500, 0}, {1000, g_state->kWindowHeight}, V3(0.05f, 0.15f, 0.2f));
     g_state->splitter1 = {};
-    g_state->splitter1.left_count = 1;
-    g_state->splitter1.left_areas[0] = &g_state->area1;
-    g_state->splitter1.right_count = 1;
-    g_state->splitter1.right_areas[0] = &g_state->area2;
+    g_state->splitter1.is_vertical = true;
+    g_state->splitter1.position = g_state->area1.rect.right;
+    g_state->splitter1.one_side_count = 1;
+    g_state->splitter1.one_side_areas[0] = &g_state->area1;
+    g_state->splitter1.other_side_count = 1;
+    g_state->splitter1.other_side_areas[0] = &g_state->area2;
   }
 
   if (input->mouse_left) {
@@ -175,7 +191,7 @@ Update_Result update_and_render(void *program_memory,
       g_state->splitter1.being_moved = true;
     }
     if (g_state->splitter1.being_moved) {
-      g_state->splitter1.resize_areas(input->mouse);
+      g_state->splitter1.move(input->mouse);
     }
   } else {
     g_state->splitter1.being_moved = false;
