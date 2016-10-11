@@ -312,8 +312,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       GetCursorPos(&mouse_pointer);
       ScreenToClient(Window, &mouse_pointer);
 
-      new_input->mouse = {mouse_pointer.x,
-                          g_pixel_buffer.height - mouse_pointer.y};
+      new_input->mouse = {mouse_pointer.x, mouse_pointer.y};
 
       new_input->mouse_left = GetKeyState(VK_LBUTTON) & (1 << 15);
       new_input->mouse_right = GetKeyState(VK_RBUTTON) & (1 << 15);

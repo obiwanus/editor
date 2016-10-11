@@ -84,8 +84,10 @@ struct Program_State {
 
   Area area1;
   Area area2;
+  Area area3;
 
-  Area_Splitter splitter1;
+  static const int kNumSplitters = 2;
+  Area_Splitter splitter[kNumSplitters];
 
   // Some constants
   int kWindowWidth;

@@ -101,12 +101,12 @@ void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
   u32 rgb = get_rgb_u32(color);
 
   if (rect.left < 0) rect.left = 0;
-  if (rect.bottom < 0) rect.bottom = 0;
+  if (rect.top < 0) rect.top = 0;
   if (rect.right > pixel_buffer->width) rect.right = pixel_buffer->width;
-  if (rect.top > pixel_buffer->height) rect.top = pixel_buffer->height;
+  if (rect.bottom > pixel_buffer->height) rect.bottom = pixel_buffer->height;
 
   for (int x = rect.left; x < rect.right; x++) {
-    for (int y = rect.bottom; y < rect.top; y++) {
+    for (int y = rect.top; y < rect.bottom; y++) {
       // Don't care about performance
       draw_pixel(pixel_buffer, V2i(x, y), rgb);
     }
@@ -116,8 +116,8 @@ void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
 Area::Area(v2i p1, v2i p2, v3 color) {
   this->rect.left = p1.x < p2.x ? p1.x : p2.x;
   this->rect.right = p1.x < p2.x ? p2.x : p1.x;
-  this->rect.bottom = p1.y < p2.y ? p1.y : p2.y;
-  this->rect.top = p1.y < p2.y ? p2.y : p1.y;
+  this->rect.bottom = p1.y > p2.y ? p1.y : p2.y;
+  this->rect.top = p1.y < p2.y ? p1.y : p2.y;
 
   this->color = color;
 }
@@ -175,26 +175,39 @@ Update_Result update_and_render(void *program_memory,
     g_state->area1 =
         Area({0, 0}, {500, g_state->kWindowHeight}, V3(0.1f, 0.2f, 0.3f));
     g_state->area2 =
-        Area({500, 0}, {1000, g_state->kWindowHeight}, V3(0.05f, 0.15f, 0.2f));
-    g_state->splitter1 = {};
-    g_state->splitter1.is_vertical = true;
-    g_state->splitter1.position = g_state->area1.rect.right;
-    g_state->splitter1.one_side_count = 1;
-    g_state->splitter1.one_side_areas[0] = &g_state->area1;
-    g_state->splitter1.other_side_count = 1;
-    g_state->splitter1.other_side_areas[0] = &g_state->area2;
+        Area({500, 0}, {1000, 300}, V3(0.05f, 0.15f, 0.2f));
+    g_state->area3 =
+        Area({500, 300}, {1000, g_state->kWindowHeight}, V3(0.15f, 0.25f, 0.35f));
+
+    g_state->splitter[0] = {};
+    g_state->splitter[0].is_vertical = true;
+    g_state->splitter[0].position = g_state->area1.rect.right;
+    g_state->splitter[0].one_side_count = 1;
+    g_state->splitter[0].one_side_areas[0] = &g_state->area1;
+    g_state->splitter[0].other_side_count = 2;
+    g_state->splitter[0].other_side_areas[0] = &g_state->area2;
+    g_state->splitter[0].other_side_areas[1] = &g_state->area3;
+
+    g_state->splitter[1] = {};
+    g_state->splitter[1].is_vertical = false;
+    g_state->splitter[1].position = g_state->area2.rect.bottom;
+    g_state->splitter[1].one_side_count = 1;
+    g_state->splitter[1].one_side_areas[0] = &g_state->area2;
+    g_state->splitter[1].other_side_count = 1;
+    g_state->splitter[1].other_side_areas[0] = &g_state->area3;
   }
 
-  if (input->mouse_left) {
-    // Find if the mouse is above a splitter
-    if (g_state->splitter1.is_mouse_over(input->mouse)) {
-      g_state->splitter1.being_moved = true;
+  for (int i = 0; i < g_state->kNumSplitters; i++) {
+    Area_Splitter *splitter = &g_state->splitter[i];
+    if (input->mouse_left && splitter->is_mouse_over(input->mouse)) {
+      splitter->being_moved = true;
     }
-    if (g_state->splitter1.being_moved) {
-      g_state->splitter1.move(input->mouse);
+    if (!input->mouse_left) {
+      splitter->being_moved = false;
     }
-  } else {
-    g_state->splitter1.being_moved = false;
+    if (splitter->being_moved) {
+      splitter->move(input->mouse);
+    }
   }
 
   // Clear
@@ -203,6 +216,7 @@ Update_Result update_and_render(void *program_memory,
 
   g_state->area1.draw(pixel_buffer);
   g_state->area2.draw(pixel_buffer);
+  g_state->area3.draw(pixel_buffer);
 
 #if 0
 
