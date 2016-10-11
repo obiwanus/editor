@@ -45,6 +45,8 @@ struct Rect {
   int right;
   int top;
   int bottom;
+
+  bool is_within(v2i point);
 };
 
 struct Area {
@@ -68,6 +70,7 @@ struct Area_Splitter {
   Area *one_side_areas[AREA_SPLITTER_MAX_AREAS];
   Area *other_side_areas[AREA_SPLITTER_MAX_AREAS];
 
+  Rect get_rect();
   bool is_mouse_over(v2i mouse);
   void move(v2i mouse);
 };

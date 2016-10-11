@@ -336,10 +336,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       new_input->buttons[i] = old_input->buttons[i];
     }
 
+#if 0
     r32 ms_elapsed =
         Win32GetMillisecondsElapsed(last_timestamp, Win32GetWallClock());
     printf("%.2f - ", ms_elapsed);
     last_timestamp = Win32GetWallClock();
+#endif
   }
 
   return 0;

@@ -113,6 +113,12 @@ void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
   }
 }
 
+bool Rect::is_within(v2i point) {
+  bool result = (this->left <= point.x) && (point.x <= this->right) &&
+                (this->top <= point.y) && (point.y <= this->bottom);
+  return result;
+}
+
 Area::Area(v2i p1, v2i p2, v3 color) {
   this->rect.left = p1.x < p2.x ? p1.x : p2.x;
   this->rect.right = p1.x < p2.x ? p2.x : p1.x;
@@ -126,11 +132,32 @@ void Area::draw(Pixel_Buffer *pixel_buffer) {
   draw_rect(pixel_buffer, this->rect, this->color);
 }
 
+Rect Area_Splitter::get_rect() {
+  Rect result;
+  const int kSensitivity = 5;
+  assert(this->one_side_count > 0);
+  Area *area_for_reference = this->one_side_areas[0];
+
+  // Not sure if it's better than storing the rect
+  if (this->is_vertical) {
+    result.left = this->position - kSensitivity;
+    result.right = this->position + kSensitivity;
+    result.top = area_for_reference->rect.top;
+    result.bottom = area_for_reference->rect.bottom;
+  } else {
+    result.top = this->position - kSensitivity;
+    result.bottom = this->position + kSensitivity;
+    result.left = area_for_reference->rect.left;
+    result.right = area_for_reference->rect.right;
+  }
+
+  return result;
+}
+
 bool Area_Splitter::is_mouse_over(v2i mouse) {
-  const int sensitivity = 5;
-  int value = this->is_vertical ? mouse.x : mouse.y;
-  return (this->position - sensitivity < value) &&
-         (value < this->position + sensitivity);
+  bool result = this->get_rect().is_within(mouse);
+
+  return result;
 }
 
 void Area_Splitter::move(v2i mouse) {
@@ -174,10 +201,9 @@ Update_Result update_and_render(void *program_memory,
     // TMP
     g_state->area1 =
         Area({0, 0}, {500, g_state->kWindowHeight}, V3(0.1f, 0.2f, 0.3f));
-    g_state->area2 =
-        Area({500, 0}, {1000, 300}, V3(0.05f, 0.15f, 0.2f));
-    g_state->area3 =
-        Area({500, 300}, {1000, g_state->kWindowHeight}, V3(0.15f, 0.25f, 0.35f));
+    g_state->area2 = Area({500, 0}, {1000, 300}, V3(0.05f, 0.15f, 0.2f));
+    g_state->area3 = Area({500, 300}, {1000, g_state->kWindowHeight},
+                          V3(0.15f, 0.25f, 0.35f));
 
     g_state->splitter[0] = {};
     g_state->splitter[0].is_vertical = true;
@@ -199,7 +225,8 @@ Update_Result update_and_render(void *program_memory,
 
   for (int i = 0; i < g_state->kNumSplitters; i++) {
     Area_Splitter *splitter = &g_state->splitter[i];
-    if (input->mouse_left && splitter->is_mouse_over(input->mouse)) {
+    if (input->mouse_left && !splitter->being_moved &&
+        splitter->is_mouse_over(input->mouse)) {
       splitter->being_moved = true;
     }
     if (!input->mouse_left) {
