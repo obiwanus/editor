@@ -119,9 +119,21 @@ bool Rect::is_within(v2i point) {
   return result;
 }
 
+inline int Rect::get_width() {
+  int result = this->right - this->left;
+  assert(result >= 0);
+  return result;
+}
+
+inline int Rect::get_height() {
+  int result = this->bottom - this->top;
+  assert(result >= 0);
+  return result;
+}
+
 void Area::draw(Pixel_Buffer *pixel_buffer) {
   if (this->splitter) {
-    // Don't draw the parent area
+    // Only draw the child areas
     this->splitter->areas[0]->draw(pixel_buffer);
     this->splitter->areas[1]->draw(pixel_buffer);
     return;
@@ -130,8 +142,8 @@ void Area::draw(Pixel_Buffer *pixel_buffer) {
   // draw outline
   int left = this->rect.left;
   int top = this->rect.top;
-  int right = this->rect.right;
-  int bottom = this->rect.bottom;
+  int right = this->rect.right - 1;
+  int bottom = this->rect.bottom - 1;
 
   draw_line(pixel_buffer, V2i(left, top), V2i(right, top), 0x00FFFFFF);
   draw_line(pixel_buffer, V2i(left, top), V2i(left, bottom), 0x00FFFFFF);
@@ -139,12 +151,60 @@ void Area::draw(Pixel_Buffer *pixel_buffer) {
   draw_line(pixel_buffer, V2i(left, bottom), V2i(right, bottom), 0x00FFFFFF);
 }
 
-void Area::resize(int width, int height) {
-  this->rect.right = this->rect.left + width;
-  this->rect.bottom = this->rect.top + height;
+void Area::resize(int new_width, int new_height) {
+  // TODO: this code is overly complex and can be simplified
 
+  if (new_width <= 0 || new_height <= 0) {
+    return;
+  }
+
+  int old_width = this->rect.get_width();
+  int old_height = this->rect.get_height();
+
+  // Resize itself
+  this->rect.right = this->rect.left + new_width;
+  this->rect.bottom = this->rect.top + new_height;
+
+  // Resize children if present
   if (this->splitter != NULL) {
-    // assert(!"resize splitter")
+    // New dimensions of the child areas
+    int area1_width, area1_height;
+    int area2_width, area2_height;
+    int old_splitter_position;
+    int new_splitter_position;
+    Area *area1 = this->splitter->areas[0];
+    Area *area2 = this->splitter->areas[1];
+
+    if (this->splitter->is_vertical) {
+      // New splitter position
+      old_splitter_position = this->splitter->position - this->rect.left;
+      new_splitter_position = (int)((r32)new_width * ((r32)old_splitter_position / (r32)old_width));
+      this->splitter->position = this->rect.left + new_splitter_position;
+
+      // Get new area dimensions
+      area1_width = new_splitter_position;
+      area2_width = new_width - area1_width;
+      area1_height = area2_height = new_height;
+
+      area2->rect.left = this->splitter->position;
+      area2->rect.right = area2->rect.left + area2_width;
+    } else {
+      // New splitter position
+      old_splitter_position = this->splitter->position - this->rect.top;
+      new_splitter_position = (int)((r32)new_height * ((r32)old_splitter_position / (r32)old_height));
+      this->splitter->position = this->rect.top + new_splitter_position;
+
+      // Get new area dimensions
+      area1_height = new_splitter_position;
+      area2_height = new_height - area1_height;
+      area1_width = area2_width = new_width;
+
+      area2->rect.top = this->splitter->position;
+      area2->rect.bottom = area2->rect.top + area2_height;
+    }
+
+    area1->resize(area1_width, area1_height);
+    area2->resize(area2_width, area2_height);
   }
 }
 
@@ -197,6 +257,8 @@ void Area_Splitter::move(v2i mouse) {
 }
 
 Area *User_Interface::create_area(Rect rect, Area_Splitter *splitter = NULL) {
+  assert(this->num_areas >= 0 && this->num_areas < EDITOR_MAX_AREA_COUNT);
+
   Area *area = &this->areas[this->num_areas];
   this->num_areas++;
 
@@ -208,6 +270,9 @@ Area *User_Interface::create_area(Rect rect, Area_Splitter *splitter = NULL) {
 }
 
 Area_Splitter *User_Interface::_new_splitter(Area *area, int position) {
+  assert(this->num_splitters >= 0 &&
+         this->num_splitters < EDITOR_MAX_AREA_COUNT);
+
   Area_Splitter *splitter = &this->splitters[this->num_splitters];
   area->splitter = splitter;
   this->num_splitters++;
@@ -283,62 +348,39 @@ Update_Result update_and_render(void *program_memory,
         ui->vertical_split(parent_area, g_state->kWindowWidth / 2);
 
     Area *left_area = splitter1->areas[0];
-    Area_Splitter *splitter2 = ui->horizontal_split(left_area, left_area->rect.bottom / 3);
+    Area_Splitter *splitter2 =
+        ui->horizontal_split(left_area, left_area->rect.bottom / 3);
 
-    // TMP
-    // g_state->area1 =
-    //     Area({0, 0}, {500, g_state->kWindowHeight}, V3(0.1f, 0.2f, 0.3f));
-    // g_state->area2 = Area({500, 0}, {1000, 300}, V3(0.05f, 0.15f, 0.2f));
-    // g_state->area3 = Area({500, 300}, {1000, g_state->kWindowHeight},
-    //                       V3(0.15f, 0.25f, 0.35f));
-
-    // g_state->splitter[0] = {};
-    // g_state->splitter[0].is_vertical = true;
-    // g_state->splitter[0].position = g_state->area1.rect.right;
-    // g_state->splitter[0].one_side_count = 1;
-    // g_state->splitter[0].one_side_areas[0] = &g_state->area1;
-    // g_state->splitter[0].other_side_count = 2;
-    // g_state->splitter[0].other_side_areas[0] = &g_state->area2;
-    // g_state->splitter[0].other_side_areas[1] = &g_state->area3;
-
-    // g_state->splitter[1] = {};
-    // g_state->splitter[1].is_vertical = false;
-    // g_state->splitter[1].position = g_state->area2.rect.bottom;
-    // g_state->splitter[1].one_side_count = 1;
-    // g_state->splitter[1].one_side_areas[0] = &g_state->area2;
-    // g_state->splitter[1].other_side_count = 1;
-    // g_state->splitter[1].other_side_areas[0] = &g_state->area3;
+    ui->vertical_split(splitter2->areas[1], splitter2->areas[1]->rect.get_width() / 3);
   }
 
   User_Interface *ui = &g_state->UI;
-
-  assert(ui->num_areas > 0 && ui->num_areas < EDITOR_MAX_AREA_COUNT);
-  assert(ui->num_splitters >= 0 && ui->num_splitters < EDITOR_MAX_AREA_COUNT);
 
   if (pixel_buffer->was_resized) {
     ui->areas[0].resize(pixel_buffer->width, pixel_buffer->height);
     pixel_buffer->was_resized = false;
   }
 
-  // // Drag splitters with a mouse
-  // for (int i = 0; i < g_state->kNumSplitters; i++) {
-  //   Area_Splitter *splitter = &g_state->splitter[i];
-  //   if (input->mouse_left && !splitter->being_moved &&
-  //       splitter->is_mouse_over(input->mouse)) {
-  //     splitter->being_moved = true;
-  //   }
-  //   if (!input->mouse_left) {
-  //     splitter->being_moved = false;
-  //   }
-  //   if (splitter->being_moved) {
-  //     splitter->move(input->mouse);
-  //   }
-  // }
+  // Drag splitters with a mouse
+  for (int i = 0; i < ui->num_splitters; i++) {
+    Area_Splitter *splitter = &ui->splitters[i];
+    if (input->mouse_left && !splitter->being_moved &&
+        splitter->is_mouse_over(input->mouse)) {
+      splitter->being_moved = true;
+    }
+    if (!input->mouse_left) {
+      splitter->being_moved = false;
+    }
+    if (splitter->being_moved) {
+      splitter->move(input->mouse);
+    }
+  }
 
   // Clear
   memset(pixel_buffer->memory, 0,
          pixel_buffer->width * pixel_buffer->height * 4);
 
+  assert(ui->num_areas > 0 && ui->num_areas < EDITOR_MAX_AREA_COUNT);
   ui->areas[0].draw(pixel_buffer);  // draw the parent area
 
 #if 0

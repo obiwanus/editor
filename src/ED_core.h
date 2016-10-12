@@ -51,6 +51,8 @@ struct Rect {
   int right;
   int bottom;
 
+  inline int get_width();
+  inline int get_height();
   bool is_within(v2i point);
 };
 
