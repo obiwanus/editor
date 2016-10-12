@@ -120,8 +120,23 @@ bool Rect::is_within(v2i point) {
 }
 
 void Area::draw(Pixel_Buffer *pixel_buffer) {
+  if (this->splitter) {
+    // Don't draw the parent area
+    this->splitter->areas[0]->draw(pixel_buffer);
+    this->splitter->areas[1]->draw(pixel_buffer);
+    return;
+  }
 
-  draw_rect(pixel_buffer, this->rect, this->color);
+  // draw outline
+  int left = this->rect.left;
+  int top = this->rect.top;
+  int right = this->rect.right;
+  int bottom = this->rect.bottom;
+
+  draw_line(pixel_buffer, V2i(left, top), V2i(right, top), 0x00FFFFFF);
+  draw_line(pixel_buffer, V2i(left, top), V2i(left, bottom), 0x00FFFFFF);
+  draw_line(pixel_buffer, V2i(right, top), V2i(right, bottom), 0x00FFFFFF);
+  draw_line(pixel_buffer, V2i(left, bottom), V2i(right, bottom), 0x00FFFFFF);
 }
 
 void Area::resize(int width, int height) {
@@ -129,7 +144,7 @@ void Area::resize(int width, int height) {
   this->rect.bottom = this->rect.top + height;
 
   if (this->splitter != NULL) {
-    assert(!"resize splitter")
+    // assert(!"resize splitter")
   }
 }
 
@@ -181,15 +196,62 @@ void Area_Splitter::move(v2i mouse) {
   // }
 }
 
-Area *User_Interface::create_area(Rect rect, v3 color) {
+Area *User_Interface::create_area(Rect rect, Area_Splitter *splitter = NULL) {
   Area *area = &this->areas[this->num_areas];
   this->num_areas++;
 
+  *area = {};
   area->rect = rect;
-  area->color = color;
-  area->splitter = NULL;
+  area->splitter = splitter;
 
   return area;
+}
+
+Area_Splitter *User_Interface::_new_splitter(Area *area, int position) {
+  Area_Splitter *splitter = &this->splitters[this->num_splitters];
+  area->splitter = splitter;
+  this->num_splitters++;
+
+  *splitter = {};
+  splitter->is_vertical = true;
+  splitter->position = position;
+  splitter->parent_area = area;
+
+  return splitter;
+}
+
+Area_Splitter *User_Interface::vertical_split(Area *area, int position) {
+  // Create splitter
+  Area_Splitter *splitter = this->_new_splitter(area, position);
+  splitter->is_vertical = true;
+
+  // Create 2 areas
+  Rect rect = area->rect;
+  rect.right = position;
+  splitter->areas[0] = this->create_area(rect);
+
+  rect = area->rect;
+  rect.left = position;
+  splitter->areas[1] = this->create_area(rect);
+
+  return splitter;
+}
+
+Area_Splitter *User_Interface::horizontal_split(Area *area, int position) {
+  // Create splitter
+  Area_Splitter *splitter = this->_new_splitter(area, position);
+  splitter->is_vertical = false;
+
+  // Create 2 areas
+  Rect rect = area->rect;
+  rect.bottom = position;
+  splitter->areas[0] = this->create_area(rect);
+
+  rect = area->rect;
+  rect.top = position;
+  splitter->areas[1] = this->create_area(rect);
+
+  return splitter;
 }
 
 Update_Result update_and_render(void *program_memory,
@@ -215,8 +277,13 @@ Update_Result update_and_render(void *program_memory,
     *ui = {};
 
     // Parent area
-    ui->create_area({0, 0, g_state->kWindowWidth, g_state->kWindowHeight},
-                    V3(0.1f, 0.2f, 0.3f));
+    Area *parent_area =
+        ui->create_area({0, 0, g_state->kWindowWidth, g_state->kWindowHeight});
+    Area_Splitter *splitter1 =
+        ui->vertical_split(parent_area, g_state->kWindowWidth / 2);
+
+    Area *left_area = splitter1->areas[0];
+    Area_Splitter *splitter2 = ui->horizontal_split(left_area, left_area->rect.bottom / 3);
 
     // TMP
     // g_state->area1 =

@@ -87,7 +87,10 @@ struct User_Interface {
   Area areas[EDITOR_MAX_AREA_COUNT];
   Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
 
-  Area *create_area(Rect, v3);
+  Area *create_area(Rect, Area_Splitter *);
+  Area_Splitter *_new_splitter(Area *, int);
+  Area_Splitter *vertical_split(Area *, int);
+  Area_Splitter *horizontal_split(Area *, int);
 };
 
 struct Program_State {
