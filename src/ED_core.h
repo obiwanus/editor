@@ -60,11 +60,18 @@ struct Area_Splitter;  // damned C++
 
 struct Area {
   // Multi-purpose editor area
-  Rect rect;
-  v3 color;
+  int left;
+  int top;
+  int width;
+  int height;
+
   Area_Splitter *splitter = NULL;
 
+  Rect get_rect();
+  void set_rect(Rect);
   void draw(Pixel_Buffer *);
+  void set_width(int);
+  void set_height(int);
   void resize(int, int);
 };
 
