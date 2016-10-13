@@ -219,15 +219,6 @@ void Area::resize_height(int new_height) {
   }
 }
 
-void Area::resize(int new_width, int new_height) {
-  if (new_width != this->width) {
-    this->resize_width(new_width);
-  }
-  if (new_height != this->height) {
-    this->resize_height(new_height);
-  }
-}
-
 void Area::set_left(int position) {
   int right = this->left + this->width;
   this->left = position;
@@ -372,6 +363,20 @@ Area_Splitter *User_Interface::horizontal_split(Area *area, int position) {
   return splitter;
 }
 
+void User_Interface::resize_window(int new_width, int new_height) {
+  if (this->num_areas <= 0) return;
+  Area *main_area = &this->areas[0];
+  int old_width = main_area->width;
+  int old_height = main_area->height;
+
+  // Go over every splitter and calculate new position
+  for (int i = 0; i < this->num_splitters; i++) {
+    Area_Splitter *splitter = &this->splitters[i];
+  }
+
+  // Adjust all the areas
+}
+
 Update_Result update_and_render(void *program_memory,
                                 Pixel_Buffer *pixel_buffer, user_input *input) {
   Update_Result result = {};
@@ -413,7 +418,7 @@ Update_Result update_and_render(void *program_memory,
   User_Interface *ui = &g_state->UI;
 
   if (pixel_buffer->was_resized) {
-    ui->areas[0].resize(pixel_buffer->width, pixel_buffer->height);
+    ui->resize_window(pixel_buffer->width, pixel_buffer->height);
     pixel_buffer->was_resized = false;
   }
 

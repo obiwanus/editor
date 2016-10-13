@@ -74,7 +74,6 @@ struct Area {
   void set_top(int);
   void set_bottom(int);
   void draw(Pixel_Buffer *);
-  void resize(int, int);
   void resize_width(int);
   void resize_height(int);
 };
@@ -104,6 +103,7 @@ struct User_Interface {
   Area_Splitter *_new_splitter(Area *);
   Area_Splitter *vertical_split(Area *, int);
   Area_Splitter *horizontal_split(Area *, int);
+  void resize_window(int, int);
 };
 
 struct Program_State {
