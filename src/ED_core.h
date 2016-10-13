@@ -69,10 +69,14 @@ struct Area {
 
   Rect get_rect();
   void set_rect(Rect);
+  void set_left(int);
+  void set_right(int);
+  void set_top(int);
+  void set_bottom(int);
   void draw(Pixel_Buffer *);
-  void set_width(int);
-  void set_height(int);
   void resize(int, int);
+  void resize_width(int);
+  void resize_height(int);
 };
 
 struct Area_Splitter {
@@ -97,7 +101,7 @@ struct User_Interface {
   Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
 
   Area *create_area(Rect, Area_Splitter *);
-  Area_Splitter *_new_splitter(Area *, int);
+  Area_Splitter *_new_splitter(Area *);
   Area_Splitter *vertical_split(Area *, int);
   Area_Splitter *horizontal_split(Area *, int);
 };
