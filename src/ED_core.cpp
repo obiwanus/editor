@@ -391,12 +391,14 @@ Update_Result update_and_render(void *program_memory,
   // Drag splitters with a mouse
   for (int i = 0; i < ui->num_splitters; i++) {
     Area_Splitter *splitter = &ui->splitters[i];
-    if (input->mouse_left && !splitter->being_moved &&
+    if (input->mouse_left && !ui->splitter_move_in_progress &&
         splitter->is_mouse_over(input->mouse)) {
       splitter->being_moved = true;
+      ui->splitter_move_in_progress = true;
     }
     if (!input->mouse_left) {
       splitter->being_moved = false;
+      ui->splitter_move_in_progress = false;
     }
     if (splitter->being_moved) {
       splitter->move(input->mouse);

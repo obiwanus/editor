@@ -97,6 +97,7 @@ struct Area_Splitter {
 #define EDITOR_MAX_AREA_COUNT 30
 
 struct User_Interface {
+  bool splitter_move_in_progress;
   int num_areas;
   int num_splitters;
   Area areas[EDITOR_MAX_AREA_COUNT];
