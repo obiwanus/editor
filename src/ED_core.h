@@ -78,6 +78,8 @@ struct Area {
   void set_top(int);
   void set_bottom(int);
 
+  bool can_be_split(v2i);
+
   void draw(Pixel_Buffer *);
 };
 
@@ -86,23 +88,27 @@ struct Area_Splitter {
   int position_min;  // to restrict movement
   int position_max;
 
-  bool being_moved;
   bool is_vertical;
 
   Area *parent_area;
   Area *areas[2];  // it always splits an area in 2
 
   Rect get_rect();
-  bool is_mouse_over(v2i mouse);
+  bool is_mouse_over(v2i);
   void move(v2i mouse);
 };
 
 #define EDITOR_MAX_AREA_COUNT 30
 
 struct User_Interface {
-  bool can_pick_splitter;
   int num_areas;
   int num_splitters;
+
+  bool can_pick_splitter;
+  bool can_split_area;
+  Area *area_being_split;
+  Area_Splitter *splitter_being_moved;
+
   Area areas[EDITOR_MAX_AREA_COUNT];
   Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
 
@@ -110,6 +116,7 @@ struct User_Interface {
   Area_Splitter *_new_splitter(Area *);
   Area_Splitter *vertical_split(Area *, int);
   Area_Splitter *horizontal_split(Area *, int);
+  void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
   void draw(Pixel_Buffer *);
 };
