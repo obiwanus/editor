@@ -100,7 +100,7 @@ struct Area_Splitter {
 #define EDITOR_MAX_AREA_COUNT 30
 
 struct User_Interface {
-  bool splitter_move_in_progress;
+  bool can_pick_splitter;
   int num_areas;
   int num_splitters;
   Area areas[EDITOR_MAX_AREA_COUNT];
@@ -111,6 +111,7 @@ struct User_Interface {
   Area_Splitter *vertical_split(Area *, int);
   Area_Splitter *horizontal_split(Area *, int);
   void resize_window(int, int);
+  void draw(Pixel_Buffer *);
 };
 
 struct Program_State {
