@@ -83,6 +83,9 @@ struct Area {
 
 struct Area_Splitter {
   int position;
+  int position_min;  // to restrict movement
+  int position_max;
+
   bool being_moved;
   bool is_vertical;
 

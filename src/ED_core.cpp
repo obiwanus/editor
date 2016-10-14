@@ -237,6 +237,9 @@ void Area_Splitter::move(v2i mouse) {
   int new_position = this->is_vertical ? mouse.x : mouse.y;
 
   if (this->position == new_position) return;
+  if (new_position < this->position_min) new_position = this->position_min;
+  if (this->position_max < new_position) new_position = this->position_max;
+
   this->position = new_position;
 
   if (this->is_vertical) {
@@ -395,6 +398,29 @@ Update_Result update_and_render(void *program_memory,
         splitter->is_mouse_over(input->mouse)) {
       splitter->being_moved = true;
       ui->splitter_move_in_progress = true;
+      // Calculate movement boundaries
+      int position_min;
+      int position_max;
+      if (splitter->is_vertical) {
+        position_min = splitter->parent_area->left;
+        position_max = splitter->parent_area->right;
+      } else {
+        position_min = splitter->parent_area->top;
+        position_max = splitter->parent_area->bottom;
+      }
+      for (int j = 0; j < ui->num_splitters; j++) {
+        Area_Splitter *s = &ui->splitters[j];
+        if (s->is_vertical != splitter->is_vertical) continue;
+        if (position_min < s->position && s->position < splitter->position) {
+          position_min = s->position;
+        }
+        if (splitter->position < s->position && s->position < position_max) {
+          position_max = s->position;
+        }
+      }
+      const int kMargin = 30;
+      splitter->position_max = position_max - kMargin;
+      splitter->position_min = position_min + kMargin;
     }
     if (!input->mouse_left) {
       splitter->being_moved = false;
