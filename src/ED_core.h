@@ -53,7 +53,7 @@ struct Rect {
 
   inline int get_width();
   inline int get_height();
-  bool is_within(v2i point);
+  bool contains(v2i point);
 };
 
 struct Area_Splitter;  // damned C++
@@ -73,12 +73,13 @@ struct Area {
   inline Rect get_rect();
   inline void set_rect(Rect);
 
+  Rect get_split_handle(int);
+  bool mouse_over_split_handle(v2i);
+
   void set_left(int);
   void set_right(int);
   void set_top(int);
   void set_bottom(int);
-
-  bool can_be_split(v2i);
 
   void draw(Pixel_Buffer *);
 };
@@ -104,6 +105,7 @@ struct User_Interface {
   int num_areas;
   int num_splitters;
 
+  v2i pointer_start;
   bool can_pick_splitter;
   bool can_split_area;
   Area *area_being_split;

@@ -11,6 +11,8 @@
 struct v2i {
   int x;
   int y;
+
+  r32 len();
 };
 
 union v2 {
@@ -149,6 +151,24 @@ inline r32 square(r32 A) {
 }
 
 // ========================== v2 operations ========================
+
+inline v2i operator+(v2i A, v2i B) {
+  v2i result;
+
+  result.x = A.x + B.x;
+  result.y = A.y + B.y;
+
+  return result;
+}
+
+inline v2i operator-(v2i A, v2i B) {
+  v2i result;
+
+  result.x = A.x - B.x;
+  result.y = A.y - B.y;
+
+  return result;
+}
 
 inline v2 operator*(r32 A, v2 B) {
   v2 result;

@@ -113,7 +113,7 @@ void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
   }
 }
 
-bool Rect::is_within(v2i point) {
+bool Rect::contains(v2i point) {
   bool result = (this->left <= point.x) && (point.x <= this->right) &&
                 (this->top <= point.y) && (point.y <= this->bottom);
   return result;
@@ -131,6 +131,21 @@ inline int Rect::get_height() {
   return result;
 }
 
+Rect Area::get_split_handle(int num) {
+  Rect rect;
+  assert(num == 0 || num == 1);
+  const int kSquareSize = 15;
+  rect = this->get_rect();
+  if (num == 0) {
+    rect.top = rect.bottom - kSquareSize;
+    rect.right = rect.left + kSquareSize;
+  } else {
+    rect.left = rect.right - kSquareSize;
+    rect.bottom = rect.top + kSquareSize;
+  }
+  return rect;
+}
+
 void Area::draw(Pixel_Buffer *pixel_buffer) {
   if (this->splitter) {
     // Only draw the child areas
@@ -141,19 +156,9 @@ void Area::draw(Pixel_Buffer *pixel_buffer) {
   // TODO: Draw the contents
   // ---
 
-  // Draw the split-squares
-  const int kSquareSize = 15;
-  Rect rect;
-  // Bottom left
-  rect = this->get_rect();
-  rect.top = rect.bottom - kSquareSize;
-  rect.right = rect.left + kSquareSize;
-  draw_rect(pixel_buffer, rect, {1, 0.5f, 0.5f});
-  // Top right
-  rect = this->get_rect();
-  rect.left = rect.right - kSquareSize;
-  rect.bottom = rect.top + kSquareSize;
-  draw_rect(pixel_buffer, rect, {1, 0.5f, 0.5f});
+  // Draw the split-handles
+  draw_rect(pixel_buffer, this->get_split_handle(0), {1, 0.5f, 0.5f});
+  draw_rect(pixel_buffer, this->get_split_handle(1), {1, 0.5f, 0.5f});
 }
 
 inline int Area::get_width() { return this->right - this->left; }
@@ -214,7 +219,10 @@ inline void Area::set_rect(Rect rect) {
   this->bottom = rect.bottom;
 }
 
-bool Area::can_be_split(v2i mouse) { return false; }
+bool Area::mouse_over_split_handle(v2i mouse) {
+  return this->get_split_handle(0).contains(mouse) ||
+         this->get_split_handle(1).contains(mouse);
+}
 
 Rect Area_Splitter::get_rect() {
   Rect result = {};
@@ -237,7 +245,7 @@ Rect Area_Splitter::get_rect() {
 }
 
 bool Area_Splitter::is_mouse_over(v2i mouse) {
-  return this->get_rect().is_within(mouse);
+  return this->get_rect().contains(mouse);
 }
 
 void Area_Splitter::move(v2i mouse) {
@@ -277,7 +285,7 @@ Area_Splitter *User_Interface::_new_splitter(Area *area) {
   assert(this->num_splitters >= 0 &&
          this->num_splitters < EDITOR_MAX_AREA_COUNT);
 
-  Area_Splitter *splitter = &this->splitters[this->num_splitters];
+  Area_Splitter *splitter = this->splitters + this->num_splitters;
   area->splitter = splitter;
   this->num_splitters++;
 
@@ -295,11 +303,11 @@ Area_Splitter *User_Interface::vertical_split(Area *area, int position) {
 
   // Create 2 areas
   Rect rect = area->get_rect();
-  rect.right = rect.left + position;
+  rect.right = position;
   splitter->areas[0] = this->create_area(rect);
 
   rect = area->get_rect();
-  rect.left = rect.left + position;
+  rect.left = position;
   splitter->areas[1] = this->create_area(rect);
 
   return splitter;
@@ -309,15 +317,15 @@ Area_Splitter *User_Interface::horizontal_split(Area *area, int position) {
   // Create splitter
   Area_Splitter *splitter = this->_new_splitter(area);
   splitter->is_vertical = false;
-  splitter->position = area->top + position;
+  splitter->position = position;
 
   // Create 2 areas
   Rect rect = area->get_rect();
-  rect.bottom = rect.top + position;
+  rect.bottom = position;
   splitter->areas[0] = this->create_area(rect);
 
   rect = area->get_rect();
-  rect.top = rect.top + position;
+  rect.top = position;
   splitter->areas[1] = this->create_area(rect);
 
   return splitter;
@@ -451,8 +459,10 @@ Update_Result update_and_render(void *program_memory,
       // See if we're splitting any area
       for (int i = 0; i < ui->num_areas; i++) {
         Area *area = ui->areas + i;
-        if (area->can_be_split(input->mouse)) {
+        if (area->splitter == NULL &&
+            area->mouse_over_split_handle(input->mouse)) {
           ui->area_being_split = area;
+          ui->pointer_start = input->mouse;
           break;
         }
       }
@@ -460,8 +470,34 @@ Update_Result update_and_render(void *program_memory,
       ui->can_split_area = false;
     }
 
-    // Only look at splitters if areas are not being split
-    if (ui->area_being_split == NULL) {
+    if (ui->area_being_split != NULL) {
+      // See if mouse has moved enough to finish the split
+      if (ui->area_being_split->get_rect().contains(input->mouse)) {
+        const int kMargin = 20;
+        v2i distance = ui->pointer_start - input->mouse;
+        distance.x = abs(distance.x);
+        distance.y = abs(distance.y);
+        if (distance.x > kMargin || distance.y > kMargin) {
+          Area_Splitter *splitter;
+          if (distance.x > distance.y) {
+            splitter = ui->vertical_split(ui->area_being_split, input->mouse.x);
+          } else {
+            splitter =
+                ui->horizontal_split(ui->area_being_split, input->mouse.y);
+          }
+          ui->splitter_being_moved = splitter;
+          ui->set_movement_boundaries(splitter);
+          ui->area_being_split = NULL;
+          ui->can_pick_splitter = false;
+          ui->can_split_area = false;
+        }
+      } else {
+        // Stop splitting if mouse cursor is outside of the area
+        ui->area_being_split = NULL;
+        ui->can_pick_splitter = false;
+      }
+    } else {
+      // Only look at splitters if areas are not being split
       if (ui->can_pick_splitter && ui->splitter_being_moved == NULL) {
         for (int i = 0; i < ui->num_splitters; i++) {
           Area_Splitter *splitter = ui->splitters + i;
