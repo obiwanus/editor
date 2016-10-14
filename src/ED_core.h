@@ -62,20 +62,23 @@ struct Area {
   // Multi-purpose editor area
   int left;
   int top;
-  int width;
-  int height;
+  int right;
+  int bottom;
 
   Area_Splitter *splitter = NULL;
 
-  Rect get_rect();
-  void set_rect(Rect);
+  inline int get_width();
+  inline int get_height();
+
+  inline Rect get_rect();
+  inline void set_rect(Rect);
+
   void set_left(int);
   void set_right(int);
   void set_top(int);
   void set_bottom(int);
+
   void draw(Pixel_Buffer *);
-  void resize_width(int);
-  void resize_height(int);
 };
 
 struct Area_Splitter {
