@@ -309,7 +309,7 @@ Area_Splitter *User_Interface::vertical_split(Area *area, int position) {
   // Create splitter
   Area_Splitter *splitter = this->_new_splitter(area);
   splitter->is_vertical = true;
-  splitter->position = area->left + position;
+  splitter->position = position;
 
   // Create 2 areas
   Rect rect = area->get_rect();
@@ -444,20 +444,8 @@ Update_Result update_and_render(void *program_memory,
     User_Interface *ui = &g_state->UI;
     *ui = {};
 
-    // TMP
-    Area *area;
-    Area_Splitter *splitter;
-    area = ui->create_area(
-        NULL, {0, 0, g_state->kWindowWidth, g_state->kWindowHeight});
-    splitter = ui->vertical_split(area, area->get_width() / 2);
-    area = splitter->areas[0];
-    // splitter = ui->horizontal_split(area, area->get_height() / 3);
-    // splitter = ui->vertical_split(splitter->areas[1],
-    //                               splitter->areas[1]->get_width() / 3);
-    // area = splitter->areas[1];
-    // splitter = ui->horizontal_split(area, area->top + area->get_height() / 3);
-    // area = splitter->areas[1];
-    // splitter = ui->horizontal_split(area, 2 * area->get_height() / 3);
+    ui->create_area(NULL,
+                    {0, 0, g_state->kWindowWidth, g_state->kWindowHeight});
   }
 
   User_Interface *ui = &g_state->UI;
