@@ -195,9 +195,9 @@ void Area::set_top(int position) {
 void Area::set_bottom(int position) {
   this->bottom = position;
   if (this->splitter == NULL) return;
-  this->splitter->areas[0]->set_bottom(position);
+  this->splitter->areas[1]->set_bottom(position);
   if (this->splitter->is_vertical) {
-    this->splitter->areas[1]->set_bottom(position);
+    this->splitter->areas[0]->set_bottom(position);
   }
 }
 
@@ -450,11 +450,11 @@ Update_Result update_and_render(void *program_memory,
         NULL, {0, 0, g_state->kWindowWidth, g_state->kWindowHeight});
     splitter = ui->vertical_split(area, area->get_width() / 2);
     area = splitter->areas[0];
-    splitter = ui->horizontal_split(area, area->get_height() / 3);
-    splitter = ui->vertical_split(splitter->areas[1],
-                                  splitter->areas[1]->get_width() / 3);
-    area = splitter->areas[1];
-    splitter = ui->horizontal_split(area, area->top + area->get_height() / 3);
+    // splitter = ui->horizontal_split(area, area->get_height() / 3);
+    // splitter = ui->vertical_split(splitter->areas[1],
+    //                               splitter->areas[1]->get_width() / 3);
+    // area = splitter->areas[1];
+    // splitter = ui->horizontal_split(area, area->top + area->get_height() / 3);
     // area = splitter->areas[1];
     // splitter = ui->horizontal_split(area, 2 * area->get_height() / 3);
   }
@@ -486,7 +486,7 @@ Update_Result update_and_render(void *program_memory,
     if (ui->area_being_split != NULL) {
       // See if mouse has moved enough to finish the split
       if (ui->area_being_split->get_rect().contains(input->mouse)) {
-        const int kMargin = 20;
+        const int kMargin = 25;
         v2i distance = ui->pointer_start - input->mouse;
         distance.x = abs(distance.x);
         distance.y = abs(distance.y);
