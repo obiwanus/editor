@@ -13,7 +13,8 @@
 #include <unistd.h>
 
 global bool gRunning;
-global pixel_buffer gPixelBuffer;
+global Pixel_Buffer g_pixel_buffer;
+global void *g_program_memory;
 
 global const int kWindowWidth = 1000;
 global const int kWindowHeight = 700;
@@ -63,21 +64,23 @@ int main(int argc, char const *argv[]) {
     gXImage = XGetImage(display, window, 0, 0, kWindowWidth, kWindowHeight,
                         AllPlanes, ZPixmap);
 
-    gPixelBuffer.memory = (void *)gXImage->data;
-    gPixelBuffer.width = kWindowWidth;
-    gPixelBuffer.height = kWindowHeight - 1;
-    gPixelBuffer.max_width = kWindowWidth;
-    gPixelBuffer.max_height = kWindowHeight;
+    g_pixel_buffer.memory = (void *)gXImage->data;
+    g_pixel_buffer.width = kWindowWidth;
+    g_pixel_buffer.height = kWindowHeight - 1;
+    g_pixel_buffer.max_width = kWindowWidth;
+    g_pixel_buffer.max_height = kWindowHeight;
 
     gc = XCreateGC(display, window, 0, &gcvalues);
   }
+
+  g_program_memory = malloc(1024 * 1024);  // 1 Gb
 
   user_input inputs[2];
   user_input *old_input = &inputs[0];
   user_input *new_input = &inputs[1];
   *new_input = {};
 
-  Assert(&new_input->terminator - &new_input->buttons[0] <
+  assert(&new_input->terminator - &new_input->buttons[0] <
          COUNT_OF(new_input->buttons));
 
   gRunning = true;
@@ -141,10 +144,22 @@ int main(int argc, char const *argv[]) {
           gRunning = false;
         }
       }
-
     }
 
-    UpdateAndRender(&gPixelBuffer, new_input);
+    {
+      // Get mouse position
+      int root_x, root_y;
+      unsigned int mouse_mask;
+      Window root_return, child_return;
+      XQueryPointer(display, window, &root_return, &child_return, &root_x,
+                    &root_y, &new_input->mouse.x, &new_input->mouse.y,
+                    &mouse_mask);
+      new_input->mouse_left = mouse_mask & Button1Mask;
+      new_input->mouse_right = mouse_mask & Button2Mask;
+      new_input->mouse_middle = mouse_mask & Button3Mask;
+    }
+
+    update_and_render(g_program_memory, &g_pixel_buffer, new_input);
 
     XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
               kWindowHeight);

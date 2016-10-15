@@ -67,8 +67,8 @@ struct Ray {
 
   v3 get_color(Program_State *state, RayObject *reflected_from,
                int recurse_further);
-  RayHit Ray::get_object_hit(Program_State *state, r32 tmin, r32 tmax,
-                             RayObject *ignore_object = NULL, b32 any = false);
+  RayHit get_object_hit(Program_State *state, r32 tmin, r32 tmax,
+                        RayObject *ignore_object = NULL, b32 any = false);
 };
 
 struct RayCamera {
