@@ -65,6 +65,7 @@ struct Area {
   int right;
   int bottom;
 
+  Area *parent_area;
   Area_Splitter *splitter = NULL;
 
   inline int get_width();
@@ -96,10 +97,11 @@ struct Area_Splitter {
 
   Rect get_rect();
   bool is_mouse_over(v2i);
+  bool is_under(Area *);
   void move(v2i mouse);
 };
 
-#define EDITOR_MAX_AREA_COUNT 30
+#define EDITOR_MAX_AREA_COUNT 50
 
 struct User_Interface {
   int num_areas;
@@ -114,7 +116,7 @@ struct User_Interface {
   Area areas[EDITOR_MAX_AREA_COUNT];
   Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
 
-  Area *create_area(Rect, Area_Splitter *);
+  Area *create_area(Area *, Rect);
   Area_Splitter *_new_splitter(Area *);
   Area_Splitter *vertical_split(Area *, int);
   Area_Splitter *horizontal_split(Area *, int);

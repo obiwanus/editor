@@ -268,7 +268,16 @@ void Area_Splitter::move(v2i mouse) {
   }
 }
 
-Area *User_Interface::create_area(Rect rect, Area_Splitter *splitter = NULL) {
+bool Area_Splitter::is_under(Area *area) {
+  Area *parent = this->parent_area;
+  while (parent != NULL) {
+    if (parent == area) return true;
+    parent = parent->parent_area;
+  }
+  return false;
+}
+
+Area *User_Interface::create_area(Area *parent_area, Rect rect) {
   assert(this->num_areas >= 0 && this->num_areas < EDITOR_MAX_AREA_COUNT);
 
   Area *area = &this->areas[this->num_areas];
@@ -276,7 +285,7 @@ Area *User_Interface::create_area(Rect rect, Area_Splitter *splitter = NULL) {
 
   *area = {};
   area->set_rect(rect);
-  area->splitter = splitter;
+  area->parent_area = parent_area;
 
   return area;
 }
@@ -304,11 +313,11 @@ Area_Splitter *User_Interface::vertical_split(Area *area, int position) {
   // Create 2 areas
   Rect rect = area->get_rect();
   rect.right = position;
-  splitter->areas[0] = this->create_area(rect);
+  splitter->areas[0] = this->create_area(area, rect);
 
   rect = area->get_rect();
   rect.left = position;
-  splitter->areas[1] = this->create_area(rect);
+  splitter->areas[1] = this->create_area(area, rect);
 
   return splitter;
 }
@@ -322,13 +331,43 @@ Area_Splitter *User_Interface::horizontal_split(Area *area, int position) {
   // Create 2 areas
   Rect rect = area->get_rect();
   rect.bottom = position;
-  splitter->areas[0] = this->create_area(rect);
+  splitter->areas[0] = this->create_area(area, rect);
 
   rect = area->get_rect();
   rect.top = position;
-  splitter->areas[1] = this->create_area(rect);
+  splitter->areas[1] = this->create_area(area, rect);
 
   return splitter;
+}
+
+void User_Interface::set_movement_boundaries(Area_Splitter *splitter) {
+  int position_min;
+  int position_max;
+  if (splitter->is_vertical) {
+    position_min = splitter->parent_area->left;
+    position_max = splitter->parent_area->right;
+  } else {
+    position_min = splitter->parent_area->top;
+    position_max = splitter->parent_area->bottom;
+  }
+
+  // Look at all splitters which are under our parent area
+  for (int i = 0; i < this->num_splitters; i++) {
+    Area_Splitter *s = this->splitters + i;
+    if (!s->is_under(splitter->parent_area) || s == splitter) continue;
+    if (s->is_vertical != splitter->is_vertical) continue;
+
+    if (position_min < s->position && s->position < splitter->position) {
+      position_min = s->position;
+    }
+    if (splitter->position < s->position && s->position < position_max) {
+      position_max = s->position;
+    }
+  }
+
+  const int kMargin = 15;
+  splitter->position_max = position_max - kMargin;
+  splitter->position_min = position_min + kMargin;
 }
 
 void User_Interface::resize_window(int new_width, int new_height) {
@@ -361,32 +400,6 @@ void User_Interface::resize_window(int new_width, int new_height) {
       area2->top = splitter->position;
     }
   }
-}
-
-void User_Interface::set_movement_boundaries(Area_Splitter *splitter) {
-  int position_min;
-  int position_max;
-  if (splitter->is_vertical) {
-    position_min = splitter->parent_area->left;
-    position_max = splitter->parent_area->right;
-  } else {
-    position_min = splitter->parent_area->top;
-    position_max = splitter->parent_area->bottom;
-  }
-  // Check all splitters and get the closes ones
-  for (int i = 0; i < this->num_splitters; i++) {
-    Area_Splitter *s = this->splitters + i;
-    if (s->is_vertical != splitter->is_vertical) continue;
-    if (position_min < s->position && s->position < splitter->position) {
-      position_min = s->position;
-    }
-    if (splitter->position < s->position && s->position < position_max) {
-      position_max = s->position;
-    }
-  }
-  const int kMargin = 30;
-  splitter->position_max = position_max - kMargin;
-  splitter->position_min = position_min + kMargin;
 }
 
 void User_Interface::draw(Pixel_Buffer *pixel_buffer) {
@@ -433,15 +446,15 @@ Update_Result update_and_render(void *program_memory,
     // TMP
     Area *area;
     Area_Splitter *splitter;
-    area =
-        ui->create_area({0, 0, g_state->kWindowWidth, g_state->kWindowHeight});
+    area = ui->create_area(
+        NULL, {0, 0, g_state->kWindowWidth, g_state->kWindowHeight});
     splitter = ui->vertical_split(area, area->get_width() / 2);
     area = splitter->areas[0];
     splitter = ui->horizontal_split(area, area->get_height() / 3);
-    // splitter = ui->vertical_split(splitter->areas[1],
-    //                               splitter->areas[1]->get_width() / 3);
-    // area = splitter->areas[1];
-    // splitter = ui->horizontal_split(area, area->get_height() / 4);
+    splitter = ui->vertical_split(splitter->areas[1],
+                                  splitter->areas[1]->get_width() / 3);
+    area = splitter->areas[1];
+    splitter = ui->horizontal_split(area, area->top + area->get_height() / 3);
     // area = splitter->areas[1];
     // splitter = ui->horizontal_split(area, 2 * area->get_height() / 3);
   }
@@ -504,8 +517,8 @@ Update_Result update_and_render(void *program_memory,
           if (input->mouse_left && ui->can_pick_splitter &&
               splitter->is_mouse_over(input->mouse)) {
             ui->splitter_being_moved = splitter;
-            ui->can_pick_splitter = false;
             ui->set_movement_boundaries(splitter);
+            ui->can_pick_splitter = false;
           }
         }
         // Prevent dragging splitters by swipe
