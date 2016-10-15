@@ -155,6 +155,7 @@ void Area::draw(Pixel_Buffer *pixel_buffer) {
   }
   // TODO: Draw the contents
   // ---
+  draw_rect(pixel_buffer, this->get_rect(), {0.1f, 0.1f, 0.2f});
 
   // Draw the split-handles
   draw_rect(pixel_buffer, this->get_split_handle(0), {1, 0.5f, 0.5f});
@@ -543,8 +544,8 @@ Update_Result update_and_render(void *program_memory,
          pixel_buffer->width * pixel_buffer->height * 4);
 
   assert(ui->num_areas > 0 && ui->num_areas < EDITOR_MAX_AREA_COUNT);
-  ui->draw(pixel_buffer);           // draw the splitters
   ui->areas[0].draw(pixel_buffer);  // draw the areas
+  ui->draw(pixel_buffer);           // draw the splitters
 
 #if 0
 
