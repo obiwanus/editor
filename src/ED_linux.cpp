@@ -73,7 +73,7 @@ int main(int argc, char const *argv[]) {
     gc = XCreateGC(display, window, 0, &gcvalues);
   }
 
-  g_program_memory = malloc(1024 * 1024);  // 1 Gb
+  g_program_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
 
   user_input inputs[2];
   user_input *old_input = &inputs[0];

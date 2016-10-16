@@ -198,7 +198,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   gRunning = true;
 
   // Allocate program memory
-  g_program_memory = malloc(1024 * 1024);  // 1 Gb
+  g_program_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
   // TODO: add checks for overflow when allocating
 
   // Init pixel buffer
