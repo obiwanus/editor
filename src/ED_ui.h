@@ -146,4 +146,7 @@ struct User_Interface {
   void update(Pixel_Buffer *, User_Input *);
 };
 
+inline u32 get_rgb_u32(v3);
+inline void draw_pixel(Pixel_Buffer *, v2i, u32);
+
 #endif  // __ED_UI_H__

@@ -91,13 +91,34 @@ union m3x3 {
 
 // ==================== Construction ======================
 
-inline v2 V2i(i32 X, i32 Y) {
+inline v2i V2i(i32 X, i32 Y) {
+  v2i result = {(int)X, (int)Y};
+
+  return result;
+}
+
+inline v2i V2i(u32 X, u32 Y) {
+  v2i result = {(int)X, (int)Y};
+
+  return result;
+}
+
+inline v2i V2i(r32 X, r32 Y) {
+  v2i result;
+
+  result.x = (int)X;
+  result.y = (int)Y;
+
+  return result;
+}
+
+inline v2 V2(i32 X, i32 Y) {
   v2 result = {(r32)X, (r32)Y};
 
   return result;
 }
 
-inline v2 V2i(u32 X, u32 Y) {
+inline v2 V2(u32 X, u32 Y) {
   v2 result = {(r32)X, (r32)Y};
 
   return result;

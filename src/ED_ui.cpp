@@ -1,24 +1,37 @@
 #include "ED_ui.h"
 
-inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2i Point, u32 Color) {
-  int x = Point.x;
-  int y = Point.y;
+inline u32 get_rgb_u32(v3 color) {
+  assert(color.r >= 0 && color.r <= 1);
+  assert(color.g >= 0 && color.g <= 1);
+  assert(color.b >= 0 && color.b <= 1);
+
+  u32 result = 0x00000000;
+  u8 R = (u8)(color.r * 255);
+  u8 G = (u8)(color.g * 255);
+  u8 B = (u8)(color.b * 255);
+  result = R << 16 | G << 8 | B;
+  return result;
+}
+
+inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2i point, u32 color) {
+  int x = point.x;
+  int y = point.y;
 
   if (x < 0 || x > pixel_buffer->width || y < 0 || y > pixel_buffer->height) {
     return;
   }
   // y = pixel_buffer->height - y;  // Origin in bottom-left
   u32 *pixel = (u32 *)pixel_buffer->memory + x + y * pixel_buffer->width;
-  *pixel = Color;
+  *pixel = color;
 }
 
-inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2 Point, u32 Color) {
+inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2 point, u32 color) {
   // A v2 version
-  v2i point = {(int)Point.x, (int)Point.y};
-  draw_pixel(pixel_buffer, point, Color);
+  v2i point_i = {(int)point.x, (int)point.y};
+  draw_pixel(pixel_buffer, point_i, color);
 }
 
-void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 Color) {
+void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color) {
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
     int tmp = A.x;
@@ -42,9 +55,9 @@ void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 Color) {
   int y = A.y;
   for (int x = A.x; x <= B.x; x++) {
     if (!swapped) {
-      draw_pixel(pixel_buffer, V2i(x, y), Color);
+      draw_pixel(pixel_buffer, V2i(x, y), color);
     } else {
-      draw_pixel(pixel_buffer, V2i(y, x), Color);
+      draw_pixel(pixel_buffer, V2i(y, x), color);
     }
     error += sign * dy;
     if (error > 0) {
@@ -54,23 +67,10 @@ void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 Color) {
   }
 }
 
-void draw_line(Pixel_Buffer *pixel_buffer, v2 A, v2 B, u32 Color) {
+void draw_line(Pixel_Buffer *pixel_buffer, v2 A, v2 B, u32 color) {
   v2i a = {(int)A.x, (int)A.y};
   v2i b = {(int)B.x, (int)B.y};
-  draw_line(pixel_buffer, a, b, Color);
-}
-
-inline u32 get_rgb_u32(v3 Color) {
-  assert(Color.r >= 0 && Color.r <= 1);
-  assert(Color.g >= 0 && Color.g <= 1);
-  assert(Color.b >= 0 && Color.b <= 1);
-
-  u32 result = 0x00000000;
-  u8 R = (u8)(Color.r * 255);
-  u8 G = (u8)(Color.g * 255);
-  u8 B = (u8)(Color.b * 255);
-  result = R << 16 | G << 8 | B;
-  return result;
+  draw_line(pixel_buffer, a, b, color);
 }
 
 void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
@@ -131,9 +131,6 @@ void Area::draw(Pixel_Buffer *pixel_buffer) {
   }
   // TODO: Draw the contents
   // ---
-  draw_rect(pixel_buffer, this->get_rect(), {0.1f, 0.1f, 0.2f});
-
-
 
   // Draw the split-handles
   draw_rect(pixel_buffer, this->get_split_handle(0), {1, 0.5f, 0.5f});
