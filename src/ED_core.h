@@ -5,7 +5,8 @@
 #include "ED_ui.h"
 #include "raytrace/ED_raytrace.h"
 
-#define MAX_INTERNAL_MEMORY_SIZE (1024 * 1024)
+// 512 Mb
+#define MAX_INTERNAL_MEMORY_SIZE (512 * 1024 * 1024)
 
 
 struct Update_Result {

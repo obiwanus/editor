@@ -262,6 +262,8 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
   *area = {};
   area->set_rect(rect);
   area->parent_area = parent_area;
+  area->editor_empty.area = area;
+  area->editor_raytrace.area = area;
 
   return area;
 }
@@ -378,26 +380,8 @@ void User_Interface::resize_window(int new_width, int new_height) {
   }
 }
 
-void User_Interface::draw(Pixel_Buffer *pixel_buffer) {
-  for (int i = 0; i < this->num_splitters; i++) {
-    Area_Splitter *splitter = this->splitters + i;
-    // draw_rect(pixel_buffer, splitter->get_rect(), {1,1,1});
-    Area *area = splitter->parent_area;
-    int left, top, right, bottom;
-    if (splitter->is_vertical) {
-      left = right = splitter->position;
-      top = area->top;
-      bottom = area->bottom;
-    } else {
-      top = bottom = splitter->position;
-      left = area->left;
-      right = area->right;
-    }
-    draw_line(pixel_buffer, V2i(left, top), V2i(right, bottom), 0x00FFFFFF);
-  }
-}
-
-void User_Interface::update(Pixel_Buffer *pixel_buffer, User_Input *input) {
+void User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
+                                     User_Input *input) {
   User_Interface *ui = this;
 
   if (pixel_buffer->was_resized) {
@@ -476,4 +460,46 @@ void User_Interface::update(Pixel_Buffer *pixel_buffer, User_Input *input) {
     ui->can_pick_splitter = true;
     ui->can_split_area = true;
   }
+
+  // Draw areas
+  for (int i = 0; i < this->num_areas; i++) {
+    Area *area = this->areas + i;
+    if (area->splitter != NULL) continue;  // ignore wrapper areas
+
+    switch (area->editor_type) {
+      case Area_Editor_Type_Empty: {
+        area->editor_empty.update(input);
+        area->editor_empty.draw(pixel_buffer);
+      } break;
+
+      case Area_Editor_Type_Raytrace: {
+        area->editor_raytrace.update(input);
+        area->editor_raytrace.draw(pixel_buffer);
+      } break;
+
+      default: { assert(!"Unknown editor type"); } break;
+    }
+  }
+
+  // Draw splitters
+  for (int i = 0; i < this->num_splitters; i++) {
+    Area_Splitter *splitter = this->splitters + i;
+    // draw_rect(pixel_buffer, splitter->get_rect(), {1,1,1});
+    Area *area = splitter->parent_area;
+    int left, top, right, bottom;
+    if (splitter->is_vertical) {
+      left = right = splitter->position;
+      top = area->top;
+      bottom = area->bottom;
+    } else {
+      top = bottom = splitter->position;
+      left = area->left;
+      right = area->right;
+    }
+    draw_line(pixel_buffer, V2i(left, top), V2i(right, bottom), 0x00FFFFFF);
+  }
+}
+
+void Editor_Empty::draw(Pixel_Buffer *pixel_buffer) {
+  draw_rect(pixel_buffer, this->area->get_rect(), {0});
 }

@@ -12,7 +12,7 @@ global size_t _allocated;
 
 global Program_State *g_state;
 
-void *allocate(size_t size) {
+void *global_allocate(size_t size) {
   // Deallocation is not intended
   void *result;
   if (_allocated + size > MAX_INTERNAL_MEMORY_SIZE) {
@@ -29,7 +29,7 @@ Update_Result update_and_render(void *program_memory,
 
   if (g_state == NULL) {
     _free_memory = program_memory;
-    g_state = (Program_State *)allocate(sizeof(Program_State));
+    g_state = (Program_State *)global_allocate(sizeof(Program_State));
 
     g_state->kWindowWidth = 1000;
     g_state->kWindowHeight = 700;
@@ -117,39 +117,12 @@ Update_Result update_and_render(void *program_memory,
   }
 
   User_Interface *ui = &g_state->UI;
-  ui->update(pixel_buffer, input);
-
-// Clear
-// memset(pixel_buffer->memory, 0,
-//        pixel_buffer->width * pixel_buffer->height * 4);
+  ui->update_and_draw(pixel_buffer, input);
 
 #if 1
   RayCamera *camera = &g_state->camera;
   LightSource *lights = g_state->lights;
   RayObject **ray_objects = g_state->ray_objects;
-
-  if (input->up) {
-    g_state->lights[0].source.v += 100;
-  }
-  if (input->down) {
-    g_state->lights[0].source.v -= 100;
-  }
-  if (input->left) {
-    g_state->lights[0].source.u -= 100;
-  }
-  if (input->right) {
-    g_state->lights[0].source.u += 100;
-  }
-
-  if (input->mouse_left) {
-    Ray pointer_ray = camera->get_ray_through_pixel(
-        (int)input->mouse.x, pixel_buffer->height - (int)input->mouse.y);
-
-    RayHit pointer_hit = pointer_ray.get_object_hit(g_state, 0, INFINITY, NULL);
-    if (pointer_hit.object != NULL) {
-      pointer_hit.object->color.x += 0.1f;
-    }
-  }
 
   for (int x = 0; x < pixel_buffer->width; x++) {
     for (int y = 0; y < pixel_buffer->height; y++) {
@@ -177,11 +150,6 @@ Update_Result update_and_render(void *program_memory,
   }
 
 #endif  // if 0
-
-  assert(ui->num_areas > 0 && ui->num_areas < EDITOR_MAX_AREA_COUNT);
-
-  ui->areas[0].draw(pixel_buffer);  // draw the areas
-  ui->draw(pixel_buffer);           // draw the splitters
 
   return result;
 }

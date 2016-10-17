@@ -77,6 +77,25 @@ struct Rect {
 };
 
 struct Area_Splitter;  // damned C++
+struct Area;  // bloody C++
+
+enum Area_Editor_Type {
+  Area_Editor_Type_Empty = 0,
+  Area_Editor_Type_Raytrace,
+};
+
+struct Area_Editor {
+  Area *area;
+
+  void update(User_Input *) {};
+  void draw(Pixel_Buffer *) {};
+};
+
+struct Editor_Empty : Area_Editor {
+  void draw(Pixel_Buffer *);
+};
+
+struct Editor_Raytrace : Area_Editor {};
 
 struct Area {
   // Multi-purpose editor area
@@ -87,6 +106,10 @@ struct Area {
 
   Area *parent_area;
   Area_Splitter *splitter = NULL;
+
+  Area_Editor_Type editor_type;
+  Editor_Empty editor_empty;
+  Editor_Raytrace editor_raytrace;
 
   inline int get_width();
   inline int get_height();
@@ -142,8 +165,7 @@ struct User_Interface {
   Area_Splitter *horizontal_split(Area *, int);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
-  void draw(Pixel_Buffer *);
-  void update(Pixel_Buffer *, User_Input *);
+  void update_and_draw(Pixel_Buffer *, User_Input *);
 };
 
 inline u32 get_rgb_u32(v3);
