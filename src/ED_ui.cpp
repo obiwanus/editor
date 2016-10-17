@@ -133,6 +133,8 @@ void Area::draw(Pixel_Buffer *pixel_buffer) {
   // ---
   draw_rect(pixel_buffer, this->get_rect(), {0.1f, 0.1f, 0.2f});
 
+
+
   // Draw the split-handles
   draw_rect(pixel_buffer, this->get_split_handle(0), {1, 0.5f, 0.5f});
   draw_rect(pixel_buffer, this->get_split_handle(1), {1, 0.5f, 0.5f});
@@ -395,5 +397,86 @@ void User_Interface::draw(Pixel_Buffer *pixel_buffer) {
       right = area->right;
     }
     draw_line(pixel_buffer, V2i(left, top), V2i(right, bottom), 0x00FFFFFF);
+  }
+}
+
+void User_Interface::update(Pixel_Buffer *pixel_buffer, User_Input *input) {
+  User_Interface *ui = this;
+
+  if (pixel_buffer->was_resized) {
+    ui->resize_window(pixel_buffer->width, pixel_buffer->height);
+    pixel_buffer->was_resized = false;
+  }
+
+  if (input->mouse_left) {
+    if (ui->area_being_split == NULL && ui->can_split_area &&
+        ui->splitter_being_moved == NULL) {
+      // See if we're splitting any area
+      for (int i = 0; i < ui->num_areas; i++) {
+        Area *area = ui->areas + i;
+        if (area->splitter == NULL &&
+            area->mouse_over_split_handle(input->mouse)) {
+          ui->area_being_split = area;
+          ui->pointer_start = input->mouse;
+          break;
+        }
+      }
+      // Prevent splitting areas by swipe
+      ui->can_split_area = false;
+    }
+
+    if (ui->area_being_split != NULL) {
+      // See if mouse has moved enough to finish the split
+      if (ui->area_being_split->get_rect().contains(input->mouse)) {
+        const int kMargin = 25;
+        v2i distance = ui->pointer_start - input->mouse;
+        distance.x = abs(distance.x);
+        distance.y = abs(distance.y);
+        if (distance.x > kMargin || distance.y > kMargin) {
+          Area_Splitter *splitter;
+          if (distance.x > distance.y) {
+            splitter = ui->vertical_split(ui->area_being_split, input->mouse.x);
+          } else {
+            splitter =
+                ui->horizontal_split(ui->area_being_split, input->mouse.y);
+          }
+          ui->splitter_being_moved = splitter;
+          ui->set_movement_boundaries(splitter);
+          ui->area_being_split = NULL;
+          ui->can_pick_splitter = false;
+          ui->can_split_area = false;
+        }
+      } else {
+        // Stop splitting if mouse cursor is outside of the area
+        ui->area_being_split = NULL;
+        ui->can_pick_splitter = false;
+      }
+    } else {
+      // Only look at splitters if areas are not being split
+      if (ui->can_pick_splitter && ui->splitter_being_moved == NULL) {
+        for (int i = 0; i < ui->num_splitters; i++) {
+          Area_Splitter *splitter = ui->splitters + i;
+          if (input->mouse_left && ui->can_pick_splitter &&
+              splitter->is_mouse_over(input->mouse)) {
+            ui->splitter_being_moved = splitter;
+            ui->set_movement_boundaries(splitter);
+            ui->can_pick_splitter = false;
+          }
+        }
+        // Prevent dragging splitters by swipe
+        ui->can_pick_splitter = false;
+      }
+      // Move splitter if we can
+      if (ui->splitter_being_moved != NULL) {
+        ui->splitter_being_moved->move(input->mouse);
+      }
+    }
+  } else {
+    // Mouse button released or not pressed
+    // TODO: be able to tell which is which maybe?
+    ui->area_being_split = NULL;
+    ui->splitter_being_moved = NULL;
+    ui->can_pick_splitter = true;
+    ui->can_split_area = true;
   }
 }

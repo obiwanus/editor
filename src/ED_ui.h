@@ -4,9 +4,36 @@
 #include "ED_base.h"
 #include "ED_math.h"
 
+// -------- TODO: move out somewhere -----------------
+
+struct Vertex {
+  v3 position;
+};
+
+struct Triangle {
+  v3 color;
+  int vertices[3];
+};
+
+// struct Edge {
+
+// };
+
+struct Mesh {
+  void *memory_block = NULL;
+
+  int num_vertices;
+  Vertex *vertices;
+
+  int num_triangles;
+  Triangle *triangles;
+};
+
+// -------- /TODO: move out somewhere ----------------
+
 typedef b32 button_state;
 
-struct user_input {
+struct User_Input {
   union {
     button_state buttons[8];
     struct {
@@ -116,6 +143,7 @@ struct User_Interface {
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
   void draw(Pixel_Buffer *);
+  void update(Pixel_Buffer *, User_Input *);
 };
 
 #endif  // __ED_UI_H__

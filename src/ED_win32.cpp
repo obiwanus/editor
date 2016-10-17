@@ -251,9 +251,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     }
   }
 
-  user_input inputs[2];
-  user_input *old_input = &inputs[0];
-  user_input *new_input = &inputs[1];
+  User_Input inputs[2];
+  User_Input *old_input = &inputs[0];
+  User_Input *new_input = &inputs[1];
   *new_input = {};
 
   assert(&new_input->terminator - &new_input->buttons[0] <
@@ -329,7 +329,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     Win32UpdateWindow(hdc);
 
     // Swap inputs
-    user_input *tmp = old_input;
+    User_Input *tmp = old_input;
     old_input = new_input;
     new_input = tmp;
 

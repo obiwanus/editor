@@ -75,9 +75,9 @@ int main(int argc, char const *argv[]) {
 
   g_program_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
 
-  user_input inputs[2];
-  user_input *old_input = &inputs[0];
-  user_input *new_input = &inputs[1];
+  User_Input inputs[2];
+  User_Input *old_input = &inputs[0];
+  User_Input *new_input = &inputs[1];
   *new_input = {};
 
   assert(&new_input->terminator - &new_input->buttons[0] <
@@ -165,7 +165,7 @@ int main(int argc, char const *argv[]) {
               kWindowHeight);
 
     // Swap inputs
-    user_input *tmp = old_input;
+    User_Input *tmp = old_input;
     old_input = new_input;
     new_input = tmp;
 

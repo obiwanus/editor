@@ -44,52 +44,52 @@ v3 Plane::get_normal(v3 hit_point) {
   return this->normal;
 }
 
-r32 Triangle::hit_by(Ray *ray) {
-  m3x3 A;
-  A.rows[0] = {a.x - b.x, a.x - c.x, ray->direction.x};
-  A.rows[1] = {a.y - b.y, a.y - c.y, ray->direction.y};
-  A.rows[2] = {a.z - b.z, a.z - c.z, ray->direction.z};
+// r32 Triangle::hit_by(Ray *ray) {
+//   m3x3 A;
+//   A.rows[0] = {a.x - b.x, a.x - c.x, ray->direction.x};
+//   A.rows[1] = {a.y - b.y, a.y - c.y, ray->direction.y};
+//   A.rows[2] = {a.z - b.z, a.z - c.z, ray->direction.z};
 
-  r32 D = A.determinant();
-  if (D == 0) {
-    return -1;
-  }
+//   r32 D = A.determinant();
+//   if (D == 0) {
+//     return -1;
+//   }
 
-  v3 R = {a.x - ray->origin.x, a.y - ray->origin.y, a.z - ray->origin.z};
+//   v3 R = {a.x - ray->origin.x, a.y - ray->origin.y, a.z - ray->origin.z};
 
-  // Use Cramer's rule to find t, beta, and gamma
-  m3x3 A2 = A.replace_column(2, R);
-  r32 t = A2.determinant() / D;
-  if (t <= 0) {
-    return -1;
-  }
+//   // Use Cramer's rule to find t, beta, and gamma
+//   m3x3 A2 = A.replace_column(2, R);
+//   r32 t = A2.determinant() / D;
+//   if (t <= 0) {
+//     return -1;
+//   }
 
-  r32 gamma = A.replace_column(1, R).determinant() / D;
-  if (gamma < 0 || gamma > 1) {
-    return -1;
-  }
+//   r32 gamma = A.replace_column(1, R).determinant() / D;
+//   if (gamma < 0 || gamma > 1) {
+//     return -1;
+//   }
 
-  r32 beta = A.replace_column(0, R).determinant() / D;
-  if (beta < 0 || beta > (1 - gamma)) {
-    return -1;
-  }
+//   r32 beta = A.replace_column(0, R).determinant() / D;
+//   if (beta < 0 || beta > (1 - gamma)) {
+//     return -1;
+//   }
 
-  return t;
-}
+//   return t;
+// }
 
-v3 Triangle::get_normal(v3 hit_point) {
-  // Yeah yeah
-  v3 result = (b - a).cross(c - a).normalized();
-  return result;
-}
+// v3 Triangle::get_normal(v3 hit_point) {
+//   // Yeah yeah
+//   v3 result = (b - a).cross(c - a).normalized();
+//   return result;
+// }
 
-Plane Triangle::get_plane() {
-  Plane result = {};
-  result.point = a;
-  result.normal = (b - a).cross(c - a).normalized();
-  result.color = color;
-  return result;
-}
+// Plane Triangle::get_plane() {
+//   Plane result = {};
+//   result.point = a;
+//   result.normal = (b - a).cross(c - a).normalized();
+//   result.color = color;
+//   return result;
+// }
 
 Ray RayCamera::get_ray_through_pixel(int x, int y) {
   Ray result;

@@ -42,14 +42,14 @@ struct Plane : RayObject {
   RayObject_Type get_type() override { return RayObject_Type_Plane; }
 };
 
-struct Triangle : RayObject {
-  v3 a, b, c;
+// struct Triangle : RayObject {
+//   v3 a, b, c;
 
-  r32 hit_by(Ray *ray) override;
-  v3 get_normal(v3 hit_point) override;
-  RayObject_Type get_type() override { return RayObject_Type_Triangle; }
-  Plane get_plane();
-};
+//   r32 hit_by(Ray *ray) override;
+//   v3 get_normal(v3 hit_point) override;
+//   RayObject_Type get_type() override { return RayObject_Type_Triangle; }
+//   Plane get_plane();
+// };
 
 struct RayHit {
   r32 at;

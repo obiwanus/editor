@@ -2,7 +2,6 @@
 #define ED_CORE_H
 
 #include "ED_base.h"
-#include "ED_math.h"
 #include "ED_ui.h"
 #include "raytrace/ED_raytrace.h"
 
@@ -14,18 +13,21 @@ struct Update_Result {
 };
 
 struct Program_State {
+
+  // Tmp raytracing
   Sphere *spheres;
   Plane *planes;
   Triangle *triangles;
   RayObject **ray_objects;
-
   LightSource *lights;
-
   RayCamera camera;
+
+  // Tmp mesh
+  Mesh mesh;
 
   User_Interface UI;
 
-  // Some constants
+  // Some constants - tmp too
   int kWindowWidth;
   int kWindowHeight;
   int kMaxRecursion;
@@ -36,6 +38,6 @@ struct Program_State {
   int kLightCount;
 };
 
-Update_Result update_and_render(void *, Pixel_Buffer *, user_input *);
+Update_Result update_and_render(void *, Pixel_Buffer *, User_Input *);
 
 #endif  // ED_CORE_H
