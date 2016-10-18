@@ -501,9 +501,20 @@ void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
   LightSource *lights = state->lights;
   RayObject **ray_objects = state->ray_objects;
 
-  for (int x = 0; x < pixel_buffer->width; x++) {
-    for (int y = 0; y < pixel_buffer->height; y++) {
-      Ray ray = camera->get_ray_through_pixel(x, pixel_buffer->height - y);
+  v2i pixel_count = {this->area->get_width(), this->area->get_height()};
+
+  // TODO: this is wrong but tmp.
+  // Ideally a raytrace view should have had its own camera,
+  // but this is probably not going to happen anyway
+  camera->left = -pixel_count.x / 2;
+  camera->right = pixel_count.x / 2;
+  camera->top = pixel_count.y / 2;
+  camera->bottom = -pixel_count.y / 2;
+
+  for (int x = 0; x < pixel_count.x; x++) {
+    for (int y = 0; y < pixel_count.y; y++) {
+      Ray ray =
+          camera->get_ray_through_pixel(x, y, pixel_count);
 
       const v3 ambient_color = {0.2f, 0.2f, 0.2f};
       const r32 ambient_light_intensity = 0.3f;
@@ -522,7 +533,8 @@ void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
         }
       }
 
-      draw_pixel(pixel_buffer, V2i(x, y), get_rgb_u32(color));
+      draw_pixel(pixel_buffer, V2i(this->area->left + x, this->area->bottom - y),
+                 get_rgb_u32(color));
     }
   }
 }

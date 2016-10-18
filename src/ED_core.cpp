@@ -37,7 +37,11 @@ Update_Result update_and_render(void *program_memory,
     g_state->UI = {};
     Area *area = g_state->UI.create_area(
         NULL, {0, 0, g_state->kWindowWidth, g_state->kWindowHeight});
-    area->editor_type = Area_Editor_Type_Raytrace;
+
+    Area_Splitter *splitter =
+        g_state->UI.vertical_split(area, area->get_width() / 2);
+    splitter->areas[0]->editor_type = Area_Editor_Type_Raytrace;
+    splitter->areas[1]->editor_type = Area_Editor_Type_Raytrace;
 
 #if 1
     g_state->kMaxRecursion = 3;
@@ -102,11 +106,10 @@ Update_Result update_and_render(void *program_memory,
     // Camera dimensions
     RayCamera *camera = &g_state->camera;
     camera->origin = {0, 0, 1000};
-    camera->pixel_count = {g_state->kWindowWidth, g_state->kWindowHeight};
-    camera->left = -camera->pixel_count.x / 2;
-    camera->right = camera->pixel_count.x / 2;
-    camera->bottom = -camera->pixel_count.y / 2;
-    camera->top = camera->pixel_count.y / 2;
+    camera->left = -g_state->kWindowWidth / 2;
+    camera->right = g_state->kWindowWidth / 2;
+    camera->bottom = -g_state->kWindowHeight / 2;
+    camera->top = g_state->kWindowHeight / 2;
 
     g_state->spheres = spheres;
     g_state->planes = planes;

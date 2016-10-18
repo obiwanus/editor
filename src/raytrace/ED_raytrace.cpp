@@ -91,7 +91,7 @@ v3 Plane::get_normal(v3 hit_point) {
 //   return result;
 // }
 
-Ray RayCamera::get_ray_through_pixel(int x, int y) {
+Ray RayCamera::get_ray_through_pixel(int x, int y, v2i pixel_count) {
   Ray result;
 
   v3 pixel = {left + (x + 0.5f) * (right - left) / pixel_count.x,

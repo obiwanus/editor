@@ -77,10 +77,9 @@ struct RayCamera {
   int top;
   int bottom;
 
-  v2i pixel_count;
   v3 origin;
 
-  Ray get_ray_through_pixel(int x, int y);
+  Ray get_ray_through_pixel(int x, int y, v2i);
 };
 
 struct LightSource {
