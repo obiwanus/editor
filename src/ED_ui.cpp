@@ -122,21 +122,6 @@ Rect Area::get_split_handle(int num) {
   return rect;
 }
 
-void Area::draw(Pixel_Buffer *pixel_buffer) {
-  if (this->splitter) {
-    // Only draw the child areas
-    this->splitter->areas[0]->draw(pixel_buffer);
-    this->splitter->areas[1]->draw(pixel_buffer);
-    return;
-  }
-  // TODO: Draw the contents
-  // ---
-
-  // Draw the split-handles
-  draw_rect(pixel_buffer, this->get_split_handle(0), {1, 0.5f, 0.5f});
-  draw_rect(pixel_buffer, this->get_split_handle(1), {1, 0.5f, 0.5f});
-}
-
 inline int Area::get_width() { return this->right - this->left; }
 
 inline int Area::get_height() { return this->bottom - this->top; }
@@ -381,7 +366,7 @@ void User_Interface::resize_window(int new_width, int new_height) {
 }
 
 void User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
-                                     User_Input *input) {
+                                     User_Input *input, Program_State *state) {
   User_Interface *ui = this;
 
   if (pixel_buffer->was_resized) {
@@ -468,17 +453,19 @@ void User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 
     switch (area->editor_type) {
       case Area_Editor_Type_Empty: {
-        area->editor_empty.update(input);
-        area->editor_empty.draw(pixel_buffer);
+        area->editor_empty.update_and_draw(pixel_buffer, input);
       } break;
 
       case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.update(input);
-        area->editor_raytrace.draw(pixel_buffer);
+        area->editor_raytrace.update_and_draw(pixel_buffer, input, state);
       } break;
 
       default: { assert(!"Unknown editor type"); } break;
     }
+
+    // Draw split handles
+    draw_rect(pixel_buffer, area->get_split_handle(0), {1, 0.5f, 0.5f});
+    draw_rect(pixel_buffer, area->get_split_handle(1), {1, 0.5f, 0.5f});
   }
 
   // Draw splitters
@@ -500,6 +487,39 @@ void User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   }
 }
 
-void Editor_Empty::draw(Pixel_Buffer *pixel_buffer) {
+void Editor_Empty::update_and_draw(Pixel_Buffer *pixel_buffer,
+                                   User_Input *input) {
   draw_rect(pixel_buffer, this->area->get_rect(), {0});
+}
+
+void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
+                                      User_Input *input, Program_State *state) {
+  RayCamera *camera = &state->camera;
+  LightSource *lights = state->lights;
+  RayObject **ray_objects = state->ray_objects;
+
+  for (int x = 0; x < pixel_buffer->width; x++) {
+    for (int y = 0; y < pixel_buffer->height; y++) {
+      Ray ray = camera->get_ray_through_pixel(x, pixel_buffer->height - y);
+
+      const v3 ambient_color = {0.2f, 0.2f, 0.2f};
+      const r32 ambient_light_intensity = 0.3f;
+
+      v3 color = ambient_color * ambient_light_intensity;
+
+      color += ray.get_color(state, 0, state->kMaxRecursion);
+
+      // Crop
+      for (int i = 0; i < 3; i++) {
+        if (color.E[i] > 1) {
+          color.E[i] = 1;
+        }
+        if (color.E[i] < 0) {
+          color.E[i] = 0;
+        }
+      }
+
+      draw_pixel(pixel_buffer, V2i(x, y), get_rgb_u32(color));
+    }
+  }
 }

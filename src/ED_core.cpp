@@ -117,39 +117,7 @@ Update_Result update_and_render(void *program_memory,
   }
 
   User_Interface *ui = &g_state->UI;
-  ui->update_and_draw(pixel_buffer, input);
-
-#if 1
-  RayCamera *camera = &g_state->camera;
-  LightSource *lights = g_state->lights;
-  RayObject **ray_objects = g_state->ray_objects;
-
-  for (int x = 0; x < pixel_buffer->width; x++) {
-    for (int y = 0; y < pixel_buffer->height; y++) {
-      Ray ray = camera->get_ray_through_pixel(x, pixel_buffer->height - y);
-
-      const v3 ambient_color = {0.2f, 0.2f, 0.2f};
-      const r32 ambient_light_intensity = 0.3f;
-
-      v3 color = ambient_color * ambient_light_intensity;
-
-      color += ray.get_color(g_state, 0, g_state->kMaxRecursion);
-
-      // Crop
-      for (int i = 0; i < 3; i++) {
-        if (color.E[i] > 1) {
-          color.E[i] = 1;
-        }
-        if (color.E[i] < 0) {
-          color.E[i] = 0;
-        }
-      }
-
-      draw_pixel(pixel_buffer, V2i(x, y), get_rgb_u32(color));
-    }
-  }
-
-#endif  // if 0
+  ui->update_and_draw(pixel_buffer, input, g_state);
 
   return result;
 }

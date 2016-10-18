@@ -13,32 +13,6 @@ struct Update_Result {
   // empty for now
 };
 
-struct Program_State {
-
-  // Tmp raytracing
-  Sphere *spheres;
-  Plane *planes;
-  Triangle *triangles;
-  RayObject **ray_objects;
-  LightSource *lights;
-  RayCamera camera;
-
-  // Tmp mesh
-  Mesh mesh;
-
-  User_Interface UI;
-
-  // Some constants - tmp too
-  int kWindowWidth;
-  int kWindowHeight;
-  int kMaxRecursion;
-  int kSphereCount;
-  int kPlaneCount;
-  int kTriangleCount;
-  int kRayObjCount;
-  int kLightCount;
-};
-
 Update_Result update_and_render(void *, Pixel_Buffer *, User_Input *);
 
 #endif  // ED_CORE_H

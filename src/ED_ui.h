@@ -3,6 +3,8 @@
 
 #include "ED_base.h"
 #include "ED_math.h"
+#include "raytrace/ED_raytrace.h"
+
 
 // -------- TODO: move out somewhere -----------------
 
@@ -77,7 +79,7 @@ struct Rect {
 };
 
 struct Area_Splitter;  // damned C++
-struct Area;  // bloody C++
+struct Area;           // bloody C++
 
 enum Area_Editor_Type {
   Area_Editor_Type_Empty = 0,
@@ -87,15 +89,16 @@ enum Area_Editor_Type {
 struct Area_Editor {
   Area *area;
 
-  void update(User_Input *) {};
-  void draw(Pixel_Buffer *) {};
+  void update_and_draw(Pixel_Buffer *, User_Input *){};
 };
 
 struct Editor_Empty : Area_Editor {
-  void draw(Pixel_Buffer *);
+  void update_and_draw(Pixel_Buffer *, User_Input *);
 };
 
-struct Editor_Raytrace : Area_Editor {};
+struct Editor_Raytrace : Area_Editor {
+  void update_and_draw(Pixel_Buffer *, User_Input *, Program_State *);
+};
 
 struct Area {
   // Multi-purpose editor area
@@ -165,8 +168,34 @@ struct User_Interface {
   Area_Splitter *horizontal_split(Area *, int);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
-  void update_and_draw(Pixel_Buffer *, User_Input *);
+  void update_and_draw(Pixel_Buffer *, User_Input *, Program_State *);
 };
+
+struct Program_State {
+
+  // Tmp raytracing
+  Sphere *spheres;
+  Plane *planes;
+  RayObject **ray_objects;
+  LightSource *lights;
+  RayCamera camera;
+
+  // Tmp mesh
+  Mesh mesh;
+
+  User_Interface UI;
+
+  // Some constants - tmp too
+  int kWindowWidth;
+  int kWindowHeight;
+  int kMaxRecursion;
+  int kSphereCount;
+  int kPlaneCount;
+  int kTriangleCount;
+  int kRayObjCount;
+  int kLightCount;
+};
+
 
 inline u32 get_rgb_u32(v3);
 inline void draw_pixel(Pixel_Buffer *, v2i, u32);
