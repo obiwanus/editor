@@ -145,6 +145,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   WNDCLASS WindowClass = {};
   WindowClass.style = CS_OWNDC | CS_VREDRAW | CS_HREDRAW;
   WindowClass.lpfnWndProc = Win32WindowProc;
+  WindowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
   WindowClass.hInstance = hInstance;
   WindowClass.lpszClassName = "VMWindowClass";
 
