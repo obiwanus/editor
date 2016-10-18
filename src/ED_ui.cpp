@@ -73,9 +73,7 @@ void draw_line(Pixel_Buffer *pixel_buffer, v2 A, v2 B, u32 color) {
   draw_line(pixel_buffer, a, b, color);
 }
 
-void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
-  u32 rgb = get_rgb_u32(color);
-
+void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, u32 color) {
   if (rect.left < 0) rect.left = 0;
   if (rect.top < 0) rect.top = 0;
   if (rect.right > pixel_buffer->width) rect.right = pixel_buffer->width;
@@ -84,9 +82,13 @@ void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
   for (int x = rect.left; x < rect.right; x++) {
     for (int y = rect.top; y < rect.bottom; y++) {
       // Don't care about performance (yet)
-      draw_pixel(pixel_buffer, V2i(x, y), rgb);
+      draw_pixel(pixel_buffer, V2i(x, y), color);
     }
   }
+}
+
+void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
+  draw_rect(pixel_buffer, rect, get_rgb_u32(color));
 }
 
 bool Rect::contains(v2i point) {
@@ -230,11 +232,11 @@ void Area_Splitter::move(v2i mouse) {
   this->position = new_position;
 
   if (this->is_vertical) {
-    area1->set_right(new_position);
-    area2->set_left(new_position);
+    area1->set_right(new_position - 1);
+    area2->set_left(new_position + 2);
   } else {
-    area1->set_bottom(new_position);
-    area2->set_top(new_position);
+    area1->set_bottom(new_position - 1);
+    area2->set_top(new_position + 1);
   }
 }
 
@@ -370,12 +372,12 @@ void User_Interface::resize_window(int new_width, int new_height) {
     area2->set_rect(parent_rect);
     if (splitter->is_vertical) {
       splitter->position = (int)(splitter->position * width_ratio);
-      area1->right = splitter->position;
-      area2->left = splitter->position;
+      area1->right = splitter->position - 1;
+      area2->left = splitter->position + 2;
     } else {
       splitter->position = (int)(splitter->position * height_ratio);
-      area1->bottom = splitter->position;
-      area2->top = splitter->position;
+      area1->bottom = splitter->position - 1;
+      area2->top = splitter->position + 1;
     }
   }
 }
@@ -483,7 +485,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     // Draw panels
     Rect panel_rect = area->get_rect();
     panel_rect.top = area->bottom - AREA_PANEL_HEIGHT;
-    draw_rect(pixel_buffer, panel_rect, {0.3f, 0.3f, 0.3f});
+    draw_rect(pixel_buffer, panel_rect, 0x00686868);
 
     // Draw split handles
     draw_rect(pixel_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
@@ -497,15 +499,19 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     Area *area = splitter->parent_area;
     int left, top, right, bottom;
     if (splitter->is_vertical) {
-      left = right = splitter->position;
+      left = splitter->position;
       top = area->top;
       bottom = area->bottom;
+      draw_line(pixel_buffer, V2i(left - 1, top), V2i(left - 1, bottom), 0x00323232);
+      draw_line(pixel_buffer, V2i(left, top), V2i(left, bottom), 0x00000000);
+      draw_line(pixel_buffer, V2i(left + 1, top), V2i(left + 1, bottom), 0x00505050);
     } else {
-      top = bottom = splitter->position;
+      top = splitter->position;
       left = area->left;
       right = area->right;
+      draw_line(pixel_buffer, V2i(left, top - 1), V2i(right, top - 1), 0x00000000);
+      draw_line(pixel_buffer, V2i(left, top), V2i(right, top), 0x00505050);
     }
-    draw_line(pixel_buffer, V2i(left, top), V2i(right, bottom), 0x00FFFFFF);
   }
 
   // Splitter resize cursor
@@ -582,7 +588,7 @@ void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
       }
 
       draw_pixel(pixel_buffer,
-                 V2i(client_rect.left + x, client_rect.bottom - y),
+                 V2i(client_rect.left + x, client_rect.bottom - y - 1),
                  get_rgb_u32(color));
     }
   }
