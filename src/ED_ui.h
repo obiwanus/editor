@@ -114,8 +114,12 @@ struct Area {
   Editor_Empty editor_empty;
   Editor_Raytrace editor_raytrace;
 
+#define AREA_PANEL_HEIGHT 25
+
   inline int get_width();
   inline int get_height();
+
+  inline Rect get_client_rect();
 
   inline Rect get_rect();
   inline void set_rect(Rect);

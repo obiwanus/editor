@@ -66,7 +66,7 @@ Update_Result update_and_render(void *program_memory,
 
     spheres[2].center = {-500, -200, -1000};
     spheres[2].radius = 100;
-    spheres[2].color = {0.2f, 0.2f, 0.3f};
+    spheres[2].color = {0.05f, 0.05f, 0.05f};
     spheres[2].phong_exp = 1000;
 
     // Planes
@@ -75,7 +75,7 @@ Update_Result update_and_render(void *program_memory,
     planes[0].point = {0, -300, 0};
     planes[0].normal = {0, 1, 0};
     planes[0].normal = planes[0].normal.normalized();
-    planes[0].color = {0.4f, 0.3f, 0.2f};
+    planes[0].color = {0.2f, 0.3f, 0.4f};
     planes[0].phong_exp = 1000;
 
     // Get a list of all objects

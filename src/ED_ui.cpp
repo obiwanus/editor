@@ -126,6 +126,15 @@ inline int Area::get_width() { return this->right - this->left; }
 
 inline int Area::get_height() { return this->bottom - this->top; }
 
+inline Rect Area::get_client_rect() {
+  Rect result;
+
+  result = this->get_rect();
+  result.bottom = result.bottom - AREA_PANEL_HEIGHT;
+
+  return result;
+}
+
 void Area::set_left(int position) {
   this->left = position;
   if (this->splitter == NULL) return;
@@ -331,7 +340,10 @@ void User_Interface::set_movement_boundaries(Area_Splitter *splitter) {
     }
   }
 
-  const int kMargin = 15;
+  int kMargin = 15;
+  if (!splitter->is_vertical) {
+    kMargin = AREA_PANEL_HEIGHT;
+  }
   splitter->position_max = position_max - kMargin;
   splitter->position_min = position_min + kMargin;
 }
@@ -468,9 +480,14 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
       default: { assert(!"Unknown editor type"); } break;
     }
 
+    // Draw panels
+    Rect panel_rect = area->get_rect();
+    panel_rect.top = area->bottom - AREA_PANEL_HEIGHT;
+    draw_rect(pixel_buffer, panel_rect, {0.3f, 0.3f, 0.3f});
+
     // Draw split handles
-    draw_rect(pixel_buffer, area->get_split_handle(0), {1, 0.5f, 0.5f});
-    draw_rect(pixel_buffer, area->get_split_handle(1), {1, 0.5f, 0.5f});
+    draw_rect(pixel_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
+    draw_rect(pixel_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
   }
 
   // Draw splitters
@@ -531,8 +548,10 @@ void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
   LightSource *lights = state->lights;
   RayObject **ray_objects = state->ray_objects;
 
-  v2i pixel_count = {this->area->get_width(), this->area->get_height()};
+  Rect client_rect = this->area->get_client_rect();
 
+  v2i pixel_count = {client_rect.right - client_rect.left,
+                     client_rect.bottom - client_rect.top};
   // TODO: this is wrong but tmp.
   // Ideally a raytrace view should have had its own camera,
   // but this is probably not going to happen anyway
@@ -563,7 +582,7 @@ void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
       }
 
       draw_pixel(pixel_buffer,
-                 V2i(this->area->left + x, this->area->bottom - y),
+                 V2i(client_rect.left + x, client_rect.bottom - y),
                  get_rgb_u32(color));
     }
   }
