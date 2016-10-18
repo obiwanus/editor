@@ -35,8 +35,9 @@ Update_Result update_and_render(void *program_memory,
     g_state->kWindowHeight = 700;
 
     g_state->UI = {};
-    g_state->UI.create_area(
+    Area *area = g_state->UI.create_area(
         NULL, {0, 0, g_state->kWindowWidth, g_state->kWindowHeight});
+    area->editor_type = Area_Editor_Type_Raytrace;
 
 #if 1
     g_state->kMaxRecursion = 3;

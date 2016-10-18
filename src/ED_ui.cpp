@@ -249,6 +249,9 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
   area->parent_area = parent_area;
   area->editor_empty.area = area;
   area->editor_raytrace.area = area;
+  if (parent_area != NULL) {
+    area->editor_type = parent_area->editor_type;
+  }
 
   return area;
 }
