@@ -145,7 +145,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   WNDCLASS WindowClass = {};
   WindowClass.style = CS_OWNDC | CS_VREDRAW | CS_HREDRAW;
   WindowClass.lpfnWndProc = Win32WindowProc;
-  WindowClass.hCursor = LoadCursor(NULL, IDC_ARROW);
   WindowClass.hInstance = hInstance;
   WindowClass.lpszClassName = "VMWindowClass";
 
@@ -223,12 +222,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     DesiredPixelFormat.cAlphaBits = 8;
     DesiredPixelFormat.iLayerType = PFD_MAIN_PLANE;
 
-    int SuggestedPixelFormatIndex =
-        ChoosePixelFormat(hdc, &DesiredPixelFormat);
+    int SuggestedPixelFormatIndex = ChoosePixelFormat(hdc, &DesiredPixelFormat);
     PIXELFORMATDESCRIPTOR SuggestedPixelFormat;
     DescribePixelFormat(hdc, SuggestedPixelFormatIndex,
-                        sizeof(SuggestedPixelFormat),
-                        &SuggestedPixelFormat);
+                        sizeof(SuggestedPixelFormat), &SuggestedPixelFormat);
 
     SetPixelFormat(hdc, SuggestedPixelFormatIndex, &SuggestedPixelFormat);
 
@@ -251,6 +248,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       assert(false);
     }
   }
+
+  Cursor_Type current_cursor = Cursor_Type_Arrow;
+  HCURSOR win_cursors[Cursor_Type__COUNT];
+  win_cursors[Cursor_Type_Arrow] = LoadCursor(NULL, IDC_ARROW);
+  win_cursors[Cursor_Type_Cross] = LoadCursor(NULL, IDC_CROSS);
+  win_cursors[Cursor_Type_Hand] = LoadCursor(NULL, IDC_HAND);
+  win_cursors[Cursor_Type_Resize_Vert] = LoadCursor(NULL, IDC_SIZENS);
+  win_cursors[Cursor_Type_Resize_Horiz] = LoadCursor(NULL, IDC_SIZEWE);
 
   User_Input inputs[2];
   User_Input *old_input = &inputs[0];
@@ -325,7 +330,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
       new_input->mouse_middle = GetKeyState(VK_MBUTTON) & (1 << 15);
     }
 
-    update_and_render(g_program_memory, &g_pixel_buffer, new_input);
+    Update_Result result =
+        update_and_render(g_program_memory, &g_pixel_buffer, new_input);
+
+    assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
+    SetCursor(win_cursors[result.cursor]);
 
     Win32UpdateWindow(hdc);
 
@@ -348,7 +357,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     printf("%.2f - ", ms_elapsed);
     last_timestamp = Win32GetWallClock();
 #endif
-
   }
 
   return 0;

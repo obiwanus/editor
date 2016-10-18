@@ -368,8 +368,10 @@ void User_Interface::resize_window(int new_width, int new_height) {
   }
 }
 
-void User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
-                                     User_Input *input, Program_State *state) {
+Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
+                                              User_Input *input,
+                                              Program_State *state) {
+  Update_Result result = {};
   User_Interface *ui = this;
 
   if (pixel_buffer->was_resized) {
@@ -450,8 +452,8 @@ void User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   }
 
   // Draw areas
-  for (int i = 0; i < this->num_areas; i++) {
-    Area *area = this->areas + i;
+  for (int i = 0; i < ui->num_areas; i++) {
+    Area *area = ui->areas + i;
     if (area->splitter != NULL) continue;  // ignore wrapper areas
 
     switch (area->editor_type) {
@@ -472,8 +474,8 @@ void User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   }
 
   // Draw splitters
-  for (int i = 0; i < this->num_splitters; i++) {
-    Area_Splitter *splitter = this->splitters + i;
+  for (int i = 0; i < ui->num_splitters; i++) {
+    Area_Splitter *splitter = ui->splitters + i;
     // draw_rect(pixel_buffer, splitter->get_rect(), {1,1,1});
     Area *area = splitter->parent_area;
     int left, top, right, bottom;
@@ -488,6 +490,34 @@ void User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     }
     draw_line(pixel_buffer, V2i(left, top), V2i(right, bottom), 0x00FFFFFF);
   }
+
+  // Splitter resize cursor
+  for (int i = 0; i < ui->num_splitters; i++) {
+    Area_Splitter *splitter = ui->splitters + i;
+    if (splitter->get_rect().contains(input->mouse)) {
+      result.cursor = splitter->is_vertical ? Cursor_Type_Resize_Horiz
+                                            : Cursor_Type_Resize_Vert;
+    }
+  }
+
+  // Area split cursor
+  for (int i = 0; i < ui->num_areas; i++) {
+    Area *area = ui->areas + i;
+    if (area->mouse_over_split_handle(input->mouse)) {
+      result.cursor = Cursor_Type_Cross;
+    }
+  }
+
+  // Set the right cursors on actual resize or split
+  if (ui->area_being_split != NULL) {
+    result.cursor = Cursor_Type_Cross;
+  } else if (ui->splitter_being_moved != NULL) {
+    result.cursor = ui->splitter_being_moved->is_vertical
+                        ? Cursor_Type_Resize_Horiz
+                        : Cursor_Type_Resize_Vert;
+  }
+
+  return result;
 }
 
 void Editor_Empty::update_and_draw(Pixel_Buffer *pixel_buffer,
@@ -513,8 +543,7 @@ void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
 
   for (int x = 0; x < pixel_count.x; x++) {
     for (int y = 0; y < pixel_count.y; y++) {
-      Ray ray =
-          camera->get_ray_through_pixel(x, y, pixel_count);
+      Ray ray = camera->get_ray_through_pixel(x, y, pixel_count);
 
       const v3 ambient_color = {0.2f, 0.2f, 0.2f};
       const r32 ambient_light_intensity = 0.3f;
@@ -533,7 +562,8 @@ void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
         }
       }
 
-      draw_pixel(pixel_buffer, V2i(this->area->left + x, this->area->bottom - y),
+      draw_pixel(pixel_buffer,
+                 V2i(this->area->left + x, this->area->bottom - y),
                  get_rgb_u32(color));
     }
   }

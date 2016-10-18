@@ -147,6 +147,20 @@ struct Area_Splitter {
   void move(v2i mouse);
 };
 
+enum Cursor_Type {
+  Cursor_Type_Arrow = 0,
+  Cursor_Type_Cross,
+  Cursor_Type_Hand,
+  Cursor_Type_Resize_Vert,
+  Cursor_Type_Resize_Horiz,
+
+  Cursor_Type__COUNT,
+};
+
+struct Update_Result {
+  Cursor_Type cursor;
+};
+
 #define EDITOR_MAX_AREA_COUNT 50
 
 struct User_Interface {
@@ -168,7 +182,7 @@ struct User_Interface {
   Area_Splitter *horizontal_split(Area *, int);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
-  void update_and_draw(Pixel_Buffer *, User_Input *, Program_State *);
+  Update_Result update_and_draw(Pixel_Buffer *, User_Input *, Program_State *);
 };
 
 struct Program_State {

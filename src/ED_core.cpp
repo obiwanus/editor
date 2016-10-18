@@ -121,7 +121,7 @@ Update_Result update_and_render(void *program_memory,
   }
 
   User_Interface *ui = &g_state->UI;
-  ui->update_and_draw(pixel_buffer, input, g_state);
+  result = ui->update_and_draw(pixel_buffer, input, g_state);
 
   return result;
 }

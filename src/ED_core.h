@@ -8,10 +8,7 @@
 // 512 Mb
 #define MAX_INTERNAL_MEMORY_SIZE (512 * 1024 * 1024)
 
-
-struct Update_Result {
-  // empty for now
-};
+// Getting lonely here
 
 Update_Result update_and_render(void *, Pixel_Buffer *, User_Input *);
 
