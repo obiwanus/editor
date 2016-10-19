@@ -153,6 +153,22 @@ DWORD WINAPI ThreadProc(LPVOID lpParam) {
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                      LPSTR lpCmdLine, int nCmdShow) {
+  // Allocate program memory
+  g_program_memory.free_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
+  // TODO: add checks for overflow when allocating
+
+  // Main program state
+  Program_State *state =
+      (Program_State *)g_program_memory.allocate(sizeof(Program_State));
+  state->init();
+
+  // Init pixel buffer
+  g_pixel_buffer.max_width = 3000;
+  g_pixel_buffer.max_height = 3000;
+  g_pixel_buffer.memory = malloc(g_pixel_buffer.max_width *
+                                 g_pixel_buffer.max_height * sizeof(u32));
+
+  // Create window class
   WNDCLASS WindowClass = {};
   WindowClass.style = CS_OWNDC | CS_VREDRAW | CS_HREDRAW;
   WindowClass.lpfnWndProc = Win32WindowProc;
@@ -185,12 +201,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   DWORD WindowStyle = WS_OVERLAPPEDWINDOW | WS_VISIBLE;
   RECT WindowRect = {};
 
-  // TODO: get monitor size
-  const int kWindowWidth = 1000;
-  const int kWindowHeight = 700;
-
-  WindowRect.right = kWindowWidth;
-  WindowRect.bottom = kWindowHeight;
+  WindowRect.right = state->kWindowWidth;
+  WindowRect.bottom = state->kWindowHeight;
   AdjustWindowRect(&WindowRect, WindowStyle, 0);
   int WindowWidth = WindowRect.right - WindowRect.left;
   int WindowHeight = WindowRect.bottom - WindowRect.top;
@@ -207,21 +219,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   HDC hdc = GetDC(Window);
 
   g_running = true;
-
-  // Allocate program memory
-  g_program_memory.free_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
-  // TODO: add checks for overflow when allocating
-
-  // Main program state
-  Program_State *state =
-      (Program_State *)g_program_memory.allocate(sizeof(Program_State));
-  *state = {};
-
-  // Init pixel buffer
-  g_pixel_buffer.max_width = 3000;
-  g_pixel_buffer.max_height = 3000;
-  g_pixel_buffer.memory = malloc(g_pixel_buffer.max_width *
-                                 g_pixel_buffer.max_height * sizeof(u32));
 
   // Set proper buffer values based on actual client size
   Win32ResizeClientWindow(Window);

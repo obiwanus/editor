@@ -192,8 +192,6 @@ struct User_Interface {
 };
 
 struct Program_State {
-  bool is_initialized;
-
   // Tmp raytracing
   Sphere *spheres;
   Plane *planes;
@@ -215,6 +213,8 @@ struct Program_State {
   int kTriangleCount;
   int kRayObjCount;
   int kLightCount;
+
+  void init();
 };
 
 
