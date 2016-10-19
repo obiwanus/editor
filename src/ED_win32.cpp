@@ -10,12 +10,17 @@
 #include <windowsX.h>
 #include <gl/gl.h>
 
-global bool gRunning;
+global bool g_running;
 global LARGE_INTEGER gPerformanceFrequency;
 
 global Pixel_Buffer g_pixel_buffer;
 global void *g_program_memory;
 global GLuint gTextureHandle;
+
+struct Win32_Thread_Param {
+  int thread_number;
+  int vasia;
+};
 
 static void Win32UpdateWindow(HDC hdc) {
   if (!g_pixel_buffer.memory) return;
@@ -103,7 +108,7 @@ Win32WindowProc(HWND Window, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     } break;
 
     case WM_CLOSE: {
-      gRunning = false;
+      g_running = false;
     } break;
 
     case WM_PAINT: {
@@ -138,6 +143,12 @@ inline r32 Win32GetMillisecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End) {
                (r32)gPerformanceFrequency.QuadPart;
 
   return Result;
+}
+
+DWORD WINAPI ThreadProc(LPVOID lpParam) {
+  Win32_Thread_Param *param = (Win32_Thread_Param *)lpParam;
+  printf("thread: %d, vasia : %d\n", param->thread_number, param->vasia);
+  return 0;
 }
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
@@ -195,7 +206,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   // We're not going to release it as we use CS_OWNDC
   HDC hdc = GetDC(Window);
 
-  gRunning = true;
+  g_running = true;
 
   // Allocate program memory
   g_program_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
@@ -267,15 +278,32 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
   LARGE_INTEGER last_timestamp = Win32GetWallClock();
 
+  // Create worker threads
+  const int kMaxThreads = 7;
+  Win32_Thread_Param thread_params[kMaxThreads];
+
+  for (int i = 0; i < kMaxThreads; i++) {
+    thread_params[i].thread_number = i;
+    HANDLE thread_handle = CreateThread(
+      0,  // LPSECURITY_ATTRIBUTES lpThreadAttributes,
+      0,  // SIZE_T dwStackSize,
+      ThreadProc,  // LPTHREAD_START_ROUTINE lpStartAddress,
+      &thread_params[i],  // LPVOID lpParameter,
+      0,  // DWORD dwCreationFlags,
+      NULL  // LPDWORD lpThreadId
+    );
+    CloseHandle(thread_handle);
+  }
+
   // Event loop
-  while (gRunning) {
+  while (g_running) {
     // Process messages
     MSG message;
     while (PeekMessage(&message, 0, 0, 0, PM_REMOVE)) {
       // Get keyboard messages
       switch (message.message) {
         case WM_QUIT: {
-          gRunning = false;
+          g_running = false;
         } break;
 
         case WM_SYSKEYDOWN:
@@ -288,13 +316,13 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
           b32 alt_key_was_down = (message.lParam & (1 << 29));
           if ((vk_code == VK_F4) && alt_key_was_down) {
-            gRunning = false;
+            g_running = false;
           }
           if (was_down == is_down) {
             break;  // nothing has changed
           }
           if (vk_code == VK_ESCAPE) {
-            gRunning = false;
+            g_running = false;
           }
           if (vk_code == VK_UP || vk_code == 'W') {
             new_input->up = is_down;
