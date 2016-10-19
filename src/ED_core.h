@@ -15,6 +15,7 @@ struct Program_Memory {
   void *allocate(size_t);
 };
 
-Update_Result update_and_render(Program_Memory *, Pixel_Buffer *, User_Input *);
+Update_Result update_and_render(Program_Memory *, Program_State *,
+                                Pixel_Buffer *, User_Input *);
 
 #endif  // ED_CORE_H

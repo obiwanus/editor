@@ -212,6 +212,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   g_program_memory.free_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
   // TODO: add checks for overflow when allocating
 
+  // Main program state
+  Program_State *state =
+      (Program_State *)g_program_memory.allocate(sizeof(Program_State));
+  *state = {};
+
   // Init pixel buffer
   g_pixel_buffer.max_width = 3000;
   g_pixel_buffer.max_height = 3000;
@@ -285,14 +290,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     for (int i = 0; i < kMaxThreads; i++) {
       thread_params[i].thread_number = i;
-      HANDLE thread_handle = CreateThread(
-        0,  // LPSECURITY_ATTRIBUTES lpThreadAttributes,
-        0,  // SIZE_T dwStackSize,
-        ThreadProc,  // LPTHREAD_START_ROUTINE lpStartAddress,
-        &thread_params[i],  // LPVOID lpParameter,
-        0,  // DWORD dwCreationFlags,
-        NULL  // LPDWORD lpThreadId
-      );
+      HANDLE thread_handle =
+          CreateThread(0,           // LPSECURITY_ATTRIBUTES lpThreadAttributes,
+                       0,           // SIZE_T dwStackSize,
+                       ThreadProc,  // LPTHREAD_START_ROUTINE lpStartAddress,
+                       &thread_params[i],  // LPVOID lpParameter,
+                       0,                  // DWORD dwCreationFlags,
+                       NULL                // LPDWORD lpThreadId
+                       );
       if (thread_handle == NULL) {
         printf("CreateThread error: %d\n", GetLastError());
         exit(1);
@@ -365,7 +370,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     }
 
     Update_Result result =
-        update_and_render(&g_program_memory, &g_pixel_buffer, new_input);
+        update_and_render(&g_program_memory, state, &g_pixel_buffer, new_input);
 
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     SetCursor(win_cursors[result.cursor]);

@@ -7,9 +7,6 @@
 #include "ED_math.h"
 #include "raytrace/ED_raytrace.h"
 
-
-global Program_State *g_state;
-
 void *Program_Memory::allocate(size_t size) {
   // Deallocation is not intended (yet)
   void *result;
@@ -21,34 +18,34 @@ void *Program_Memory::allocate(size_t size) {
   return result;
 }
 
-Update_Result update_and_render(Program_Memory *program_memory,
+Update_Result update_and_render(Program_Memory *program_memory, Program_State *state,
                                 Pixel_Buffer *pixel_buffer, User_Input *input) {
   Update_Result result = {};
 
-  if (g_state == NULL) {
-    g_state = (Program_State *)program_memory->allocate(sizeof(Program_State));
+  if (!state->is_initialized) {
+    state->is_initialized = true;
 
-    g_state->kWindowWidth = 1000;
-    g_state->kWindowHeight = 700;
+    state->kWindowWidth = 1000;
+    state->kWindowHeight = 700;
 
-    g_state->UI = {};
-    Area *area = g_state->UI.create_area(
-        NULL, {0, 0, g_state->kWindowWidth, g_state->kWindowHeight});
+    state->UI = {};
+    Area *area = state->UI.create_area(
+        NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});
 
     Area_Splitter *splitter =
-        g_state->UI.vertical_split(area, area->get_width() / 2);
+        state->UI.vertical_split(area, area->get_width() / 2);
     splitter->areas[0]->editor_type = Area_Editor_Type_Raytrace;
     splitter->areas[1]->editor_type = Area_Editor_Type_Raytrace;
 
-    g_state->kMaxRecursion = 3;
-    g_state->kSphereCount = 3;
-    g_state->kPlaneCount = 1;
-    g_state->kTriangleCount = 0;
-    g_state->kRayObjCount = g_state->kSphereCount + g_state->kPlaneCount;
-    g_state->kLightCount = 3;
+    state->kMaxRecursion = 3;
+    state->kSphereCount = 3;
+    state->kPlaneCount = 1;
+    state->kTriangleCount = 0;
+    state->kRayObjCount = state->kSphereCount + state->kPlaneCount;
+    state->kLightCount = 3;
 
     // Spheres
-    Sphere *spheres = new Sphere[g_state->kSphereCount];
+    Sphere *spheres = new Sphere[state->kSphereCount];
 
     spheres[0].center = {350, 0, -1300};
     spheres[0].radius = 300;
@@ -66,7 +63,7 @@ Update_Result update_and_render(Program_Memory *program_memory,
     spheres[2].phong_exp = 1000;
 
     // Planes
-    Plane *planes = new Plane[g_state->kPlaneCount];
+    Plane *planes = new Plane[state->kPlaneCount];
 
     planes[0].point = {0, -300, 0};
     planes[0].normal = {0, 1, 0};
@@ -76,19 +73,19 @@ Update_Result update_and_render(Program_Memory *program_memory,
 
     // Get a list of all objects
     RayObject **ray_objects =
-        (RayObject **)malloc(g_state->kRayObjCount * sizeof(RayObject *));
+        (RayObject **)malloc(state->kRayObjCount * sizeof(RayObject *));
     {
       RayObject **ro_pointer = ray_objects;
-      for (int i = 0; i < g_state->kSphereCount; i++) {
+      for (int i = 0; i < state->kSphereCount; i++) {
         *ro_pointer++ = &spheres[i];
       }
-      for (int i = 0; i < g_state->kPlaneCount; i++) {
+      for (int i = 0; i < state->kPlaneCount; i++) {
         *ro_pointer++ = &planes[i];
       }
     }
 
     // Light
-    LightSource *lights = new LightSource[g_state->kLightCount];
+    LightSource *lights = new LightSource[state->kLightCount];
 
     lights[0].intensity = 0.7f;
     lights[0].source = {1730, 600, -200};
@@ -100,23 +97,23 @@ Update_Result update_and_render(Program_Memory *program_memory,
     lights[2].source = {-1700, 300, 100};
 
     // Camera dimensions
-    RayCamera *camera = &g_state->camera;
+    RayCamera *camera = &state->camera;
     camera->origin = {0, 0, 1000};
-    camera->left = -g_state->kWindowWidth / 2;
-    camera->right = g_state->kWindowWidth / 2;
-    camera->bottom = -g_state->kWindowHeight / 2;
-    camera->top = g_state->kWindowHeight / 2;
+    camera->left = -state->kWindowWidth / 2;
+    camera->right = state->kWindowWidth / 2;
+    camera->bottom = -state->kWindowHeight / 2;
+    camera->top = state->kWindowHeight / 2;
 
-    g_state->spheres = spheres;
-    g_state->planes = planes;
+    state->spheres = spheres;
+    state->planes = planes;
 
-    g_state->ray_objects = ray_objects;
+    state->ray_objects = ray_objects;
 
-    g_state->lights = lights;
+    state->lights = lights;
   }
 
-  User_Interface *ui = &g_state->UI;
-  result = ui->update_and_draw(pixel_buffer, input, g_state);
+  User_Interface *ui = &state->UI;
+  result = ui->update_and_draw(pixel_buffer, input, state);
 
   return result;
 }
