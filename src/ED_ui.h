@@ -107,6 +107,8 @@ struct Area {
   int right;
   int bottom;
 
+  bool show_selector_popup = false;
+
   Area *parent_area;
   Area_Splitter *splitter = NULL;
 
@@ -114,7 +116,7 @@ struct Area {
   Editor_Empty editor_empty;
   Editor_Raytrace editor_raytrace;
 
-#define AREA_PANEL_HEIGHT 25
+#define AREA_PANEL_HEIGHT 26
 
   inline int get_width();
   inline int get_height();

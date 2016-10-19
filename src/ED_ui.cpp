@@ -470,6 +470,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     Area *area = ui->areas + i;
     if (area->splitter != NULL) continue;  // ignore wrapper areas
 
+    // Draw editor contents
     switch (area->editor_type) {
       case Area_Editor_Type_Empty: {
         area->editor_empty.update_and_draw(pixel_buffer, input);
@@ -513,6 +514,39 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
       draw_line(pixel_buffer, V2i(left, top), V2i(right, top), 0x00505050);
     }
   }
+
+  // Draw editor type selector
+  for (int i = 0; i < ui->num_areas; i++) {
+    Area *area = ui->areas + i;
+    Rect panel_rect = area->get_rect();
+    panel_rect.top = area->bottom - AREA_PANEL_HEIGHT;
+
+    Rect selector_rect;
+    selector_rect.left = panel_rect.left + 15;
+    selector_rect.right = panel_rect.left + 100;
+    selector_rect.top = panel_rect.top + 4;
+    selector_rect.bottom = selector_rect.top + 18;
+
+    if (selector_rect.contains(input->mouse)) {
+      draw_rect(pixel_buffer, selector_rect, {0.2f,0.2f,0.2f});
+    } else {
+      draw_rect(pixel_buffer, selector_rect, {0});
+    }
+    if (input->mouse_left) {
+      area->show_selector_popup = selector_rect.contains(input->mouse);
+    }
+
+    if (area->show_selector_popup) {
+      Rect popup_rect;
+      popup_rect.left = selector_rect.left - 200;
+      popup_rect.right = selector_rect.left + 150;
+      popup_rect.top = selector_rect.top - 250;
+      popup_rect.bottom = selector_rect.top - 2;
+      draw_rect(pixel_buffer, popup_rect, {0});
+    }
+  }
+
+  // -- Cursors ---------------
 
   // Splitter resize cursor
   for (int i = 0; i < ui->num_splitters; i++) {
