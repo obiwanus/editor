@@ -7,29 +7,26 @@
 #include "ED_math.h"
 #include "raytrace/ED_raytrace.h"
 
-global void *_free_memory;  // for the allocator
-global size_t _allocated;
 
 global Program_State *g_state;
 
-void *global_allocate(size_t size) {
-  // Deallocation is not intended
+void *Program_Memory::allocate(size_t size) {
+  // Deallocation is not intended (yet)
   void *result;
-  if (_allocated + size > MAX_INTERNAL_MEMORY_SIZE) {
+  if (this->allocated + size > MAX_INTERNAL_MEMORY_SIZE) {
     return NULL;
   }
-  result = _free_memory;
-  _free_memory = (void *)((u8 *)_free_memory + size);
+  result = this->free_memory;
+  this->free_memory = (void *)((u8 *)this->free_memory + size);
   return result;
 }
 
-Update_Result update_and_render(void *program_memory,
+Update_Result update_and_render(Program_Memory *program_memory,
                                 Pixel_Buffer *pixel_buffer, User_Input *input) {
   Update_Result result = {};
 
   if (g_state == NULL) {
-    _free_memory = program_memory;
-    g_state = (Program_State *)global_allocate(sizeof(Program_State));
+    g_state = (Program_State *)program_memory->allocate(sizeof(Program_State));
 
     g_state->kWindowWidth = 1000;
     g_state->kWindowHeight = 700;
@@ -43,7 +40,6 @@ Update_Result update_and_render(void *program_memory,
     splitter->areas[0]->editor_type = Area_Editor_Type_Raytrace;
     splitter->areas[1]->editor_type = Area_Editor_Type_Raytrace;
 
-#if 1
     g_state->kMaxRecursion = 3;
     g_state->kSphereCount = 3;
     g_state->kPlaneCount = 1;
@@ -117,7 +113,6 @@ Update_Result update_and_render(void *program_memory,
     g_state->ray_objects = ray_objects;
 
     g_state->lights = lights;
-#endif
   }
 
   User_Interface *ui = &g_state->UI;

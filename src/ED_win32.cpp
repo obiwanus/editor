@@ -14,7 +14,7 @@ global bool g_running;
 global LARGE_INTEGER gPerformanceFrequency;
 
 global Pixel_Buffer g_pixel_buffer;
-global void *g_program_memory;
+global Program_Memory g_program_memory;
 global GLuint gTextureHandle;
 
 struct Win32_Thread_Param {
@@ -147,7 +147,7 @@ inline r32 Win32GetMillisecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End) {
 
 DWORD WINAPI ThreadProc(LPVOID lpParam) {
   Win32_Thread_Param *param = (Win32_Thread_Param *)lpParam;
-  printf("thread: %d, vasia : %d\n", param->thread_number, param->vasia);
+
   return 0;
 }
 
@@ -209,7 +209,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   g_running = true;
 
   // Allocate program memory
-  g_program_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
+  g_program_memory.free_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
   // TODO: add checks for overflow when allocating
 
   // Init pixel buffer
@@ -279,20 +279,26 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   LARGE_INTEGER last_timestamp = Win32GetWallClock();
 
   // Create worker threads
-  const int kMaxThreads = 7;
-  Win32_Thread_Param thread_params[kMaxThreads];
+  {
+    const int kMaxThreads = 7;
+    Win32_Thread_Param thread_params[kMaxThreads];
 
-  for (int i = 0; i < kMaxThreads; i++) {
-    thread_params[i].thread_number = i;
-    HANDLE thread_handle = CreateThread(
-      0,  // LPSECURITY_ATTRIBUTES lpThreadAttributes,
-      0,  // SIZE_T dwStackSize,
-      ThreadProc,  // LPTHREAD_START_ROUTINE lpStartAddress,
-      &thread_params[i],  // LPVOID lpParameter,
-      0,  // DWORD dwCreationFlags,
-      NULL  // LPDWORD lpThreadId
-    );
-    CloseHandle(thread_handle);
+    for (int i = 0; i < kMaxThreads; i++) {
+      thread_params[i].thread_number = i;
+      HANDLE thread_handle = CreateThread(
+        0,  // LPSECURITY_ATTRIBUTES lpThreadAttributes,
+        0,  // SIZE_T dwStackSize,
+        ThreadProc,  // LPTHREAD_START_ROUTINE lpStartAddress,
+        &thread_params[i],  // LPVOID lpParameter,
+        0,  // DWORD dwCreationFlags,
+        NULL  // LPDWORD lpThreadId
+      );
+      if (thread_handle == NULL) {
+        printf("CreateThread error: %d\n", GetLastError());
+        exit(1);
+      }
+      CloseHandle(thread_handle);
+    }
   }
 
   // Event loop
@@ -359,7 +365,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     }
 
     Update_Result result =
-        update_and_render(g_program_memory, &g_pixel_buffer, new_input);
+        update_and_render(&g_program_memory, &g_pixel_buffer, new_input);
 
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     SetCursor(win_cursors[result.cursor]);

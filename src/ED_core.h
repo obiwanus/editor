@@ -8,8 +8,13 @@
 // 512 Mb
 #define MAX_INTERNAL_MEMORY_SIZE (512 * 1024 * 1024)
 
-// Getting lonely here
+struct Program_Memory {
+  void *free_memory;
+  size_t allocated;
 
-Update_Result update_and_render(void *, Pixel_Buffer *, User_Input *);
+  void *allocate(size_t);
+};
+
+Update_Result update_and_render(Program_Memory *, Pixel_Buffer *, User_Input *);
 
 #endif  // ED_CORE_H
