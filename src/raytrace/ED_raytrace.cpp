@@ -103,15 +103,15 @@ Ray RayCamera::get_ray_through_pixel(int x, int y, v2i pixel_count) {
   return result;
 }
 
-RayHit Ray::get_object_hit(Program_State *state, r32 tmin, r32 tmax,
+RayHit Ray::get_object_hit(Ray_Tracer *rt, r32 tmin, r32 tmax,
                            RayObject *ignore_object, b32 any) {
   Ray *ray = this;
 
   RayHit ray_hit = {};
   r32 min_hit = 0;
 
-  for (int i = 0; i < state->kRayObjCount; i++) {
-    RayObject *current_object = state->ray_objects[i];
+  for (int i = 0; i < rt->kRayObjCount; i++) {
+    RayObject *current_object = rt->ray_objects[i];
     if (current_object == ignore_object) {
       // NOTE: won't work for reflections on non-convex shapes
       continue;
@@ -132,13 +132,13 @@ RayHit Ray::get_object_hit(Program_State *state, r32 tmin, r32 tmax,
   return ray_hit;
 }
 
-v3 Ray::get_color(Program_State *state, RayObject *reflected_from,
+v3 Ray::get_color(Ray_Tracer *rt, RayObject *reflected_from,
                   int recurse_further) {
   Ray *ray = this;
 
   v3 color = {};
 
-  RayHit ray_hit = ray->get_object_hit(state, 0, INFINITY, reflected_from);
+  RayHit ray_hit = ray->get_object_hit(rt, 0, INFINITY, reflected_from);
 
   if (ray_hit.object == NULL) {
     color = {0.05f, 0.05f, 0.05f};  // background color
@@ -149,8 +149,8 @@ v3 Ray::get_color(Program_State *state, RayObject *reflected_from,
   v3 normal = ray_hit.object->get_normal(hit_point);
   v3 line_of_sight = -ray->direction.normalized();
 
-  for (int i = 0; i < state->kLightCount; i++) {
-    LightSource *light = &state->lights[i];
+  for (int i = 0; i < rt->kLightCount; i++) {
+    LightSource *light = &rt->lights[i];
 
     v3 light_direction = (hit_point - light->source).normalized();
 
@@ -163,7 +163,7 @@ v3 Ray::get_color(Program_State *state, RayObject *reflected_from,
           light->source - hit_point;  // not normalizing on purpose
 
       RayHit shadow_ray_hit =
-          shadow_ray.get_object_hit(state, 0, 1, ray_hit.object, true);
+          shadow_ray.get_object_hit(rt, 0, 1, ray_hit.object, true);
       if (shadow_ray_hit.object != NULL) {
         point_in_shadow = true;
       }
@@ -204,7 +204,7 @@ v3 Ray::get_color(Program_State *state, RayObject *reflected_from,
     }
     color +=
         k *
-        reflection_ray.get_color(state, ray_hit.object, recurse_further - 1);
+        reflection_ray.get_color(rt, ray_hit.object, recurse_further - 1);
   }
 
   return color;

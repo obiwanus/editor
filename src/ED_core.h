@@ -15,6 +15,20 @@ struct Program_Memory {
   void *allocate(size_t);
 };
 
+struct Program_State {
+  // Tmp mesh
+  Mesh mesh;
+
+  int kWindowWidth;
+  int kWindowHeight;
+
+  User_Interface UI;
+
+  Ray_Tracer ray_tracer;
+
+  void init();
+};
+
 Update_Result update_and_render(Program_Memory *, Program_State *,
                                 Pixel_Buffer *, User_Input *);
 

@@ -384,7 +384,7 @@ void User_Interface::resize_window(int new_width, int new_height) {
 
 Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
                                               User_Input *input,
-                                              Program_State *state) {
+                                              Ray_Tracer *rt) {
   Update_Result result = {};
   User_Interface *ui = this;
 
@@ -477,7 +477,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
       } break;
 
       case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.update_and_draw(pixel_buffer, input, state);
+        area->editor_raytrace.update_and_draw(pixel_buffer, input, rt);
       } break;
 
       default: { assert(!"Unknown editor type"); } break;
@@ -583,10 +583,10 @@ void Editor_Empty::update_and_draw(Pixel_Buffer *pixel_buffer,
 }
 
 void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
-                                      User_Input *input, Program_State *state) {
-  RayCamera *camera = &state->camera;
-  LightSource *lights = state->lights;
-  RayObject **ray_objects = state->ray_objects;
+                                      User_Input *input, Ray_Tracer *rt) {
+  RayCamera *camera = &rt->camera;
+  LightSource *lights = rt->lights;
+  RayObject **ray_objects = rt->ray_objects;
 
   Rect client_rect = this->area->get_client_rect();
 
@@ -609,7 +609,7 @@ void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
 
       v3 color = ambient_color * ambient_light_intensity;
 
-      color += ray.get_color(state, 0, state->kMaxRecursion);
+      color += ray.get_color(rt, 0, rt->kMaxRecursion);
 
       // Crop
       for (int i = 0; i < 3; i++) {

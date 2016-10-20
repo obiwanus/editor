@@ -97,7 +97,7 @@ struct Editor_Empty : Area_Editor {
 };
 
 struct Editor_Raytrace : Area_Editor {
-  void update_and_draw(Pixel_Buffer *, User_Input *, Program_State *);
+  void update_and_draw(Pixel_Buffer *, User_Input *, Ray_Tracer *);
 };
 
 struct Area {
@@ -188,33 +188,7 @@ struct User_Interface {
   Area_Splitter *horizontal_split(Area *, int);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
-  Update_Result update_and_draw(Pixel_Buffer *, User_Input *, Program_State *);
-};
-
-struct Program_State {
-  // Tmp raytracing
-  Sphere *spheres;
-  Plane *planes;
-  RayObject **ray_objects;
-  LightSource *lights;
-  RayCamera camera;
-
-  // Tmp mesh
-  Mesh mesh;
-
-  User_Interface UI;
-
-  // Some constants - tmp too
-  int kWindowWidth;
-  int kWindowHeight;
-  int kMaxRecursion;
-  int kSphereCount;
-  int kPlaneCount;
-  int kTriangleCount;
-  int kRayObjCount;
-  int kLightCount;
-
-  void init();
+  Update_Result update_and_draw(Pixel_Buffer *, User_Input *, Ray_Tracer *);
 };
 
 

@@ -5,7 +5,7 @@
 #include "ED_math.h"
 
 struct Ray;
-struct Program_State;
+struct Ray_Tracer;
 
 typedef enum {
   RayObject_Type_Invalid = 0,
@@ -65,10 +65,9 @@ struct Ray {
     return result;
   }
 
-  v3 get_color(Program_State *state, RayObject *reflected_from,
-               int recurse_further);
-  RayHit get_object_hit(Program_State *state, r32 tmin, r32 tmax,
-                        RayObject *ignore_object = NULL, b32 any = false);
+  v3 get_color(Ray_Tracer *, RayObject *, int);
+  RayHit get_object_hit(Ray_Tracer *, r32, r32, RayObject *ignore_object = NULL,
+                        b32 any = false);
 };
 
 struct RayCamera {
@@ -85,6 +84,22 @@ struct RayCamera {
 struct LightSource {
   v3 source;
   r32 intensity;
+};
+
+struct Ray_Tracer {
+  // Tmp raytracing
+  Sphere *spheres;
+  Plane *planes;
+  RayObject **ray_objects;
+  LightSource *lights;
+  RayCamera camera;
+
+  int kMaxRecursion;
+  int kSphereCount;
+  int kPlaneCount;
+  int kTriangleCount;
+  int kRayObjCount;
+  int kLightCount;
 };
 
 #endif  // __ED_RAYTRACE_H__
