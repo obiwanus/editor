@@ -60,11 +60,11 @@ struct Pixel_Buffer {
   int max_width;
   int max_height;
 
-  int prev_width;
-  int prev_height;
   bool was_resized;
 
   void *memory;
+
+  void allocate(Program_Memory *);
 };
 
 struct Rect {
@@ -93,11 +93,11 @@ struct Area_Editor {
 };
 
 struct Editor_Empty : Area_Editor {
-  void update_and_draw(Pixel_Buffer *);
+  void draw();
 };
 
 struct Editor_Raytrace : Area_Editor {
-  void update_and_draw(Pixel_Buffer *, Ray_Tracer *);
+  void draw(Ray_Tracer *);
 };
 
 struct Area {
@@ -111,6 +111,7 @@ struct Area {
 
   Area *parent_area;
   Area_Splitter *splitter = NULL;
+  Pixel_Buffer *draw_buffer = NULL;
 
   Area_Editor_Type editor_type;
   Editor_Empty editor_empty;
@@ -170,6 +171,8 @@ struct Update_Result {
 #define EDITOR_MAX_AREA_COUNT 50
 
 struct User_Interface {
+  Program_Memory *memory;
+
   int num_areas;
   int num_splitters;
 
@@ -182,14 +185,14 @@ struct User_Interface {
   Area areas[EDITOR_MAX_AREA_COUNT];
   Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
 
-  Area *create_area(Area *, Rect);
+  Area *create_area(Area *, Rect, Pixel_Buffer *buf = NULL);
   Area_Splitter *_new_splitter(Area *);
   Area_Splitter *vertical_split(Area *, int);
   Area_Splitter *horizontal_split(Area *, int);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
   Update_Result update_and_draw(Pixel_Buffer *, User_Input *);
-  void draw_areas(Pixel_Buffer *, Ray_Tracer *);
+  void draw_areas(Ray_Tracer *);
 };
 
 

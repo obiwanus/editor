@@ -18,13 +18,14 @@ void *Program_Memory::allocate(size_t size) {
   return result;
 }
 
-void Program_State::init() {
+void Program_State::init(Program_Memory *memory) {
   Program_State *state = this;
 
   state->kWindowWidth = 1000;
   state->kWindowHeight = 700;
 
   state->UI = {};
+  state->UI.memory = memory;
   Area *area = state->UI.create_area(
       NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});
 
@@ -106,7 +107,6 @@ void Program_State::init() {
 Update_Result update_and_render(Program_Memory *program_memory, Program_State *state,
                                 Pixel_Buffer *pixel_buffer, User_Input *input) {
   Update_Result result = {};
-
 
   result = state->UI.update_and_draw(pixel_buffer, input);
 

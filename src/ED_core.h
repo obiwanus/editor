@@ -5,16 +5,6 @@
 #include "ED_ui.h"
 #include "raytrace/ED_raytrace.h"
 
-// 512 Mb
-#define MAX_INTERNAL_MEMORY_SIZE (512 * 1024 * 1024)
-
-struct Program_Memory {
-  void *free_memory;
-  size_t allocated;
-
-  void *allocate(size_t);
-};
-
 struct Program_State {
   // Tmp mesh
   Mesh mesh;
@@ -26,7 +16,7 @@ struct Program_State {
 
   Ray_Tracer ray_tracer;
 
-  void init();
+  void init(Program_Memory *);
 };
 
 Update_Result update_and_render(Program_Memory *, Program_State *,

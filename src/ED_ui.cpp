@@ -249,7 +249,16 @@ bool Area_Splitter::is_under(Area *area) {
   return false;
 }
 
-Area *User_Interface::create_area(Area *parent_area, Rect rect) {
+void Pixel_Buffer::allocate(Program_Memory *program_memory) {
+  *this = {};
+  this->max_width = 3000;
+  this->max_height = 3000;
+  this->memory = program_memory->allocate(this->max_width * this->max_height *
+                                          sizeof(u32));
+}
+
+Area *User_Interface::create_area(Area *parent_area, Rect rect,
+                                  Pixel_Buffer *draw_buffer) {
   assert(this->num_areas >= 0 && this->num_areas < EDITOR_MAX_AREA_COUNT);
 
   Area *area = &this->areas[this->num_areas];
@@ -262,6 +271,13 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
   area->editor_raytrace.area = area;
   if (parent_area != NULL) {
     area->editor_type = parent_area->editor_type;
+  }
+  if (draw_buffer != NULL) {
+    area->draw_buffer = draw_buffer;
+  } else {
+    area->draw_buffer =
+        (Pixel_Buffer *)this->memory->allocate(sizeof(Pixel_Buffer));
+    area->draw_buffer->allocate(this->memory);
   }
 
   return area;
@@ -290,7 +306,7 @@ Area_Splitter *User_Interface::vertical_split(Area *area, int position) {
   // Create 2 areas
   Rect rect = area->get_rect();
   rect.right = position;
-  splitter->areas[0] = this->create_area(area, rect);
+  splitter->areas[0] = this->create_area(area, rect, area->draw_buffer);
 
   rect = area->get_rect();
   rect.left = position;
@@ -308,7 +324,7 @@ Area_Splitter *User_Interface::horizontal_split(Area *area, int position) {
   // Create 2 areas
   Rect rect = area->get_rect();
   rect.bottom = position;
-  splitter->areas[0] = this->create_area(area, rect);
+  splitter->areas[0] = this->create_area(area, rect, area->draw_buffer);
 
   rect = area->get_rect();
   rect.top = position;
@@ -551,7 +567,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   return result;
 }
 
-void User_Interface::draw_areas(Pixel_Buffer *pixel_buffer, Ray_Tracer *rt) {
+void User_Interface::draw_areas(Ray_Tracer *rt) {
   // Draw areas
   for (int i = 0; i < this->num_areas; i++) {
     Area *area = this->areas + i;
@@ -560,11 +576,11 @@ void User_Interface::draw_areas(Pixel_Buffer *pixel_buffer, Ray_Tracer *rt) {
     // Draw editor contents
     switch (area->editor_type) {
       case Area_Editor_Type_Empty: {
-        area->editor_empty.update_and_draw(pixel_buffer);
+        area->editor_empty.draw();
       } break;
 
       case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.update_and_draw(pixel_buffer, rt);
+        area->editor_raytrace.draw(rt);
       } break;
 
       default: { assert(!"Unknown editor type"); } break;
@@ -573,19 +589,19 @@ void User_Interface::draw_areas(Pixel_Buffer *pixel_buffer, Ray_Tracer *rt) {
     // Draw panels
     Rect panel_rect = area->get_rect();
     panel_rect.top = area->bottom - AREA_PANEL_HEIGHT;
-    draw_rect(pixel_buffer, panel_rect, 0x00686868);
+    draw_rect(area->draw_buffer, panel_rect, 0x00686868);
 
     // Draw split handles
-    draw_rect(pixel_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
-    draw_rect(pixel_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
+    draw_rect(area->draw_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
+    draw_rect(area->draw_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
   }
 }
 
-void Editor_Empty::update_and_draw(Pixel_Buffer *pixel_buffer) {
-  draw_rect(pixel_buffer, this->area->get_rect(), {0});
+void Editor_Empty::draw() {
+  draw_rect(this->area->draw_buffer, this->area->get_rect(), {0});
 }
 
-void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer, Ray_Tracer *rt) {
+void Editor_Raytrace::draw(Ray_Tracer *rt) {
   // TODO: ray tracer should probably be member and not
   // a function parameter
 
@@ -627,7 +643,7 @@ void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer, Ray_Tracer *rt
         }
       }
 
-      draw_pixel(pixel_buffer,
+      draw_pixel(this->area->draw_buffer,
                  V2i(client_rect.left + x, client_rect.bottom - y - 1),
                  get_rgb_u32(color));
     }

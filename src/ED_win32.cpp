@@ -89,10 +89,6 @@ static void Win32ResizeClientWindow(HWND window) {
     height = g_pixel_buffer.max_height;
   }
 
-  if (!g_pixel_buffer.was_resized) {
-    g_pixel_buffer.prev_width = g_pixel_buffer.width;
-    g_pixel_buffer.prev_height = g_pixel_buffer.height;
-  }
   g_pixel_buffer.width = width;
   g_pixel_buffer.height = height;
   g_pixel_buffer.was_resized = true;
@@ -150,7 +146,7 @@ DWORD WINAPI ThreadProc(LPVOID lpParam) {
   Program_State *state = param->state;
 
   while (g_running) {
-    state->UI.draw_areas(&g_pixel_buffer, &state->ray_tracer);
+    state->UI.draw_areas(&state->ray_tracer);
   }
 
   return 0;
@@ -165,13 +161,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   // Main program state
   Program_State *state =
       (Program_State *)g_program_memory.allocate(sizeof(Program_State));
-  state->init();
+  state->init(&g_program_memory);
 
   // Init pixel buffer
-  g_pixel_buffer.max_width = 3000;
-  g_pixel_buffer.max_height = 3000;
-  g_pixel_buffer.memory = malloc(g_pixel_buffer.max_width *
-                                 g_pixel_buffer.max_height * sizeof(u32));
+  g_pixel_buffer.allocate(&g_program_memory);
 
   // Create window class
   WNDCLASS WindowClass = {};
