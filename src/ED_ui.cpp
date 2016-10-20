@@ -279,6 +279,8 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect,
         (Pixel_Buffer *)this->memory->allocate(sizeof(Pixel_Buffer));
     area->draw_buffer->allocate(this->memory);
   }
+  area->draw_buffer->width = area->get_width();
+  area->draw_buffer->height = area->get_height();
 
   return area;
 }
@@ -505,6 +507,21 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     }
   }
 
+  // Copy area buffers into the main buffer
+  for (int i = 0; i < ui->num_areas; i++) {
+    Area *area = ui->areas + i;
+    Rect client_rect = area->get_client_rect();
+    Pixel_Buffer *src_buffer = area->draw_buffer;
+    for (int y = 0; y < src_buffer->height; y++) {
+      for (int x = 0; x < src_buffer->width; x++) {
+        u32 *pixel_src = (u32 *)src_buffer->memory + x + y * src_buffer->width;
+        u32 *pixel_dest = (u32 *)pixel_buffer->memory + (client_rect.left + x) +
+                          (client_rect.top + y) * pixel_buffer->width;
+        *pixel_dest = *pixel_src;
+      }
+    }
+  }
+
   // Draw editor type selector
   for (int i = 0; i < ui->num_areas; i++) {
     Area *area = ui->areas + i;
@@ -598,7 +615,7 @@ void User_Interface::draw_areas(Ray_Tracer *rt) {
 }
 
 void Editor_Empty::draw() {
-  draw_rect(this->area->draw_buffer, this->area->get_rect(), {0});
+  draw_rect(this->area->draw_buffer, this->area->get_client_rect(), {0});
 }
 
 void Editor_Raytrace::draw(Ray_Tracer *rt) {
@@ -643,9 +660,7 @@ void Editor_Raytrace::draw(Ray_Tracer *rt) {
         }
       }
 
-      draw_pixel(this->area->draw_buffer,
-                 V2i(client_rect.left + x, client_rect.bottom - y - 1),
-                 get_rgb_u32(color));
+      draw_pixel(this->area->draw_buffer, V2i(x, y), get_rgb_u32(color));
     }
   }
 }
