@@ -107,8 +107,8 @@ Update_Result update_and_render(Program_Memory *program_memory, Program_State *s
                                 Pixel_Buffer *pixel_buffer, User_Input *input) {
   Update_Result result = {};
 
-  User_Interface *ui = &state->UI;
-  result = ui->update_and_draw(pixel_buffer, input, &state->ray_tracer);
+
+  result = state->UI.update_and_draw(pixel_buffer, input);
 
   return result;
 }

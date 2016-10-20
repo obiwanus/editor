@@ -19,7 +19,7 @@ global GLuint gTextureHandle;
 
 struct Win32_Thread_Param {
   int thread_number;
-  int vasia;
+  Program_State *state;
 };
 
 static void Win32UpdateWindow(HDC hdc) {
@@ -147,6 +147,11 @@ inline r32 Win32GetMillisecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End) {
 
 DWORD WINAPI ThreadProc(LPVOID lpParam) {
   Win32_Thread_Param *param = (Win32_Thread_Param *)lpParam;
+  Program_State *state = param->state;
+
+  while (g_running) {
+    state->UI.draw_areas(&g_pixel_buffer, &state->ray_tracer);
+  }
 
   return 0;
 }
@@ -282,11 +287,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
   // Create worker threads
   {
-    const int kMaxThreads = 7;
+    const int kMaxThreads = 1;
     Win32_Thread_Param thread_params[kMaxThreads];
 
     for (int i = 0; i < kMaxThreads; i++) {
       thread_params[i].thread_number = i;
+      thread_params[i].state = state;
       HANDLE thread_handle =
           CreateThread(0,           // LPSECURITY_ATTRIBUTES lpThreadAttributes,
                        0,           // SIZE_T dwStackSize,

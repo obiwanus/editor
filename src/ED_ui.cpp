@@ -383,8 +383,7 @@ void User_Interface::resize_window(int new_width, int new_height) {
 }
 
 Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
-                                              User_Input *input,
-                                              Ray_Tracer *rt) {
+                                              User_Input *input) {
   Update_Result result = {};
   User_Interface *ui = this;
 
@@ -465,34 +464,6 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     ui->can_split_area = true;
   }
 
-  // Draw areas
-  for (int i = 0; i < ui->num_areas; i++) {
-    Area *area = ui->areas + i;
-    if (area->splitter != NULL) continue;  // ignore wrapper areas
-
-    // Draw editor contents
-    switch (area->editor_type) {
-      case Area_Editor_Type_Empty: {
-        area->editor_empty.update_and_draw(pixel_buffer, input);
-      } break;
-
-      case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.update_and_draw(pixel_buffer, input, rt);
-      } break;
-
-      default: { assert(!"Unknown editor type"); } break;
-    }
-
-    // Draw panels
-    Rect panel_rect = area->get_rect();
-    panel_rect.top = area->bottom - AREA_PANEL_HEIGHT;
-    draw_rect(pixel_buffer, panel_rect, 0x00686868);
-
-    // Draw split handles
-    draw_rect(pixel_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
-    draw_rect(pixel_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
-  }
-
   // Draw splitters
   for (int i = 0; i < ui->num_splitters; i++) {
     Area_Splitter *splitter = ui->splitters + i;
@@ -503,14 +474,17 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
       left = splitter->position;
       top = area->top;
       bottom = area->bottom;
-      draw_line(pixel_buffer, V2i(left - 1, top), V2i(left - 1, bottom), 0x00323232);
+      draw_line(pixel_buffer, V2i(left - 1, top), V2i(left - 1, bottom),
+                0x00323232);
       draw_line(pixel_buffer, V2i(left, top), V2i(left, bottom), 0x00000000);
-      draw_line(pixel_buffer, V2i(left + 1, top), V2i(left + 1, bottom), 0x00505050);
+      draw_line(pixel_buffer, V2i(left + 1, top), V2i(left + 1, bottom),
+                0x00505050);
     } else {
       top = splitter->position;
       left = area->left;
       right = area->right;
-      draw_line(pixel_buffer, V2i(left, top - 1), V2i(right, top - 1), 0x00000000);
+      draw_line(pixel_buffer, V2i(left, top - 1), V2i(right, top - 1),
+                0x00000000);
       draw_line(pixel_buffer, V2i(left, top), V2i(right, top), 0x00505050);
     }
   }
@@ -528,7 +502,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     selector_rect.bottom = selector_rect.top + 18;
 
     if (selector_rect.contains(input->mouse)) {
-      draw_rect(pixel_buffer, selector_rect, {0.2f,0.2f,0.2f});
+      draw_rect(pixel_buffer, selector_rect, {0.2f, 0.2f, 0.2f});
     } else {
       draw_rect(pixel_buffer, selector_rect, {0});
     }
@@ -577,13 +551,44 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   return result;
 }
 
-void Editor_Empty::update_and_draw(Pixel_Buffer *pixel_buffer,
-                                   User_Input *input) {
+void User_Interface::draw_areas(Pixel_Buffer *pixel_buffer, Ray_Tracer *rt) {
+  // Draw areas
+  for (int i = 0; i < this->num_areas; i++) {
+    Area *area = this->areas + i;
+    if (area->splitter != NULL) continue;  // ignore wrapper areas
+
+    // Draw editor contents
+    switch (area->editor_type) {
+      case Area_Editor_Type_Empty: {
+        area->editor_empty.update_and_draw(pixel_buffer);
+      } break;
+
+      case Area_Editor_Type_Raytrace: {
+        area->editor_raytrace.update_and_draw(pixel_buffer, rt);
+      } break;
+
+      default: { assert(!"Unknown editor type"); } break;
+    }
+
+    // Draw panels
+    Rect panel_rect = area->get_rect();
+    panel_rect.top = area->bottom - AREA_PANEL_HEIGHT;
+    draw_rect(pixel_buffer, panel_rect, 0x00686868);
+
+    // Draw split handles
+    draw_rect(pixel_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
+    draw_rect(pixel_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
+  }
+}
+
+void Editor_Empty::update_and_draw(Pixel_Buffer *pixel_buffer) {
   draw_rect(pixel_buffer, this->area->get_rect(), {0});
 }
 
-void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
-                                      User_Input *input, Ray_Tracer *rt) {
+void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer, Ray_Tracer *rt) {
+  // TODO: ray tracer should probably be member and not
+  // a function parameter
+
   RayCamera *camera = &rt->camera;
   LightSource *lights = rt->lights;
   RayObject **ray_objects = rt->ray_objects;
@@ -592,8 +597,9 @@ void Editor_Raytrace::update_and_draw(Pixel_Buffer *pixel_buffer,
 
   v2i pixel_count = {client_rect.right - client_rect.left,
                      client_rect.bottom - client_rect.top};
+
   // TODO: this is wrong but tmp.
-  // Ideally a raytrace view should have had its own camera,
+  // Ideally a raytrace view should have its own camera,
   // but this is probably not going to happen anyway
   camera->left = -pixel_count.x / 2;
   camera->right = pixel_count.x / 2;

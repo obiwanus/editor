@@ -93,11 +93,11 @@ struct Area_Editor {
 };
 
 struct Editor_Empty : Area_Editor {
-  void update_and_draw(Pixel_Buffer *, User_Input *);
+  void update_and_draw(Pixel_Buffer *);
 };
 
 struct Editor_Raytrace : Area_Editor {
-  void update_and_draw(Pixel_Buffer *, User_Input *, Ray_Tracer *);
+  void update_and_draw(Pixel_Buffer *, Ray_Tracer *);
 };
 
 struct Area {
@@ -188,7 +188,8 @@ struct User_Interface {
   Area_Splitter *horizontal_split(Area *, int);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
-  Update_Result update_and_draw(Pixel_Buffer *, User_Input *, Ray_Tracer *);
+  Update_Result update_and_draw(Pixel_Buffer *, User_Input *);
+  void draw_areas(Pixel_Buffer *, Ray_Tracer *);
 };
 
 
