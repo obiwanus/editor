@@ -32,7 +32,7 @@ void Program_State::init(Program_Memory *memory) {
   Area_Splitter *splitter =
       state->UI.vertical_split(area, area->get_width() / 2);
   splitter->areas[0]->editor_type = Area_Editor_Type_Raytrace;
-  splitter->areas[1]->editor_type = Area_Editor_Type_Raytrace;
+  // splitter->areas[1]->editor_type = Area_Editor_Type_Raytrace;
 
   // Main ray tracer (tmp)
   Ray_Tracer *rt = &state->ray_tracer;

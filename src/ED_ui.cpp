@@ -415,6 +415,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     pixel_buffer->was_resized = false;
   }
 
+  // ----- Update ----------------------------------------------------
+
   if (input->mouse_left) {
     if (ui->area_being_split == NULL && ui->can_split_area &&
         ui->splitter_being_moved == NULL) {
@@ -487,6 +489,32 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     ui->can_split_area = true;
   }
 
+  // ------- Draw area contents -------------------------------------------
+
+  // Potentially will be in separate threads
+  ui->draw_areas(NULL);
+
+  // Copy area buffers into the main buffer
+  for (int i = 0; i < ui->num_areas; i++) {
+    Area *area = ui->areas + i;
+    if (area->splitter != NULL) continue;
+    Rect client_rect = area->get_client_rect();
+    Pixel_Buffer *src_buffer = area->draw_buffer;
+    for (int y = 0; y < src_buffer->height; y++) {
+      for (int x = 0; x < src_buffer->width; x++) {
+        u32 *pixel_src = (u32 *)src_buffer->memory + x + y * src_buffer->width;
+        u32 *pixel_dest = (u32 *)pixel_buffer->memory + (client_rect.left + x) +
+                          (client_rect.top + y) * pixel_buffer->width;
+        *pixel_dest = *pixel_src;
+      }
+    }
+  }
+
+  // TODO: optimize multiple loops.
+  // or maybe use an iterator if we need to keep them?
+
+  // ------ Draw UI elements ----------------------------------------------
+
   // Draw splitters
   for (int i = 0; i < ui->num_splitters; i++) {
     Area_Splitter *splitter = ui->splitters + i;
@@ -512,30 +540,21 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     }
   }
 
-  ui->draw_areas(NULL);
-
-  // Copy area buffers into the main buffer
+  // Draw panels and switches
   for (int i = 0; i < ui->num_areas; i++) {
     Area *area = ui->areas + i;
     if (area->splitter != NULL) continue;
-    Rect client_rect = area->get_client_rect();
-    Pixel_Buffer *src_buffer = area->draw_buffer;
-    for (int y = 0; y < src_buffer->height; y++) {
-      for (int x = 0; x < src_buffer->width; x++) {
-        u32 *pixel_src = (u32 *)src_buffer->memory + x + y * src_buffer->width;
-        u32 *pixel_dest = (u32 *)pixel_buffer->memory + (client_rect.left + x) +
-                          (client_rect.top + y) * pixel_buffer->width;
-        *pixel_dest = *pixel_src;
-      }
-    }
-  }
 
-  // Draw editor type selector
-  for (int i = 0; i < ui->num_areas; i++) {
-    Area *area = ui->areas + i;
+    // Draw panels
     Rect panel_rect = area->get_rect();
     panel_rect.top = area->bottom - AREA_PANEL_HEIGHT;
+    draw_rect(pixel_buffer, panel_rect, 0x00686868);
 
+    // Draw split handles
+    draw_rect(pixel_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
+    draw_rect(pixel_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
+
+    // Draw editor type selector
     Rect selector_rect;
     selector_rect.left = panel_rect.left + 15;
     selector_rect.right = panel_rect.left + 100;
@@ -553,7 +572,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 
     if (area->show_selector_popup) {
       Rect popup_rect;
-      popup_rect.left = selector_rect.left - 200;
+      popup_rect.left = selector_rect.left;
       popup_rect.right = selector_rect.left + 150;
       popup_rect.top = selector_rect.top - 250;
       popup_rect.bottom = selector_rect.top - 2;
@@ -612,20 +631,11 @@ void User_Interface::draw_areas(Ray_Tracer *rt) {
 
       default: { assert(!"Unknown editor type"); } break;
     }
-
-    // Draw panels
-    Rect panel_rect = area->get_rect();
-    panel_rect.top = area->bottom - AREA_PANEL_HEIGHT;
-    draw_rect(area->draw_buffer, panel_rect, 0x00686868);
-
-    // Draw split handles
-    draw_rect(area->draw_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
-    draw_rect(area->draw_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
   }
 }
 
 void Editor_Empty::draw() {
-  draw_rect(this->area->draw_buffer, this->area->get_client_rect(), {0});
+  draw_rect(this->area->draw_buffer, this->area->draw_buffer->get_rect(), {0});
 }
 
 void Editor_Raytrace::draw(Ray_Tracer *rt) {
