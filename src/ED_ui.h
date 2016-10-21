@@ -54,6 +54,17 @@ struct User_Input {
   v2i mouse;
 };
 
+struct Rect {
+  int left;
+  int top;
+  int right;
+  int bottom;
+
+  inline int get_width();
+  inline int get_height();
+  bool contains(v2i point);
+};
+
 struct Pixel_Buffer {
   int width;
   int height;
@@ -65,17 +76,7 @@ struct Pixel_Buffer {
   void *memory;
 
   void allocate(Program_Memory *);
-};
-
-struct Rect {
-  int left;
-  int top;
-  int right;
-  int bottom;
-
-  inline int get_width();
-  inline int get_height();
-  bool contains(v2i point);
+  Rect get_rect();
 };
 
 struct Area_Splitter;  // damned C++

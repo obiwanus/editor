@@ -101,10 +101,10 @@ void Program_State::init(Program_Memory *memory) {
   rt->camera.right = state->kWindowWidth / 2;
   rt->camera.bottom = -state->kWindowHeight / 2;
   rt->camera.top = state->kWindowHeight / 2;
-
 }
 
-Update_Result update_and_render(Program_Memory *program_memory, Program_State *state,
+Update_Result update_and_render(Program_Memory *program_memory,
+                                Program_State *state,
                                 Pixel_Buffer *pixel_buffer, User_Input *input) {
   Update_Result result = {};
 

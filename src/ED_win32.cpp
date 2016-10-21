@@ -145,9 +145,9 @@ DWORD WINAPI ThreadProc(LPVOID lpParam) {
   Win32_Thread_Param *param = (Win32_Thread_Param *)lpParam;
   Program_State *state = param->state;
 
-  while (g_running) {
-    state->UI.draw_areas(&state->ray_tracer);
-  }
+  // while (g_running) {
+  //   state->UI.draw_areas(&state->ray_tracer);
+  // }
 
   return 0;
 }

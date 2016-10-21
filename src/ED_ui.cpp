@@ -257,9 +257,14 @@ void Pixel_Buffer::allocate(Program_Memory *program_memory) {
                                           sizeof(u32));
 }
 
+Rect Pixel_Buffer::get_rect() {
+  Rect result = {0, 0, this->width, this->height};
+  return result;
+}
+
 Area *User_Interface::create_area(Area *parent_area, Rect rect,
                                   Pixel_Buffer *draw_buffer) {
-  assert(this->num_areas >= 0 && this->num_areas < EDITOR_MAX_AREA_COUNT);
+  assert(this->num_areas >= 0 && this->num_areas < EDITOR_MAX_AREA_COUNT - 1);
 
   Area *area = &this->areas[this->num_areas];
   this->num_areas++;
@@ -507,9 +512,12 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     }
   }
 
+  ui->draw_areas(NULL);
+
   // Copy area buffers into the main buffer
   for (int i = 0; i < ui->num_areas; i++) {
     Area *area = ui->areas + i;
+    if (area->splitter != NULL) continue;
     Rect client_rect = area->get_client_rect();
     Pixel_Buffer *src_buffer = area->draw_buffer;
     for (int y = 0; y < src_buffer->height; y++) {
@@ -589,6 +597,8 @@ void User_Interface::draw_areas(Ray_Tracer *rt) {
   for (int i = 0; i < this->num_areas; i++) {
     Area *area = this->areas + i;
     if (area->splitter != NULL) continue;  // ignore wrapper areas
+    area->draw_buffer->width = area->get_width();
+    area->draw_buffer->height = area->get_height();
 
     // Draw editor contents
     switch (area->editor_type) {
@@ -621,6 +631,12 @@ void Editor_Empty::draw() {
 void Editor_Raytrace::draw(Ray_Tracer *rt) {
   // TODO: ray tracer should probably be member and not
   // a function parameter
+
+  if (rt == NULL) {
+    draw_rect(this->area->draw_buffer, this->area->draw_buffer->get_rect(),
+              0x00123123);
+    return;
+  }
 
   RayCamera *camera = &rt->camera;
   LightSource *lights = rt->lights;
