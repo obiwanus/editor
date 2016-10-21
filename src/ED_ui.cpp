@@ -196,6 +196,10 @@ bool Area::mouse_over_split_handle(v2i mouse) {
          this->get_split_handle(1).contains(mouse);
 }
 
+bool Area::is_visible() {
+  return this->splitter == NULL;
+}
+
 Rect Area_Splitter::get_rect() {
   Rect result = {};
   const int kSensitivity = 5;
@@ -266,7 +270,7 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect,
                                   Pixel_Buffer *draw_buffer) {
   assert(this->num_areas >= 0 && this->num_areas < EDITOR_MAX_AREA_COUNT - 1);
 
-  Area *area = &this->areas[this->num_areas];
+  Area *area = this->areas + this->num_areas;
   this->num_areas++;
 
   *area = {};
@@ -277,6 +281,8 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect,
   if (parent_area != NULL) {
     area->editor_type = parent_area->editor_type;
   }
+
+  // Create or set draw buffer
   if (draw_buffer != NULL) {
     area->draw_buffer = draw_buffer;
   } else {
@@ -286,6 +292,15 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect,
   }
   area->draw_buffer->width = area->get_width();
   area->draw_buffer->height = area->get_height();
+
+  // Create a type selector
+  UI_Select *select = this->selects + this->num_selects;
+  this->num_selects++;
+  *select = {};
+  select->flags = select->flags | UI_Select_Align_Bottom;
+  select->x = 20;
+  select->y = 2;
+  select->parent_area = area;
 
   return area;
 }
@@ -423,7 +438,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
       // See if we're splitting any area
       for (int i = 0; i < ui->num_areas; i++) {
         Area *area = ui->areas + i;
-        if (area->splitter == NULL &&
+        if (area->is_visible() &&
             area->mouse_over_split_handle(input->mouse)) {
           ui->area_being_split = area;
           ui->pointer_start = input->mouse;
@@ -497,7 +512,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   // Copy area buffers into the main buffer
   for (int i = 0; i < ui->num_areas; i++) {
     Area *area = ui->areas + i;
-    if (area->splitter != NULL) continue;
+    if (!area->is_visible()) continue;
     Rect client_rect = area->get_client_rect();
     Pixel_Buffer *src_buffer = area->draw_buffer;
     for (int y = 0; y < src_buffer->height; y++) {
@@ -543,7 +558,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   // Draw panels and switches
   for (int i = 0; i < ui->num_areas; i++) {
     Area *area = ui->areas + i;
-    if (area->splitter != NULL) continue;
+    if (!area->is_visible()) continue;
 
     // Draw panels
     Rect panel_rect = area->get_rect();
@@ -554,30 +569,67 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     draw_rect(pixel_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
     draw_rect(pixel_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
 
-    // Draw editor type selector
-    Rect selector_rect;
-    selector_rect.left = panel_rect.left + 15;
-    selector_rect.right = panel_rect.left + 100;
-    selector_rect.top = panel_rect.top + 4;
-    selector_rect.bottom = selector_rect.top + 18;
+    // // Draw editor type selector
+    // {
+    //   Rect selector_rect;
+    //   selector_rect.left = panel_rect.left + 15;
+    //   selector_rect.right = panel_rect.left + 100;
+    //   selector_rect.top = panel_rect.top + 4;
+    //   selector_rect.bottom = selector_rect.top + 18;
 
-    if (selector_rect.contains(input->mouse)) {
-      draw_rect(pixel_buffer, selector_rect, {0.2f, 0.2f, 0.2f});
+    //   bool mouse_over = selector_rect.contains(input->mouse);
+
+    //   if (mouse_over) {
+    //     draw_rect(pixel_buffer, selector_rect, {0.2f, 0.2f, 0.2f});
+    //   } else {
+    //     draw_rect(pixel_buffer, selector_rect, {0});
+    //   }
+    //   if (input->mouse_left) {
+    //     area->show_selector_popup = mouse_over;
+    //   }
+
+    //   if (area->show_selector_popup) {
+    //     Rect popup_rect;
+    //     popup_rect.left = selector_rect.left;
+    //     popup_rect.right = selector_rect.left + 150;
+    //     popup_rect.top = selector_rect.top - 250;
+    //     popup_rect.bottom = selector_rect.top - 2;
+    //     draw_rect(pixel_buffer, popup_rect, {0});
+    //   }
+    // }
+  }
+
+  // Draw ui selects
+  for (int i = 0; i < ui->num_selects; i++) {
+    UI_Select *select = ui->selects + i;
+    if (select->parent_area && !select->parent_area->is_visible()) continue;
+
+    Rect bounds;
+    if (select->parent_area != NULL) {
+      bounds = select->parent_area->get_rect();
     } else {
-      draw_rect(pixel_buffer, selector_rect, {0});
-    }
-    if (input->mouse_left) {
-      area->show_selector_popup = selector_rect.contains(input->mouse);
+      bounds = pixel_buffer->get_rect();
     }
 
-    if (area->show_selector_popup) {
-      Rect popup_rect;
-      popup_rect.left = selector_rect.left;
-      popup_rect.right = selector_rect.left + 150;
-      popup_rect.top = selector_rect.top - 250;
-      popup_rect.bottom = selector_rect.top - 2;
-      draw_rect(pixel_buffer, popup_rect, {0});
+    const int kSelectWidth = 200;
+    const int kSelectHeight = 18;
+    Rect rect = {};
+    if (select->flags & UI_Select_Align_Bottom) {
+      rect.bottom = bounds.bottom - select->y;
+      rect.top = rect.bottom - kSelectHeight;
+    } else {
+      rect.top = bounds.top + select->y;
+      rect.bottom = rect.top + kSelectHeight;
     }
+    if (select->flags & UI_Select_Align_Right) {
+      rect.right = bounds.right - select->x;
+      rect.left = rect.right - kSelectWidth;
+    } else {
+      rect.left = bounds.left + select->x;
+      rect.right = rect.left + kSelectWidth;
+    }
+
+    draw_rect(pixel_buffer, rect, 0x00FF3123);
   }
 
   // -- Cursors ---------------
@@ -615,7 +667,7 @@ void User_Interface::draw_areas(Ray_Tracer *rt) {
   // Draw areas
   for (int i = 0; i < this->num_areas; i++) {
     Area *area = this->areas + i;
-    if (area->splitter != NULL) continue;  // ignore wrapper areas
+    if (!area->is_visible()) continue;  // ignore wrapper areas
     area->draw_buffer->width = area->get_width();
     area->draw_buffer->height = area->get_height();
 

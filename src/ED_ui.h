@@ -82,6 +82,21 @@ struct Pixel_Buffer {
 struct Area_Splitter;  // damned C++
 struct Area;           // bloody C++
 
+enum UI_Select_Flags {
+  UI_Select_None = 0x00,
+  UI_Select_Highlighted = 0x01,
+  UI_Select_Selected = 0x02,
+  UI_Select_Align_Right = 0x04,
+  UI_Select_Align_Bottom = 0x08,
+};
+
+struct UI_Select {
+  u8 flags;
+  int x;
+  int y;
+  Area *parent_area;
+};
+
 enum Area_Editor_Type {
   Area_Editor_Type_Empty = 0,
   Area_Editor_Type_Raytrace,
@@ -131,6 +146,8 @@ struct Area {
   Rect get_split_handle(int);
   bool mouse_over_split_handle(v2i);
 
+  bool is_visible();
+
   void set_left(int);
   void set_right(int);
   void set_top(int);
@@ -170,21 +187,28 @@ struct Update_Result {
 };
 
 #define EDITOR_MAX_AREA_COUNT 50
+#define EDITOR_MAX_SELECT_COUNT 100
 
 struct User_Interface {
   Program_Memory *memory;
 
+  v2i pointer_start;
+
+  // Areas and splitters
   int num_areas;
   int num_splitters;
 
-  v2i pointer_start;
+  Area areas[EDITOR_MAX_AREA_COUNT];
+  Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
+
   bool can_pick_splitter;
   bool can_split_area;
   Area *area_being_split;
   Area_Splitter *splitter_being_moved;
 
-  Area areas[EDITOR_MAX_AREA_COUNT];
-  Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
+  // Selects
+  int num_selects;
+  UI_Select selects[EDITOR_MAX_SELECT_COUNT];
 
   Area *create_area(Area *, Rect, Pixel_Buffer *buf = NULL);
   Area_Splitter *_new_splitter(Area *);
