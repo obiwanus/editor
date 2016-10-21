@@ -266,6 +266,34 @@ Rect Pixel_Buffer::get_rect() {
   return result;
 }
 
+Rect UI_Select::get_rect() {
+  UI_Select *select = this;
+  assert(select->parent_area != NULL);
+
+  Rect rect;
+  Rect bounds = select->parent_area->get_rect();;
+
+  const int kSelectWidth = 150;
+  const int kSelectHeight = 18;
+
+  if (select->flags & UI_Select_Align_Bottom) {
+    rect.bottom = bounds.bottom - select->y;
+    rect.top = rect.bottom - kSelectHeight;
+  } else {
+    rect.top = bounds.top + select->y;
+    rect.bottom = rect.top + kSelectHeight;
+  }
+  if (select->flags & UI_Select_Align_Right) {
+    rect.right = bounds.right - select->x;
+    rect.left = rect.right - kSelectWidth;
+  } else {
+    rect.left = bounds.left + select->x;
+    rect.right = rect.left + kSelectWidth;
+  }
+
+  return rect;
+}
+
 Area *User_Interface::create_area(Area *parent_area, Rect rect,
                                   Pixel_Buffer *draw_buffer) {
   assert(this->num_areas >= 0 && this->num_areas < EDITOR_MAX_AREA_COUNT - 1);
@@ -604,32 +632,22 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     UI_Select *select = ui->selects + i;
     if (select->parent_area && !select->parent_area->is_visible()) continue;
 
-    Rect bounds;
-    if (select->parent_area != NULL) {
-      bounds = select->parent_area->get_rect();
+    Rect rect = select->get_rect();
+
+    // Update
+    if (rect.contains(input->mouse)) {
+      select->flags |= UI_Select_Highlighted;
     } else {
-      bounds = pixel_buffer->get_rect();
+      select->flags &= ~UI_Select_Highlighted;
     }
 
-    const int kSelectWidth = 200;
-    const int kSelectHeight = 18;
-    Rect rect = {};
-    if (select->flags & UI_Select_Align_Bottom) {
-      rect.bottom = bounds.bottom - select->y;
-      rect.top = rect.bottom - kSelectHeight;
-    } else {
-      rect.top = bounds.top + select->y;
-      rect.bottom = rect.top + kSelectHeight;
-    }
-    if (select->flags & UI_Select_Align_Right) {
-      rect.right = bounds.right - select->x;
-      rect.left = rect.right - kSelectWidth;
-    } else {
-      rect.left = bounds.left + select->x;
-      rect.right = rect.left + kSelectWidth;
-    }
+    // Draw
 
-    draw_rect(pixel_buffer, rect, 0x00FF3123);
+    if (select->flags & UI_Select_Highlighted) {
+      draw_rect(pixel_buffer, rect, 0x00234234);
+    } else {
+      draw_rect(pixel_buffer, rect, 0x00123123);
+    }
   }
 
   // -- Cursors ---------------

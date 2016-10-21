@@ -95,6 +95,8 @@ struct UI_Select {
   int x;
   int y;
   Area *parent_area;
+
+  Rect get_rect();
 };
 
 enum Area_Editor_Type {
@@ -186,6 +188,7 @@ struct Update_Result {
   Cursor_Type cursor;
 };
 
+// TODO: use auto-extending arrays instead
 #define EDITOR_MAX_AREA_COUNT 50
 #define EDITOR_MAX_SELECT_COUNT 100
 
