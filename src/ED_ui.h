@@ -82,21 +82,19 @@ struct Pixel_Buffer {
 struct Area_Splitter;  // damned C++
 struct Area;           // bloody C++
 
-enum UI_Select_Flags {
-  UI_Select_None = 0x00,
-  UI_Select_Highlighted = 0x01,
-  UI_Select_Selected = 0x02,
-  UI_Select_Align_Right = 0x04,
-  UI_Select_Align_Bottom = 0x08,
-};
-
 struct UI_Select {
-  u8 flags;
+  // Simpler than flags
+  bool align_right;
+  bool align_bottom;
+  bool highlighted;
+  bool selected;
+
   int x;
   int y;
   Area *parent_area;
 
   Rect get_rect();
+  Rect get_absolute_rect();
 };
 
 enum Area_Editor_Type {

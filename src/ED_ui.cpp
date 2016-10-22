@@ -196,9 +196,7 @@ bool Area::mouse_over_split_handle(v2i mouse) {
          this->get_split_handle(1).contains(mouse);
 }
 
-bool Area::is_visible() {
-  return this->splitter == NULL;
-}
+bool Area::is_visible() { return this->splitter == NULL; }
 
 Rect Area_Splitter::get_rect() {
   Rect result = {};
@@ -267,29 +265,40 @@ Rect Pixel_Buffer::get_rect() {
 }
 
 Rect UI_Select::get_rect() {
-  UI_Select *select = this;
-  assert(select->parent_area != NULL);
-
+  assert(this->parent_area != NULL);
   Rect rect;
-  Rect bounds = select->parent_area->get_rect();;
+  Rect bounds = {0, 0, this->parent_area->get_width(),
+                 this->parent_area->get_height()};
 
-  const int kSelectWidth = 150;
+  const int kSelectWidth = 100;
   const int kSelectHeight = 18;
 
-  if (select->flags & UI_Select_Align_Bottom) {
-    rect.bottom = bounds.bottom - select->y;
+  if (this->align_bottom) {
+    rect.bottom = bounds.bottom - this->y;
     rect.top = rect.bottom - kSelectHeight;
   } else {
-    rect.top = bounds.top + select->y;
+    rect.top = bounds.top + this->y;
     rect.bottom = rect.top + kSelectHeight;
   }
-  if (select->flags & UI_Select_Align_Right) {
-    rect.right = bounds.right - select->x;
+  if (this->align_right) {
+    rect.right = bounds.right - this->x;
     rect.left = rect.right - kSelectWidth;
   } else {
-    rect.left = bounds.left + select->x;
+    rect.left = bounds.left + this->x;
     rect.right = rect.left + kSelectWidth;
   }
+
+  return rect;
+}
+
+Rect UI_Select::get_absolute_rect() {
+  assert(this->parent_area != NULL);
+  Rect rect = this->get_rect();
+
+  rect.left += this->parent_area->left;
+  rect.right += this->parent_area->left;
+  rect.top += this->parent_area->top;
+  rect.bottom += this->parent_area->top;
 
   return rect;
 }
@@ -325,9 +334,9 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect,
   UI_Select *select = this->selects + this->num_selects;
   this->num_selects++;
   *select = {};
-  select->flags = select->flags | UI_Select_Align_Bottom;
+  select->align_bottom = true;
   select->x = 20;
-  select->y = 2;
+  select->y = 3;
   select->parent_area = area;
 
   return area;
@@ -466,8 +475,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
       // See if we're splitting any area
       for (int i = 0; i < ui->num_areas; i++) {
         Area *area = ui->areas + i;
-        if (area->is_visible() &&
-            area->mouse_over_split_handle(input->mouse)) {
+        if (area->is_visible() && area->mouse_over_split_handle(input->mouse)) {
           ui->area_being_split = area;
           ui->pointer_start = input->mouse;
           break;
@@ -537,6 +545,40 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   // Potentially will be in separate threads
   ui->draw_areas(NULL);
 
+  // Draw panels
+  for (int i = 0; i < ui->num_areas; i++) {
+    Area *area = ui->areas + i;
+    if (!area->is_visible()) continue;
+
+    // Draw panels
+    Rect panel_rect = area->draw_buffer->get_rect();
+    panel_rect.top = panel_rect.bottom - AREA_PANEL_HEIGHT;
+    draw_rect(area->draw_buffer, panel_rect, 0x00686868);
+  }
+
+  // Draw ui selects
+  for (int i = 0; i < ui->num_selects; i++) {
+    UI_Select *select = ui->selects + i;
+    if (select->parent_area && !select->parent_area->is_visible()) continue;
+
+    // Update
+    bool mouse_over = select->parent_area->get_rect().contains(input->mouse) &&
+                      select->get_absolute_rect().contains(input->mouse);
+    if (mouse_over) {
+      select->highlighted = true;
+    } else {
+      select->highlighted = false;
+    }
+
+    // Draw
+    Rect rect = select->get_rect();
+    if (select->highlighted) {
+      draw_rect(select->parent_area->draw_buffer, rect, 0x00234234);
+    } else {
+      draw_rect(select->parent_area->draw_buffer, rect, 0x00123123);
+    }
+  }
+
   // Copy area buffers into the main buffer
   for (int i = 0; i < ui->num_areas; i++) {
     Area *area = ui->areas + i;
@@ -583,71 +625,13 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     }
   }
 
-  // Draw panels and switches
   for (int i = 0; i < ui->num_areas; i++) {
     Area *area = ui->areas + i;
     if (!area->is_visible()) continue;
 
-    // Draw panels
-    Rect panel_rect = area->get_rect();
-    panel_rect.top = area->bottom - AREA_PANEL_HEIGHT;
-    draw_rect(pixel_buffer, panel_rect, 0x00686868);
-
     // Draw split handles
     draw_rect(pixel_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
     draw_rect(pixel_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
-
-    // // Draw editor type selector
-    // {
-    //   Rect selector_rect;
-    //   selector_rect.left = panel_rect.left + 15;
-    //   selector_rect.right = panel_rect.left + 100;
-    //   selector_rect.top = panel_rect.top + 4;
-    //   selector_rect.bottom = selector_rect.top + 18;
-
-    //   bool mouse_over = selector_rect.contains(input->mouse);
-
-    //   if (mouse_over) {
-    //     draw_rect(pixel_buffer, selector_rect, {0.2f, 0.2f, 0.2f});
-    //   } else {
-    //     draw_rect(pixel_buffer, selector_rect, {0});
-    //   }
-    //   if (input->mouse_left) {
-    //     area->show_selector_popup = mouse_over;
-    //   }
-
-    //   if (area->show_selector_popup) {
-    //     Rect popup_rect;
-    //     popup_rect.left = selector_rect.left;
-    //     popup_rect.right = selector_rect.left + 150;
-    //     popup_rect.top = selector_rect.top - 250;
-    //     popup_rect.bottom = selector_rect.top - 2;
-    //     draw_rect(pixel_buffer, popup_rect, {0});
-    //   }
-    // }
-  }
-
-  // Draw ui selects
-  for (int i = 0; i < ui->num_selects; i++) {
-    UI_Select *select = ui->selects + i;
-    if (select->parent_area && !select->parent_area->is_visible()) continue;
-
-    Rect rect = select->get_rect();
-
-    // Update
-    if (rect.contains(input->mouse)) {
-      select->flags |= UI_Select_Highlighted;
-    } else {
-      select->flags &= ~UI_Select_Highlighted;
-    }
-
-    // Draw
-
-    if (select->flags & UI_Select_Highlighted) {
-      draw_rect(pixel_buffer, rect, 0x00234234);
-    } else {
-      draw_rect(pixel_buffer, rect, 0x00123123);
-    }
   }
 
   // -- Cursors ---------------
