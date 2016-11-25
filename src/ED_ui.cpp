@@ -573,9 +573,9 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     // Draw
     Rect rect = select->get_rect();
     if (select->highlighted) {
-      draw_rect(select->parent_area->draw_buffer, rect, 0x00234234);
+      draw_rect(select->parent_area->draw_buffer, rect, 0x00222222);
     } else {
-      draw_rect(select->parent_area->draw_buffer, rect, 0x00123123);
+      draw_rect(select->parent_area->draw_buffer, rect, 0x00111111);
     }
   }
 
