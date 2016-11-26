@@ -88,10 +88,12 @@ struct UI_Select {
   bool align_right;
   bool align_bottom;
   bool highlighted;
-  bool selected;
+  bool open;
 
   int option_count;
   int option_height;
+
+  int option_selected;
 
   int x;
   int y;

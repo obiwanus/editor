@@ -586,34 +586,39 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 
     // Update
     bool mouse_in_area = parent_area_rect.contains(input->mouse);
-    bool mouse_over =
+    bool mouse_over_select =
         mouse_in_area &&
         select_rect.contains(parent_area_rect.projected(input->mouse));
+    bool mouse_over_options =
+        mouse_in_area &&
+        all_options_rect.contains(parent_area_rect.projected(input->mouse));
 
-    if (mouse_over && input->mouse_left) {
-      select->selected = true;
+    if (mouse_over_select && input->mouse_left) {
+      select->open = true;
     }
 
-    if (select->selected && (!mouse_in_area ||
-                             !all_options_rect.contains(
-                                 parent_area_rect.projected(input->mouse)))) {
-      select->selected = false;
+    if (select->open && (!mouse_in_area || !mouse_over_options)) {
+      select->open = false;
     }
 
-    if (mouse_over) {
+    if (mouse_over_select) {
       select->highlighted = true;
-    } else if (!select->selected) {
+    } else if (!select->open) {
       select->highlighted = false;
     }
+
+    const u32 colors[10] = {0x00123123, 0x00111111, 0x00505050,
+                            0x00323232, 0x00684829, 0x00342055};
 
     // Draw
     if (select->highlighted) {
       draw_rect(select->parent_area->draw_buffer, select_rect, 0x00222222);
     } else {
-      draw_rect(select->parent_area->draw_buffer, select_rect, 0x00111111);
+      draw_rect(select->parent_area->draw_buffer, select_rect,
+                colors[select->option_selected]);
     }
 
-    if (select->selected) {
+    if (select->open) {
       int bottom = select_rect.top;
       for (int opt = 0; opt < select->option_count; opt++) {
         Rect option;
@@ -623,14 +628,20 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
         option.top = option.bottom - select->option_height;
         Rect parent_rect = select->parent_area->get_rect();
         bool mouse_over_option =
-            parent_rect.contains(input->mouse) &&
+            mouse_over_options &&
             option.contains(parent_rect.projected(input->mouse));
         u32 color = 0x00111111;
         if (mouse_over_option) {
           color = 0x00222222;
         }
-        draw_rect(select->parent_area->draw_buffer, option, color);
+        draw_rect(select->parent_area->draw_buffer, option, colors[opt]);
         bottom -= select->option_height + 1;
+
+        // Select the option on click
+        if (mouse_over_option && input->mouse_left) {
+          select->option_selected = opt;
+          select->open = false;
+        }
       }
     }
   }
