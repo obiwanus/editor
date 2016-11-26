@@ -626,15 +626,14 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
         option.left = select_rect.left;
         option.right = select_rect.right + 30;
         option.top = option.bottom - select->option_height;
-        Rect parent_rect = select->parent_area->get_rect();
         bool mouse_over_option =
             mouse_over_options &&
-            option.contains(parent_rect.projected(input->mouse));
-        u32 color = 0x00111111;
+            option.contains(parent_area_rect.projected(input->mouse));
+        u32 color = colors[opt];
         if (mouse_over_option) {
-          color = 0x00222222;
+          color += 0x00121212;
         }
-        draw_rect(select->parent_area->draw_buffer, option, colors[opt]);
+        draw_rect(select->parent_area->draw_buffer, option, color);
         bottom -= select->option_height + 1;
 
         // Select the option on click
