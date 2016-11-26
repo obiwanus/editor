@@ -90,6 +90,9 @@ struct UI_Select {
   bool highlighted;
   bool selected;
 
+  int option_count;
+  int option_height;
+
   int x;
   int y;
   Area *parent_area;

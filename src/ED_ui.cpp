@@ -347,6 +347,8 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect,
   select->align_bottom = true;
   select->x = 20;
   select->y = 3;
+  select->option_count = 5;
+  select->option_height = 20;
   select->parent_area = area;
 
   return area;
@@ -571,45 +573,65 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     UI_Select *select = ui->selects + i;
     if (select->parent_area && !select->parent_area->is_visible()) continue;
 
+    Rect select_rect = select->get_rect();
+    Rect parent_area_rect = select->parent_area->get_rect();
+    Rect all_options_rect;
+    int kMargin = 5;
+    all_options_rect.left = select_rect.left - kMargin;
+    all_options_rect.right = select_rect.right + 30 + kMargin;
+    all_options_rect.bottom = select_rect.bottom + kMargin;
+    all_options_rect.top = select_rect.top -
+                           select->option_count * (select->option_height + 1) -
+                           kMargin;
+
     // Update
-    bool mouse_over = select->parent_area->get_rect().contains(input->mouse) &&
-                      select->get_absolute_rect().contains(input->mouse);
+    bool mouse_in_area = parent_area_rect.contains(input->mouse);
+    bool mouse_over =
+        mouse_in_area &&
+        select_rect.contains(parent_area_rect.projected(input->mouse));
+
+    if (mouse_over && input->mouse_left) {
+      select->selected = true;
+    }
+
+    if (select->selected && (!mouse_in_area ||
+                             !all_options_rect.contains(
+                                 parent_area_rect.projected(input->mouse)))) {
+      select->selected = false;
+    }
+
     if (mouse_over) {
       select->highlighted = true;
-    } else {
+    } else if (!select->selected) {
       select->highlighted = false;
     }
 
     // Draw
-    Rect select_rect = select->get_rect();
     if (select->highlighted) {
       draw_rect(select->parent_area->draw_buffer, select_rect, 0x00222222);
     } else {
       draw_rect(select->parent_area->draw_buffer, select_rect, 0x00111111);
     }
 
-    {
-      int option_count = 4;
-      int option_height = 20;
+    if (select->selected) {
       int bottom = select_rect.top;
-      for (int opt = 0; opt < option_count; opt++) {
+      for (int opt = 0; opt < select->option_count; opt++) {
         Rect option;
         option.bottom = bottom;
         option.left = select_rect.left;
         option.right = select_rect.right + 30;
-        option.top = option.bottom - option_height;
-        u32 color = 0x00111111;
+        option.top = option.bottom - select->option_height;
         Rect parent_rect = select->parent_area->get_rect();
         bool mouse_over_option =
             parent_rect.contains(input->mouse) &&
             option.contains(parent_rect.projected(input->mouse));
+        u32 color = 0x00111111;
         if (mouse_over_option) {
           color = 0x00222222;
         }
         draw_rect(select->parent_area->draw_buffer, option, color);
-        bottom -= option_height + 1;
+        bottom -= select->option_height + 1;
       }
-
     }
   }
 
