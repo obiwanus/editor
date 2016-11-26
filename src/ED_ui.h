@@ -63,6 +63,7 @@ struct Rect {
   inline int get_width();
   inline int get_height();
   bool contains(v2i point);
+  v2i projected(v2i point);
 };
 
 struct Pixel_Buffer {

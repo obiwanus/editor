@@ -97,6 +97,15 @@ bool Rect::contains(v2i point) {
   return result;
 }
 
+v2i Rect::projected(v2i point) {
+  v2i result = point;
+
+  result.x -= this->left;
+  result.y -= this->top;
+
+  return result;
+}
+
 inline int Rect::get_width() {
   int result = this->right - this->left;
   assert(result >= 0);
@@ -292,6 +301,7 @@ Rect UI_Select::get_rect() {
 }
 
 Rect UI_Select::get_absolute_rect() {
+  // TODO: maybe we can just use "projected" instead?
   assert(this->parent_area != NULL);
   Rect rect = this->get_rect();
 
@@ -571,11 +581,35 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     }
 
     // Draw
-    Rect rect = select->get_rect();
+    Rect select_rect = select->get_rect();
     if (select->highlighted) {
-      draw_rect(select->parent_area->draw_buffer, rect, 0x00222222);
+      draw_rect(select->parent_area->draw_buffer, select_rect, 0x00222222);
     } else {
-      draw_rect(select->parent_area->draw_buffer, rect, 0x00111111);
+      draw_rect(select->parent_area->draw_buffer, select_rect, 0x00111111);
+    }
+
+    {
+      int option_count = 4;
+      int option_height = 20;
+      int bottom = select_rect.top;
+      for (int opt = 0; opt < option_count; opt++) {
+        Rect option;
+        option.bottom = bottom;
+        option.left = select_rect.left;
+        option.right = select_rect.right + 30;
+        option.top = option.bottom - option_height;
+        u32 color = 0x00111111;
+        Rect parent_rect = select->parent_area->get_rect();
+        bool mouse_over_option =
+            parent_rect.contains(input->mouse) &&
+            option.contains(parent_rect.projected(input->mouse));
+        if (mouse_over_option) {
+          color = 0x00222222;
+        }
+        draw_rect(select->parent_area->draw_buffer, option, color);
+        bottom -= option_height + 1;
+      }
+
     }
   }
 
