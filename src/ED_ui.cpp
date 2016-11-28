@@ -568,6 +568,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     draw_rect(area->draw_buffer, panel_rect, 0x00686868);
   }
 
+  bool mouse_over_any_select = false;
+
   // Draw ui selects
   for (int i = 0; i < ui->num_selects; i++) {
     UI_Select *select = ui->selects + i;
@@ -593,12 +595,22 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
         mouse_in_area &&
         all_options_rect.contains(parent_area_rect.projected(input->mouse));
 
-    if (mouse_over_select && input->mouse_left) {
+    if (mouse_over_select) {
+      mouse_over_any_select = true;
+    }
+
+    if (mouse_over_select && input->mouse_left && ui->can_pick_select) {
       select->open = true;
+      ui->can_pick_select = false;
     }
 
     if (select->open && (!mouse_in_area || !mouse_over_options)) {
       select->open = false;
+      ui->can_pick_select = false;
+    }
+
+    if (mouse_over_select && !input->mouse_left) {
+      ui->can_pick_select = true;
     }
 
     if (mouse_over_select) {
@@ -637,12 +649,22 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
         bottom -= select->option_height + 1;
 
         // Select the option on click
-        if (mouse_over_option && input->mouse_left) {
+        if (mouse_over_option && input->mouse_left && ui->can_pick_select) {
           select->option_selected = opt;
           select->open = false;
         }
+
+        if (mouse_over_option && !input->mouse_left) {
+          ui->can_pick_select = true;
+          mouse_over_any_select = true;
+        }
       }
     }
+  }
+
+  // If mouse has left a select, we can't pick them anymore
+  if (!mouse_over_any_select) {
+    ui->can_pick_select = false;
   }
 
   // Copy area buffers into the main buffer

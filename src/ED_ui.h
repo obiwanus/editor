@@ -210,6 +210,7 @@ struct User_Interface {
 
   bool can_pick_splitter;
   bool can_split_area;
+  bool can_pick_select;
   Area *area_being_split;
   Area_Splitter *splitter_being_moved;
 
