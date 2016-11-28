@@ -28,6 +28,7 @@ void Program_State::init(Program_Memory *memory) {
   state->UI.memory = memory;
   Area *area = state->UI.create_area(
       NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});
+  state->UI.new_type_selector(area);
 
   Area_Splitter *splitter =
       state->UI.vertical_split(area, area->get_width() / 2);

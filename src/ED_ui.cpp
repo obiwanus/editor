@@ -340,17 +340,6 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect,
   area->draw_buffer->width = area->get_width();
   area->draw_buffer->height = area->get_height();
 
-  // Create a type selector
-  UI_Select *select = this->selects + this->num_selects;
-  this->num_selects++;
-  *select = {};
-  select->align_bottom = true;
-  select->x = 20;
-  select->y = 3;
-  select->option_count = 5;
-  select->option_height = 20;
-  select->parent_area = area;
-
   return area;
 }
 
@@ -368,6 +357,50 @@ Area_Splitter *User_Interface::_new_splitter(Area *area) {
   return splitter;
 }
 
+UI_Select *User_Interface::new_type_selector(Area *area) {
+  UI_Select *select = this->selects + this->num_selects;
+  this->num_selects++;
+  *select = {};
+  select->align_bottom = true;
+  select->x = 20;
+  select->y = 3;
+  select->option_count = 5;
+  select->option_height = 20;
+  select->parent_area = area;
+
+  return select;
+}
+
+void User_Interface::_split_type_selectors(Area *area, Area_Splitter *splitter,
+                                           bool is_vertical) {
+  // Find old select for this area
+  UI_Select *old_select = NULL;
+  for (int i = 0; i < this->num_selects; i++) {
+    UI_Select *select = this->selects + i;
+    if (select->parent_area == area) {
+      old_select = select;
+      break;
+    }
+  }
+  assert(old_select != NULL);
+
+  int position = splitter->position;
+  Rect rect = area->get_rect();
+  int bigger_area = 0;
+  int smaller_area = 1;
+  if ((is_vertical && (position - rect.left < rect.right - position)) ||
+      (!is_vertical && (position - rect.top < rect.bottom - position))) {
+    bigger_area = 1;
+    smaller_area = 0;
+  }
+
+  // Old select goes to the bigger area
+  old_select->parent_area = splitter->areas[bigger_area];
+
+  // The other gets a new select
+  this->new_type_selector(splitter->areas[smaller_area]);
+}
+
 Area_Splitter *User_Interface::vertical_split(Area *area, int position) {
   // Create splitter
   Area_Splitter *splitter = this->_new_splitter(area);
@@ -382,6 +415,8 @@ Area_Splitter *User_Interface::vertical_split(Area *area, int position) {
   rect = area->get_rect();
   rect.left = position;
   splitter->areas[1] = this->create_area(area, rect);
+
+  this->_split_type_selectors(area, splitter, true);
 
   return splitter;
 }
@@ -400,6 +435,8 @@ Area_Splitter *User_Interface::horizontal_split(Area *area, int position) {
   rect = area->get_rect();
   rect.top = position;
   splitter->areas[1] = this->create_area(area, rect);
+
+  this->_split_type_selectors(area, splitter, false);
 
   return splitter;
 }

@@ -222,6 +222,8 @@ struct User_Interface {
   Area_Splitter *_new_splitter(Area *);
   Area_Splitter *vertical_split(Area *, int);
   Area_Splitter *horizontal_split(Area *, int);
+  UI_Select *new_type_selector(Area *);
+  void _split_type_selectors(Area *, Area_Splitter *, bool);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
   Update_Result update_and_draw(Pixel_Buffer *, User_Input *);
