@@ -364,7 +364,7 @@ UI_Select *User_Interface::new_type_selector(Area *area) {
   select->align_bottom = true;
   select->x = 20;
   select->y = 3;
-  select->option_count = 5;
+  select->option_count = 2;
   select->option_height = 20;
   select->parent_area = area;
 
@@ -615,13 +615,13 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     Rect select_rect = select->get_rect();
     Rect parent_area_rect = select->parent_area->get_rect();
     Rect all_options_rect;
-    int kMargin = 5;
+    int kMargin = 1;
     all_options_rect.left = select_rect.left - kMargin;
     all_options_rect.right = select_rect.right + 30 + kMargin;
     all_options_rect.bottom = select_rect.bottom + kMargin;
     all_options_rect.top = select_rect.top -
                            select->option_count * (select->option_height + 1) -
-                           kMargin;
+                           kMargin + 1;
 
     // Update
     bool mouse_in_area = parent_area_rect.contains(input->mouse);
@@ -656,8 +656,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
       select->highlighted = false;
     }
 
-    const u32 colors[10] = {0x00123123, 0x00111111, 0x00505050,
-                            0x00323232, 0x00684829, 0x00342055};
+    const u32 colors[10] = {0x00000000, 0x00123123};
 
     // Draw
     if (select->highlighted) {
@@ -668,6 +667,13 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     }
 
     if (select->open) {
+
+      Rect options_border = all_options_rect;
+      options_border.bottom = select_rect.top + kMargin;
+
+      // Draw all options rect first
+      draw_rect(select->parent_area->draw_buffer, options_border, 0x00686868);
+
       int bottom = select_rect.top;
       for (int opt = 0; opt < select->option_count; opt++) {
         Rect option;
@@ -680,7 +686,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
             option.contains(parent_area_rect.projected(input->mouse));
         u32 color = colors[opt];
         if (mouse_over_option) {
-          color += 0x00121212;
+          color += 0x00121212;  // highlight
         }
         draw_rect(select->parent_area->draw_buffer, option, color);
         bottom -= select->option_height + 1;
