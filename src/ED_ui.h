@@ -150,6 +150,7 @@ struct Area {
   inline void set_rect(Rect);
 
   Rect get_split_handle(int);
+  Rect get_delete_button();
   bool mouse_over_split_handle(v2i);
 
   bool is_visible();
@@ -160,6 +161,8 @@ struct Area {
   void set_bottom(int);
 
   void draw(Pixel_Buffer *);
+
+  void remove();
 };
 
 struct Area_Splitter {
@@ -211,6 +214,7 @@ struct User_Interface {
   bool can_pick_splitter;
   bool can_split_area;
   bool can_pick_select;
+  bool can_delete_area;
   Area *area_being_split;
   Area_Splitter *splitter_being_moved;
 

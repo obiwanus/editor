@@ -119,10 +119,9 @@ inline int Rect::get_height() {
 }
 
 Rect Area::get_split_handle(int num) {
-  Rect rect;
+  Rect rect = this->get_rect();
   assert(num == 0 || num == 1);
   const int kSquareSize = 15;
-  rect = this->get_rect();
   if (num == 0) {
     rect.top = rect.bottom - kSquareSize;
     rect.right = rect.left + kSquareSize;
@@ -130,6 +129,15 @@ Rect Area::get_split_handle(int num) {
     rect.left = rect.right - kSquareSize;
     rect.bottom = rect.top + kSquareSize;
   }
+  return rect;
+}
+
+Rect Area::get_delete_button() {
+  Rect rect = this->get_rect();
+  const int kSquareSize = 10;
+  rect.right = rect.left + kSquareSize;
+  rect.bottom = rect.top + kSquareSize;
+
   return rect;
 }
 
@@ -206,6 +214,10 @@ bool Area::mouse_over_split_handle(v2i mouse) {
 }
 
 bool Area::is_visible() { return this->splitter == NULL; }
+
+void Area::remove() {
+  // TODO
+}
 
 Rect Area_Splitter::get_rect() {
   Rect result = {};
@@ -581,6 +593,19 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
         ui->splitter_being_moved->move(input->mouse);
       }
     }
+
+    // Maybe we're deleting an area?
+    if (ui->can_delete_area) {
+      ui->can_delete_area = false;
+      for (int i = 0; i < ui->num_areas; i++) {
+        Area *area = ui->areas + i;
+        if (!area->is_visible()) continue;
+        if (area->get_delete_button().contains(input->mouse)) {
+          area->remove();
+          break;
+        }
+      }
+    }
   } else {
     // Mouse button released or not pressed
     // TODO: be able to tell which is which maybe?
@@ -588,6 +613,24 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     ui->splitter_being_moved = NULL;
     ui->can_pick_splitter = true;
     ui->can_split_area = true;
+
+    // NOTE: if we need to check something for all areas
+    // every frame, consider putting it here
+
+    // See if we can delete an area
+    bool mouse_over_any_delete_button = false;
+    for (int i = 0; i < ui->num_areas; i++) {
+      Area *area = ui->areas + i;
+      if (!area->is_visible()) continue;
+      if (area->get_delete_button().contains(input->mouse)) {
+        ui->can_delete_area = true;
+        mouse_over_any_delete_button = true;
+        break;
+      }
+    }
+    if (!mouse_over_any_delete_button) {
+      ui->can_delete_area = false;
+    }
   }
 
   // ------- Draw area contents -------------------------------------------
@@ -767,6 +810,9 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     // Draw split handles
     draw_rect(pixel_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
     draw_rect(pixel_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
+
+    // Draw delete buttons
+    draw_rect(pixel_buffer, area->get_delete_button(), {0.4f, 0.1f, 0.1f});
   }
 
   // -- Cursors ---------------
