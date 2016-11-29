@@ -367,6 +367,7 @@ UI_Select *User_Interface::new_type_selector(Area *area) {
   select->option_count = 2;
   select->option_height = 20;
   select->parent_area = area;
+  select->option_selected = area->editor_type;
 
   return select;
 }
@@ -695,6 +696,9 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
         if (mouse_over_option && input->mouse_left && ui->can_pick_select) {
           select->option_selected = opt;
           select->open = false;
+
+          // TODO: if we ever generalize this, this bit will have to change
+          select->parent_area->editor_type = (Area_Editor_Type)opt;
         }
 
         if (mouse_over_option && !input->mouse_left) {
