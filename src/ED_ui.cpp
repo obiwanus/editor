@@ -215,10 +215,6 @@ bool Area::mouse_over_split_handle(v2i mouse) {
 
 bool Area::is_visible() { return this->splitter == NULL; }
 
-void Area::remove() {
-  // TODO
-}
-
 Rect Area_Splitter::get_rect() {
   Rect result = {};
   const int kSensitivity = 5;
@@ -355,6 +351,86 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect,
   return area;
 }
 
+void User_Interface::remove_area(Area *area) {
+  Area *sister_area = NULL;
+  Area *parent_area = area->parent_area;
+  for (int i = 0; i < 2; i++) {
+    if (parent_area->splitter->areas[i] != area) {
+      sister_area = parent_area->splitter->areas[i];
+    }
+  }
+  assert(sister_area != NULL);
+
+  // Remove splitter
+  bool found_splitter = false;
+  for (int i = 0; i < this->num_splitters; i++) {
+    Area_Splitter *splitter = this->splitters + i;
+    if (parent_area->splitter == splitter) {
+      found_splitter = true;
+    }
+    if (!found_splitter) continue;
+    if (i < this->num_splitters - 1) {
+      *splitter = *(splitter + 1);  // copy from the next
+    }
+  }
+  this->num_splitters--;
+  assert(found_splitter);
+  parent_area->splitter = NULL;
+
+  // Find type selects
+  UI_Select *area_select = NULL;
+  UI_Select *sister_select = NULL;
+  for (int i = 0; i < this->num_selects; i++) {
+    UI_Select *select = this->selects + i;
+    if (select->parent_area == area) {
+      area_select = select;
+    } else if (select->parent_area == sister_area) {
+      sister_select = select;
+    }
+  }
+  assert(area_select != NULL);
+  assert(sister_select != NULL);
+
+  // TODO: we'll need to copy more than just this in the future
+  parent_area->editor_type = sister_area->editor_type;
+  sister_select->parent_area = parent_area;
+
+  // Delete area select
+  bool found_select = false;
+  for (int i = 0; i < this->num_selects; i++) {
+    UI_Select *select = this->selects + i;
+    if (area_select == select) {
+      found_select = true;
+    }
+    if (!found_select) continue;
+    if (i < this->num_selects - 1) {
+      *select = *(select + 1);  // copy from the next
+    }
+  }
+  this->num_selects--;
+  assert(found_select);
+
+  // Remove areas
+  int areas_found = 0;
+  for (int i = 0; i < this->num_areas; i++) {
+    Area *a = this->areas + i;
+    if (areas_found < 2 && (a == area || a == sister_area)) {
+      areas_found++;
+    }
+    if (i < this->num_areas - 2) {
+      if (areas_found == 1) {
+        *a = *(a + 1);
+      }
+      if (areas_found == 2) {
+        *(a - 1) = *(a + 1);
+        *a = *(a + 2);
+      }
+    }
+  }
+  assert(areas_found == 2);
+  this->num_areas -= 2;
+}
+
 Area_Splitter *User_Interface::_new_splitter(Area *area) {
   assert(this->num_splitters >= 0 &&
          this->num_splitters < EDITOR_MAX_AREA_COUNT);
@@ -376,7 +452,7 @@ UI_Select *User_Interface::new_type_selector(Area *area) {
   select->align_bottom = true;
   select->x = 20;
   select->y = 3;
-  select->option_count = 2;
+  select->option_count = Area_Editor_Type__COUNT;
   select->option_height = 20;
   select->parent_area = area;
   select->option_selected = area->editor_type;
@@ -601,7 +677,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
         Area *area = ui->areas + i;
         if (!area->is_visible()) continue;
         if (area->get_delete_button().contains(input->mouse)) {
-          area->remove();
+          ui->remove_area(area);
           break;
         }
       }
@@ -711,7 +787,6 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     }
 
     if (select->open) {
-
       Rect options_border = all_options_rect;
       options_border.bottom = select_rect.top + kMargin;
 

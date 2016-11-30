@@ -106,6 +106,8 @@ struct UI_Select {
 enum Area_Editor_Type {
   Area_Editor_Type_Empty = 0,
   Area_Editor_Type_Raytrace,
+
+  Area_Editor_Type__COUNT,
 };
 
 struct Area_Editor {
@@ -128,8 +130,6 @@ struct Area {
   int top;
   int right;
   int bottom;
-
-  bool show_selector_popup = false;
 
   Area *parent_area;
   Area_Splitter *splitter = NULL;
@@ -161,8 +161,6 @@ struct Area {
   void set_bottom(int);
 
   void draw(Pixel_Buffer *);
-
-  void remove();
 };
 
 struct Area_Splitter {
@@ -223,6 +221,7 @@ struct User_Interface {
   UI_Select selects[EDITOR_MAX_SELECT_COUNT];
 
   Area *create_area(Area *, Rect, Pixel_Buffer *buf = NULL);
+  void remove_area(Area *);
   Area_Splitter *_new_splitter(Area *);
   Area_Splitter *vertical_split(Area *, int);
   Area_Splitter *horizontal_split(Area *, int);
