@@ -389,11 +389,20 @@ void User_Interface::remove_area(Area *area) {
     }
   }
   assert(area_select != NULL);
-  assert(sister_select != NULL);
 
-  // TODO: we'll need to copy more than just this in the future
+  Rect parent_rect = parent_area->get_rect();
   parent_area->editor_type = sister_area->editor_type;
-  sister_select->parent_area = parent_area;
+  if (sister_select != NULL) {
+    sister_select->parent_area = parent_area;
+  }
+  if (sister_area->splitter != NULL) {
+    parent_area->splitter = sister_area->splitter;;
+    // TODO: draw buffer?
+  }
+  parent_area->set_left(parent_rect.left);
+  parent_area->set_right(parent_rect.right);
+  parent_area->set_top(parent_rect.top);
+  parent_area->set_bottom(parent_rect.bottom);
 
   // Delete area select
   bool found_select = false;
@@ -409,6 +418,8 @@ void User_Interface::remove_area(Area *area) {
   }
   this->num_selects--;
   assert(found_select);
+
+  // TODO: draw buffers
 
   // Remove areas
   int areas_found = 0;
