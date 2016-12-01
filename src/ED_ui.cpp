@@ -308,19 +308,6 @@ Rect UI_Select::get_rect() {
   return rect;
 }
 
-Rect UI_Select::get_absolute_rect() {
-  // TODO: maybe we can just use "projected" instead?
-  assert(this->parent_area != NULL);
-  Rect rect = this->get_rect();
-
-  rect.left += this->parent_area->left;
-  rect.right += this->parent_area->left;
-  rect.top += this->parent_area->top;
-  rect.bottom += this->parent_area->top;
-
-  return rect;
-}
-
 Area *User_Interface::create_area(Area *parent_area, Rect rect,
                                   Pixel_Buffer *draw_buffer) {
   assert(this->num_areas >= 0 && this->num_areas < EDITOR_MAX_AREA_COUNT - 1);
@@ -362,20 +349,21 @@ void User_Interface::remove_area(Area *area) {
   assert(sister_area != NULL);
 
   // Remove splitter
-  bool found_splitter = false;
-  for (int i = 0; i < this->num_splitters; i++) {
-    Area_Splitter *splitter = this->splitters + i;
-    if (parent_area->splitter == splitter) {
-      found_splitter = true;
+  {
+    int splitter_id = -1;
+    for (int i = 0; i < this->num_splitters; i++) {
+      Area_Splitter *splitter = this->splitters + i;
+      if (parent_area->splitter == splitter) {
+        splitter_id = i;
+        break;
+      }
     }
-    if (!found_splitter) continue;
-    if (i < this->num_splitters - 1) {
-      *splitter = *(splitter + 1);  // copy from the next
-    }
+    assert(0 <= splitter_id && splitter_id < this->num_splitters);
+    this->num_splitters--;
+    this->splitters[splitter_id] = this->splitters[this->num_splitters];
+    this->splitters[this->num_splitters] = {};
+    parent_area->splitter = NULL;
   }
-  this->num_splitters--;
-  assert(found_splitter);
-  parent_area->splitter = NULL;
 
   // Find type selects
   UI_Select *area_select = NULL;
@@ -390,56 +378,91 @@ void User_Interface::remove_area(Area *area) {
   }
   assert(area_select != NULL);
 
-  Rect parent_rect = parent_area->get_rect();
   parent_area->editor_type = sister_area->editor_type;
   if (sister_select != NULL) {
     sister_select->parent_area = parent_area;
   }
   if (sister_area->splitter != NULL) {
-    parent_area->splitter = sister_area->splitter;;
-    // TODO: draw buffer?
+    parent_area->splitter = sister_area->splitter;
+    parent_area->splitter->parent_area = parent_area;
+    for (int j = 0; j < 2; j++) {
+      parent_area->splitter->areas[j]->parent_area = parent_area;
+    }
   }
+  Rect parent_rect = parent_area->get_rect();
   parent_area->set_left(parent_rect.left);
   parent_area->set_right(parent_rect.right);
   parent_area->set_top(parent_rect.top);
   parent_area->set_bottom(parent_rect.bottom);
 
   // Delete area select
-  bool found_select = false;
-  for (int i = 0; i < this->num_selects; i++) {
-    UI_Select *select = this->selects + i;
-    if (area_select == select) {
-      found_select = true;
+  {
+    int select_id = -1;
+    for (int i = 0; i < this->num_selects; i++) {
+      UI_Select *select = this->selects + i;
+      if (area_select == select) {
+        select_id = i;
+        break;
+      }
     }
-    if (!found_select) continue;
-    if (i < this->num_selects - 1) {
-      *select = *(select + 1);  // copy from the next
-    }
+    assert(0 <= select_id && select_id < this->num_selects);
+    this->num_selects--;
+    this->selects[select_id] = this->selects[this->num_selects];
+    this->selects[this->num_selects] = {};
   }
-  this->num_selects--;
-  assert(found_select);
 
   // TODO: draw buffers
 
   // Remove areas
-  int areas_found = 0;
-  for (int i = 0; i < this->num_areas; i++) {
-    Area *a = this->areas + i;
-    if (areas_found < 2 && (a == area || a == sister_area)) {
-      areas_found++;
-    }
-    if (i < this->num_areas - 2) {
-      if (areas_found == 1) {
-        *a = *(a + 1);
+  {
+    int area_id = -1;
+    int sister_area_id = -1;
+    for (int i = 0; i < this->num_areas; i++) {
+      Area *a = this->areas + i;
+      if (a == area) {
+        area_id = i;
       }
-      if (areas_found == 2) {
-        *(a - 1) = *(a + 1);
-        *a = *(a + 2);
+      if (a == sister_area) {
+        sister_area_id = i;
       }
     }
+    assert(0 <= area_id && area_id < this->num_areas);
+    assert(0 <= sister_area_id && sister_area_id < this->num_areas);
+    int edge = this->num_areas - 1;
+    if (area_id < edge) {
+      this->areas[area_id] = this->areas[edge];
+      this->areas[edge] = {};
+      if (sister_area_id == edge) {
+        // Make sure we overwrite it later
+        sister_area_id = area_id;
+      }
+    }
+    edge--;
+    if (sister_area_id < edge) {
+      this->areas[sister_area_id] = this->areas[edge];
+      this->areas[edge] = {};
+    }
+    this->num_areas -= 2;
+
+    // int areas_found = 0;
+    // for (int i = 0; i < this->num_areas; i++) {
+    //   Area *a = this->areas + i;
+    //   if (areas_found < 2 && (a == area || a == sister_area)) {
+    //     areas_found++;
+    //   }
+    //   if (i < this->num_areas - 2) {
+    //     if (areas_found == 1) {
+    //       *a = *(a + 1);
+    //     }
+    //     if (areas_found == 2) {
+    //       *(a - 1) = *(a + 1);
+    //       *a = *(a + 2);
+    //     }
+    //   }
+    // }
+    // assert(areas_found == 2);
+    // this->num_areas -= 2;
   }
-  assert(areas_found == 2);
-  this->num_areas -= 2;
 }
 
 Area_Splitter *User_Interface::_new_splitter(Area *area) {

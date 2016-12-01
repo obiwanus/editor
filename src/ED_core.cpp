@@ -24,7 +24,7 @@ void Program_State::init(Program_Memory *memory) {
   state->kWindowWidth = 1000;
   state->kWindowHeight = 700;
 
-  state->UI = {};
+  memset(&state->UI, 0, sizeof(state->UI));
   state->UI.memory = memory;
   Area *area = state->UI.create_area(
       NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});

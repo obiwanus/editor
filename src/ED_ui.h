@@ -100,7 +100,6 @@ struct UI_Select {
   Area *parent_area;
 
   Rect get_rect();
-  Rect get_absolute_rect();
 };
 
 enum Area_Editor_Type {
