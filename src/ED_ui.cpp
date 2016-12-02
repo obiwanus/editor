@@ -312,9 +312,12 @@ Rect UI_Select::get_rect() {
 
 Area *User_Interface::create_area(Area *parent_area, Rect rect,
                                   Pixel_Buffer *draw_buffer) {
-  Area *area = this->areas + this->num_areas;
-  // Area *area = (Area *)malloc(sizeof(*area));
-  // sb_push(this->areas, area, Area **);
+  // TODO: I don't want to allocate things randomly on the heap,
+  // so later it'd be good to have a pool allocator for this
+  // possibly with the ability to remove elements
+  Area *area = (Area *)malloc(sizeof(*area));
+  sb_push(Area **, this->areas, area);
+  this->num_areas++;
 
   *area = {};
   area->set_rect(rect);
@@ -419,7 +422,7 @@ void User_Interface::remove_area(Area *area) {
     int area_id = -1;
     int sister_area_id = -1;
     for (int i = 0; i < this->num_areas; i++) {
-      Area *a = this->areas + i;
+      Area *a = this->areas[i];
       if (a == area) {
         area_id = i;
       }
@@ -600,7 +603,7 @@ void User_Interface::set_movement_boundaries(Area_Splitter *splitter) {
 
 void User_Interface::resize_window(int new_width, int new_height) {
   if (this->num_areas <= 0) return;
-  Area *main_area = &this->areas[0];
+  Area *main_area = this->areas[0];
   int old_width = main_area->get_width();
   int old_height = main_area->get_height();
 
@@ -647,7 +650,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
         ui->splitter_being_moved == NULL) {
       // See if we're splitting any area
       for (int i = 0; i < ui->num_areas; i++) {
-        Area *area = ui->areas + i;
+        Area *area = ui->areas[i];
         if (area->is_visible() && area->mouse_over_split_handle(input->mouse)) {
           ui->area_being_split = area;
           ui->pointer_start = input->mouse;
@@ -709,7 +712,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     if (ui->can_delete_area) {
       ui->can_delete_area = false;
       for (int i = 0; i < ui->num_areas; i++) {
-        Area *area = ui->areas + i;
+        Area *area = ui->areas[i];
         if (!area->is_visible()) continue;
         if (area->get_delete_button().contains(input->mouse)) {
           ui->remove_area(area);
@@ -731,7 +734,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     // See if we can delete an area
     bool mouse_over_any_delete_button = false;
     for (int i = 0; i < ui->num_areas; i++) {
-      Area *area = ui->areas + i;
+      Area *area = ui->areas[i];
       if (!area->is_visible()) continue;
       if (area->get_delete_button().contains(input->mouse)) {
         ui->can_delete_area = true;
@@ -751,7 +754,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 
   // Draw panels
   for (int i = 0; i < ui->num_areas; i++) {
-    Area *area = ui->areas + i;
+    Area *area = ui->areas[i];
     if (!area->is_visible()) continue;
 
     // Draw panels
@@ -869,7 +872,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 
   // Copy area buffers into the main buffer
   for (int i = 0; i < ui->num_areas; i++) {
-    Area *area = ui->areas + i;
+    Area *area = ui->areas[i];
     if (!area->is_visible()) continue;
     Rect client_rect = area->get_client_rect();
     Pixel_Buffer *src_buffer = area->draw_buffer;
@@ -914,7 +917,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   }
 
   for (int i = 0; i < ui->num_areas; i++) {
-    Area *area = ui->areas + i;
+    Area *area = ui->areas[i];
     if (!area->is_visible()) continue;
 
     // Draw split handles
@@ -938,7 +941,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 
   // Area split cursor
   for (int i = 0; i < ui->num_areas; i++) {
-    Area *area = ui->areas + i;
+    Area *area = ui->areas[i];
     if (area->mouse_over_split_handle(input->mouse)) {
       result.cursor = Cursor_Type_Cross;
     }
@@ -959,7 +962,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 void User_Interface::draw_areas(Ray_Tracer *rt) {
   // Draw areas
   for (int i = 0; i < this->num_areas; i++) {
-    Area *area = this->areas + i;
+    Area *area = this->areas[i];
     if (!area->is_visible()) continue;  // ignore wrapper areas
     area->draw_buffer->width = area->get_width();
     area->draw_buffer->height = area->get_height();

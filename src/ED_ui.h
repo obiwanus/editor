@@ -205,8 +205,7 @@ struct User_Interface {
   int num_selects;
   int num_areas;
 
-  // Area **areas;
-  Area areas[EDITOR_MAX_AREA_COUNT];
+  Area **areas;
   Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
   UI_Select selects[EDITOR_MAX_AREA_COUNT];
 
