@@ -715,7 +715,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     // Maybe we're deleting an area?
     if (ui->can_delete_area) {
       ui->can_delete_area = false;
-      for (int i = 0; i < ui->num_areas; i++) {
+      for (int i = 1; i < ui->num_areas; i++) {
+        // Note we're not considering area 0
         Area *area = ui->areas[i];
         if (!area->is_visible()) continue;
         if (area->get_delete_button().contains(input->mouse)) {
@@ -737,7 +738,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 
     // See if we can delete an area
     bool mouse_over_any_delete_button = false;
-    for (int i = 0; i < ui->num_areas; i++) {
+    for (int i = 1; i < ui->num_areas; i++) {
+      // Note we're not considering area 0
       Area *area = ui->areas[i];
       if (!area->is_visible()) continue;
       if (area->get_delete_button().contains(input->mouse)) {
@@ -929,7 +931,10 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     draw_rect(pixel_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
 
     // Draw delete buttons
-    draw_rect(pixel_buffer, area->get_delete_button(), {0.4f, 0.1f, 0.1f});
+    if (i > 0) {
+      // Can't delete area 0
+      draw_rect(pixel_buffer, area->get_delete_button(), {0.4f, 0.1f, 0.1f});
+    }
   }
 
   // -- Cursors ---------------
