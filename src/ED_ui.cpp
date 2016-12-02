@@ -1,3 +1,5 @@
+#include <stdlib.h>
+#include "include/stb_stretchy_buffer.h"
 #include "ED_ui.h"
 
 inline u32 get_rgb_u32(v3 color) {
@@ -310,10 +312,9 @@ Rect UI_Select::get_rect() {
 
 Area *User_Interface::create_area(Area *parent_area, Rect rect,
                                   Pixel_Buffer *draw_buffer) {
-  assert(this->num_areas >= 0 && this->num_areas < EDITOR_MAX_AREA_COUNT - 1);
-
   Area *area = this->areas + this->num_areas;
-  this->num_areas++;
+  // Area *area = (Area *)malloc(sizeof(*area));
+  // sb_push(this->areas, area, Area **);
 
   *area = {};
   area->set_rect(rect);

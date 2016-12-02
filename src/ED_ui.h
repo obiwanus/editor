@@ -194,7 +194,6 @@ struct Update_Result {
 
 // TODO: use auto-extending arrays instead
 #define EDITOR_MAX_AREA_COUNT 50
-#define EDITOR_MAX_SELECT_COUNT 100
 
 struct User_Interface {
   Program_Memory *memory;
@@ -202,11 +201,14 @@ struct User_Interface {
   v2i pointer_start;
 
   // Areas and splitters
-  int num_areas;
   int num_splitters;
+  int num_selects;
+  int num_areas;
 
+  // Area **areas;
   Area areas[EDITOR_MAX_AREA_COUNT];
   Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
+  UI_Select selects[EDITOR_MAX_AREA_COUNT];
 
   bool can_pick_splitter;
   bool can_split_area;
@@ -214,10 +216,6 @@ struct User_Interface {
   bool can_delete_area;
   Area *area_being_split;
   Area_Splitter *splitter_being_moved;
-
-  // Selects
-  int num_selects;
-  UI_Select selects[EDITOR_MAX_SELECT_COUNT];
 
   Area *create_area(Area *, Rect, Pixel_Buffer *buf = NULL);
   void remove_area(Area *);
