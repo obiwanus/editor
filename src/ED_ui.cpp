@@ -316,7 +316,11 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect,
   // so later it'd be good to have a pool allocator for this
   // possibly with the ability to remove elements
   Area *area = (Area *)malloc(sizeof(*area));
-  sb_push(Area **, this->areas, area);
+  if (sb_count(this->areas) > this->num_areas) {
+    this->areas[this->num_areas] = area;
+  } else {
+    sb_push(Area **, this->areas, area);
+  }
   this->num_areas++;
 
   *area = {};
@@ -356,7 +360,7 @@ void User_Interface::remove_area(Area *area) {
   {
     int splitter_id = -1;
     for (int i = 0; i < this->num_splitters; i++) {
-      Area_Splitter *splitter = this->splitters + i;
+      Area_Splitter *splitter = this->splitters[i];
       if (parent_area->splitter == splitter) {
         splitter_id = i;
         break;
@@ -364,6 +368,7 @@ void User_Interface::remove_area(Area *area) {
     }
     assert(0 <= splitter_id && splitter_id < this->num_splitters);
     this->num_splitters--;
+    free(this->splitters[splitter_id]);
     this->splitters[splitter_id] = this->splitters[this->num_splitters];
     this->splitters[this->num_splitters] = {};
     parent_area->splitter = NULL;
@@ -373,7 +378,7 @@ void User_Interface::remove_area(Area *area) {
   UI_Select *area_select = NULL;
   UI_Select *sister_select = NULL;
   for (int i = 0; i < this->num_selects; i++) {
-    UI_Select *select = this->selects + i;
+    UI_Select *select = this->selects[i];
     if (select->parent_area == area) {
       area_select = select;
     } else if (select->parent_area == sister_area) {
@@ -403,7 +408,7 @@ void User_Interface::remove_area(Area *area) {
   {
     int select_id = -1;
     for (int i = 0; i < this->num_selects; i++) {
-      UI_Select *select = this->selects + i;
+      UI_Select *select = this->selects[i];
       if (area_select == select) {
         select_id = i;
         break;
@@ -411,6 +416,7 @@ void User_Interface::remove_area(Area *area) {
     }
     assert(0 <= select_id && select_id < this->num_selects);
     this->num_selects--;
+    free(this->selects[select_id]);
     this->selects[select_id] = this->selects[this->num_selects];
     this->selects[this->num_selects] = {};
   }
@@ -434,6 +440,7 @@ void User_Interface::remove_area(Area *area) {
     assert(0 <= sister_area_id && sister_area_id < this->num_areas);
     int edge = this->num_areas - 1;
     if (area_id < edge) {
+      free(this->areas[area_id]);
       this->areas[area_id] = this->areas[edge];
       this->areas[edge] = {};
       if (sister_area_id == edge) {
@@ -443,6 +450,7 @@ void User_Interface::remove_area(Area *area) {
     }
     edge--;
     if (sister_area_id < edge) {
+      free(this->areas[sister_area_id]);
       this->areas[sister_area_id] = this->areas[edge];
       this->areas[edge] = {};
     }
@@ -470,10 +478,12 @@ void User_Interface::remove_area(Area *area) {
 }
 
 Area_Splitter *User_Interface::_new_splitter(Area *area) {
-  assert(this->num_splitters >= 0 &&
-         this->num_splitters < EDITOR_MAX_AREA_COUNT);
-
-  Area_Splitter *splitter = this->splitters + this->num_splitters;
+  Area_Splitter *splitter = (Area_Splitter *)malloc(sizeof(*splitter));
+  if (sb_count(this->splitters) > this->num_splitters) {
+    this->splitters[this->num_splitters] = splitter;
+  } else {
+    sb_push(Area_Splitter **, this->splitters, splitter);
+  }
   area->splitter = splitter;
   this->num_splitters++;
 
@@ -484,7 +494,12 @@ Area_Splitter *User_Interface::_new_splitter(Area *area) {
 }
 
 UI_Select *User_Interface::new_type_selector(Area *area) {
-  UI_Select *select = this->selects + this->num_selects;
+  UI_Select *select = (UI_Select *)malloc(sizeof(*select));
+  if (sb_count(this->selects) > this->num_selects) {
+    this->selects[this->num_selects] = select;
+  } else {
+    sb_push(UI_Select **, this->selects, select);
+  }
   this->num_selects++;
   *select = {};
   select->align_bottom = true;
@@ -503,7 +518,7 @@ void User_Interface::_split_type_selectors(Area *area, Area_Splitter *splitter,
   // Find old select for this area
   UI_Select *old_select = NULL;
   for (int i = 0; i < this->num_selects; i++) {
-    UI_Select *select = this->selects + i;
+    UI_Select *select = this->selects[i];
     if (select->parent_area == area) {
       old_select = select;
       break;
@@ -581,7 +596,7 @@ void User_Interface::set_movement_boundaries(Area_Splitter *splitter) {
 
   // Look at all splitters which are under our parent area
   for (int i = 0; i < this->num_splitters; i++) {
-    Area_Splitter *s = this->splitters + i;
+    Area_Splitter *s = this->splitters[i];
     if (!s->is_under(splitter->parent_area) || s == splitter) continue;
     if (s->is_vertical != splitter->is_vertical) continue;
 
@@ -614,7 +629,7 @@ void User_Interface::resize_window(int new_width, int new_height) {
 
   // Go over every splitter and calculate new position
   for (int i = 0; i < this->num_splitters; i++) {
-    Area_Splitter *splitter = &this->splitters[i];
+    Area_Splitter *splitter = this->splitters[i];
     Area *area1 = splitter->areas[0];
     Area *area2 = splitter->areas[1];
     // Match the parent first
@@ -691,7 +706,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
       // Only look at splitters if areas are not being split
       if (ui->can_pick_splitter && ui->splitter_being_moved == NULL) {
         for (int i = 0; i < ui->num_splitters; i++) {
-          Area_Splitter *splitter = ui->splitters + i;
+          Area_Splitter *splitter = ui->splitters[i];
           if (input->mouse_left && ui->can_pick_splitter &&
               splitter->is_mouse_over(input->mouse)) {
             ui->splitter_being_moved = splitter;
@@ -767,7 +782,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 
   // Draw ui selects
   for (int i = 0; i < ui->num_selects; i++) {
-    UI_Select *select = ui->selects + i;
+    UI_Select *select = ui->selects[i];
     if (select->parent_area && !select->parent_area->is_visible()) continue;
 
     Rect select_rect = select->get_rect();
@@ -893,7 +908,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 
   // Draw splitters
   for (int i = 0; i < ui->num_splitters; i++) {
-    Area_Splitter *splitter = ui->splitters + i;
+    Area_Splitter *splitter = ui->splitters[i];
     // draw_rect(pixel_buffer, splitter->get_rect(), {1,1,1});
     Area *area = splitter->parent_area;
     int left, top, right, bottom;
@@ -932,7 +947,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
 
   // Splitter resize cursor
   for (int i = 0; i < ui->num_splitters; i++) {
-    Area_Splitter *splitter = ui->splitters + i;
+    Area_Splitter *splitter = ui->splitters[i];
     if (splitter->get_rect().contains(input->mouse)) {
       result.cursor = splitter->is_vertical ? Cursor_Type_Resize_Horiz
                                             : Cursor_Type_Resize_Vert;

@@ -192,9 +192,6 @@ struct Update_Result {
   Cursor_Type cursor;
 };
 
-// TODO: use auto-extending arrays instead
-#define EDITOR_MAX_AREA_COUNT 50
-
 struct User_Interface {
   Program_Memory *memory;
 
@@ -206,8 +203,8 @@ struct User_Interface {
   int num_areas;
 
   Area **areas;
-  Area_Splitter splitters[EDITOR_MAX_AREA_COUNT];
-  UI_Select selects[EDITOR_MAX_AREA_COUNT];
+  Area_Splitter **splitters;
+  UI_Select **selects;
 
   bool can_pick_splitter;
   bool can_split_area;
