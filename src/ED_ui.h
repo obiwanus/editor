@@ -76,7 +76,7 @@ struct Pixel_Buffer {
 
   void *memory;
 
-  void allocate(Program_Memory *);
+  void allocate();
   Rect get_rect();
 };
 
@@ -160,6 +160,8 @@ struct Area {
   void set_bottom(int);
 
   void draw(Pixel_Buffer *);
+
+  void deallocate();
 };
 
 struct Area_Splitter {
@@ -213,7 +215,7 @@ struct User_Interface {
   Area *area_being_split;
   Area_Splitter *splitter_being_moved;
 
-  Area *create_area(Area *, Rect, Pixel_Buffer *buf = NULL);
+  Area *create_area(Area *, Rect);
   void remove_area(Area *);
   Area_Splitter *_new_splitter(Area *);
   Area_Splitter *vertical_split(Area *, int);

@@ -217,6 +217,14 @@ bool Area::mouse_over_split_handle(v2i mouse) {
 
 bool Area::is_visible() { return this->splitter == NULL; }
 
+void Area::deallocate() {
+  if (this->draw_buffer != NULL) {
+    free(this->draw_buffer->memory);
+    free(this->draw_buffer);
+  }
+  free(this);
+}
+
 Rect Area_Splitter::get_rect() {
   Rect result = {};
   const int kSensitivity = 5;
@@ -270,12 +278,11 @@ bool Area_Splitter::is_under(Area *area) {
   return false;
 }
 
-void Pixel_Buffer::allocate(Program_Memory *program_memory) {
+void Pixel_Buffer::allocate() {
   *this = {};
   this->max_width = 3000;
   this->max_height = 3000;
-  this->memory = program_memory->allocate(this->max_width * this->max_height *
-                                          sizeof(u32));
+  this->memory = malloc(this->max_width * this->max_height * sizeof(u32));
 }
 
 Rect Pixel_Buffer::get_rect() {
@@ -310,8 +317,7 @@ Rect UI_Select::get_rect() {
   return rect;
 }
 
-Area *User_Interface::create_area(Area *parent_area, Rect rect,
-                                  Pixel_Buffer *draw_buffer) {
+Area *User_Interface::create_area(Area *parent_area, Rect rect) {
   // TODO: I don't want to allocate things randomly on the heap,
   // so later it'd be good to have a pool allocator for this
   // possibly with the ability to remove elements
@@ -332,14 +338,9 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect,
     area->editor_type = parent_area->editor_type;
   }
 
-  // Create or set draw buffer
-  if (draw_buffer != NULL) {
-    area->draw_buffer = draw_buffer;
-  } else {
-    area->draw_buffer =
-        (Pixel_Buffer *)this->memory->allocate(sizeof(Pixel_Buffer));
-    area->draw_buffer->allocate(this->memory);
-  }
+  // Create draw buffer
+  area->draw_buffer = (Pixel_Buffer *)malloc(sizeof(Pixel_Buffer));
+  area->draw_buffer->allocate();
   area->draw_buffer->width = area->get_width();
   area->draw_buffer->height = area->get_height();
 
@@ -398,11 +399,6 @@ void User_Interface::remove_area(Area *area) {
       parent_area->splitter->areas[j]->parent_area = parent_area;
     }
   }
-  Rect parent_rect = parent_area->get_rect();
-  parent_area->set_left(parent_rect.left);
-  parent_area->set_right(parent_rect.right);
-  parent_area->set_top(parent_rect.top);
-  parent_area->set_bottom(parent_rect.bottom);
 
   // Delete area select
   {
@@ -421,8 +417,6 @@ void User_Interface::remove_area(Area *area) {
     this->selects[this->num_selects] = {};
   }
 
-  // TODO: draw buffers
-
   // Remove areas
   {
     int area_id = -1;
@@ -440,7 +434,7 @@ void User_Interface::remove_area(Area *area) {
     assert(0 <= sister_area_id && sister_area_id < this->num_areas);
     int edge = this->num_areas - 1;
     if (area_id < edge) {
-      free(this->areas[area_id]);
+      this->areas[area_id]->deallocate();
       this->areas[area_id] = this->areas[edge];
       this->areas[edge] = {};
       if (sister_area_id == edge) {
@@ -450,31 +444,19 @@ void User_Interface::remove_area(Area *area) {
     }
     edge--;
     if (sister_area_id < edge) {
-      free(this->areas[sister_area_id]);
+      this->areas[sister_area_id]->deallocate();
       this->areas[sister_area_id] = this->areas[edge];
       this->areas[edge] = {};
     }
     this->num_areas -= 2;
-
-    // int areas_found = 0;
-    // for (int i = 0; i < this->num_areas; i++) {
-    //   Area *a = this->areas + i;
-    //   if (areas_found < 2 && (a == area || a == sister_area)) {
-    //     areas_found++;
-    //   }
-    //   if (i < this->num_areas - 2) {
-    //     if (areas_found == 1) {
-    //       *a = *(a + 1);
-    //     }
-    //     if (areas_found == 2) {
-    //       *(a - 1) = *(a + 1);
-    //       *a = *(a + 2);
-    //     }
-    //   }
-    // }
-    // assert(areas_found == 2);
-    // this->num_areas -= 2;
   }
+
+  // Adjust the rects
+  Rect parent_rect = parent_area->get_rect();
+  parent_area->set_left(parent_rect.left);
+  parent_area->set_right(parent_rect.right);
+  parent_area->set_top(parent_rect.top);
+  parent_area->set_bottom(parent_rect.bottom);
 }
 
 Area_Splitter *User_Interface::_new_splitter(Area *area) {
@@ -552,7 +534,7 @@ Area_Splitter *User_Interface::vertical_split(Area *area, int position) {
   // Create 2 areas
   Rect rect = area->get_rect();
   rect.right = position;
-  splitter->areas[0] = this->create_area(area, rect, area->draw_buffer);
+  splitter->areas[0] = this->create_area(area, rect);
 
   rect = area->get_rect();
   rect.left = position;
@@ -572,7 +554,7 @@ Area_Splitter *User_Interface::horizontal_split(Area *area, int position) {
   // Create 2 areas
   Rect rect = area->get_rect();
   rect.bottom = position;
-  splitter->areas[0] = this->create_area(area, rect, area->draw_buffer);
+  splitter->areas[0] = this->create_area(area, rect);
 
   rect = area->get_rect();
   rect.top = position;
@@ -616,6 +598,30 @@ void User_Interface::set_movement_boundaries(Area_Splitter *splitter) {
   splitter->position_min = position_min + kMargin;
 }
 
+void reposition_splitter(Area *area, r32 width_ratio, r32 height_ratio) {
+  Area_Splitter *splitter = area->splitter;
+  if (splitter == NULL) return;
+  assert(splitter->parent_area == area);
+
+  Area *area1 = splitter->areas[0];
+  Area *area2 = splitter->areas[1];
+  // Match the parent first
+  Rect parent_rect = area->get_rect();
+  area1->set_rect(parent_rect);
+  area2->set_rect(parent_rect);
+  if (splitter->is_vertical) {
+    splitter->position = (int)(splitter->position * width_ratio);
+    area1->right = splitter->position - 1;
+    area2->left = splitter->position + 2;
+  } else {
+    splitter->position = (int)(splitter->position * height_ratio);
+    area1->bottom = splitter->position - 1;
+    area2->top = splitter->position + 1;
+  }
+  reposition_splitter(area1, width_ratio, height_ratio);
+  reposition_splitter(area2, width_ratio, height_ratio);
+}
+
 void User_Interface::resize_window(int new_width, int new_height) {
   if (this->num_areas <= 0) return;
   Area *main_area = this->areas[0];
@@ -627,25 +633,8 @@ void User_Interface::resize_window(int new_width, int new_height) {
   r32 width_ratio = (r32)new_width / (r32)old_width;
   r32 height_ratio = (r32)new_height / (r32)old_height;
 
-  // Go over every splitter and calculate new position
-  for (int i = 0; i < this->num_splitters; i++) {
-    Area_Splitter *splitter = this->splitters[i];
-    Area *area1 = splitter->areas[0];
-    Area *area2 = splitter->areas[1];
-    // Match the parent first
-    Rect parent_rect = splitter->parent_area->get_rect();
-    area1->set_rect(parent_rect);
-    area2->set_rect(parent_rect);
-    if (splitter->is_vertical) {
-      splitter->position = (int)(splitter->position * width_ratio);
-      area1->right = splitter->position - 1;
-      area2->left = splitter->position + 2;
-    } else {
-      splitter->position = (int)(splitter->position * height_ratio);
-      area1->bottom = splitter->position - 1;
-      area2->top = splitter->position + 1;
-    }
-  }
+  // Recursively reposition all splitters
+  reposition_splitter(main_area, width_ratio, height_ratio);
 }
 
 Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,

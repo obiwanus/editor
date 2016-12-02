@@ -164,7 +164,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   state->init(&g_program_memory);
 
   // Init pixel buffer
-  g_pixel_buffer.allocate(&g_program_memory);
+  g_pixel_buffer.allocate();
 
   // Create window class
   WNDCLASS WindowClass = {};
