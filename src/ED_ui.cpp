@@ -713,14 +713,13 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     }
 
     // Maybe we're deleting an area?
-    if (ui->can_delete_area) {
-      ui->can_delete_area = false;
+    if (ui->can_delete_area == 0) {
       for (int i = 1; i < ui->num_areas; i++) {
         // Note we're not considering area 0
         Area *area = ui->areas[i];
         if (!area->is_visible()) continue;
         if (area->get_delete_button().contains(input->mouse)) {
-          ui->remove_area(area);
+          ui->can_delete_area = i;
           break;
         }
       }
@@ -736,21 +735,19 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     // NOTE: if we need to check something for all areas
     // every frame, consider putting it here
 
-    // See if we can delete an area
-    bool mouse_over_any_delete_button = false;
+    // If we've released LMB we may be deleting an area
     for (int i = 1; i < ui->num_areas; i++) {
       // Note we're not considering area 0
       Area *area = ui->areas[i];
       if (!area->is_visible()) continue;
       if (area->get_delete_button().contains(input->mouse)) {
-        ui->can_delete_area = true;
-        mouse_over_any_delete_button = true;
+        if (ui->can_delete_area == i) {
+          ui->remove_area(area);
+        }
         break;
       }
     }
-    if (!mouse_over_any_delete_button) {
-      ui->can_delete_area = false;
-    }
+    ui->can_delete_area = 0;
   }
 
   // ------- Draw area contents -------------------------------------------
