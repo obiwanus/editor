@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "include/stb_stretchy_buffer.h"
 #include "ED_base.h"
 #include "ED_core.h"
 #include "ED_math.h"
@@ -18,6 +19,53 @@ void *Program_Memory::allocate(size_t size) {
   return result;
 }
 
+void *read_file_into_buffer(char *filename) {
+  // Allocates memory
+
+  FILE *f = fopen(filename, "rb");
+  assert(f != NULL);
+
+  fseek(f, 0, SEEK_END);
+  size_t fsize = ftell(f);
+  fseek(f, 0, SEEK_SET);
+
+  void *buffer = malloc(fsize);
+  fread(buffer, fsize, 1, f);
+  fclose(f);
+
+  return buffer;
+}
+
+void Model::read_from_obj_file(char *filename) {
+  FILE *f = fopen(filename, "rb");
+  if (f == NULL) {
+    printf("Can't open file %s\n", filename);
+    exit(1);
+  }
+
+  this->vertices = NULL;  // stb_stretchy_buffer needs this
+  this->faces = NULL;
+
+  const int kBufSize = 100;
+  char string[kBufSize];
+  while (fgets(string, kBufSize, f) != NULL) {
+    if (string[0] == 'v' && string[1] == ' ') {
+      v3 vertex;
+      sscanf(string + 2, "%f %f %f", &vertex.x, &vertex.y, &vertex.z);
+      sb_push(v3 *, this->vertices, vertex);
+    }
+    if (string[0] == 'f' && string[1] == ' ') {
+      Face face;
+      sscanf(string + 2, "%d/%d/%d %d/%d/%d %d/%d/%d", &face.v_ids[0],
+             &face.vn_ids[0], &face.tx_ids[0], &face.v_ids[1], &face.vn_ids[1],
+             &face.tx_ids[1], &face.v_ids[2], &face.vn_ids[2], &face.tx_ids[2]);
+      sb_push(Face *, this->faces, face);
+    }
+  }
+
+  fclose(f);
+}
+
 void Program_State::init(Program_Memory *memory) {
   Program_State *state = this;
 
@@ -30,10 +78,8 @@ void Program_State::init(Program_Memory *memory) {
       NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});
   state->UI.new_type_selector(area);
 
-  Area_Splitter *splitter =
-      state->UI.vertical_split(area, area->get_width() / 2);
-  splitter->areas[0]->editor_type = Area_Editor_Type_Raytrace;
-  // splitter->areas[1]->editor_type = Area_Editor_Type_Raytrace;
+  // Load test model
+  state->model.read_from_obj_file("../models/african_head.obj");
 
   // Main ray tracer (tmp)
   Ray_Tracer *rt = &state->ray_tracer;

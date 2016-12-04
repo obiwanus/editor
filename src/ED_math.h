@@ -143,13 +143,13 @@ inline v3 V3(r32 X, r32 Y, r32 Z) {
   return result;
 }
 
-inline v3 V3i(i32 X, i32 Y, i32 Z) {
+inline v3 V3(i32 X, i32 Y, i32 Z) {
   v3 result = {(r32)X, (r32)Y, (r32)Z};
 
   return result;
 }
 
-inline v3 V3i(u32 X, u32 Y, u32 Z) {
+inline v3 V3(u32 X, u32 Y, u32 Z) {
   v3 result = {(r32)X, (r32)Y, (r32)Z};
 
   return result;

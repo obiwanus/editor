@@ -34,6 +34,7 @@ inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2 point, u32 color) {
 }
 
 void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color) {
+  // TODO: replace this with a fast version
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
     int tmp = A.x;
@@ -332,7 +333,7 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
   *area = {};
   area->set_rect(rect);
   area->parent_area = parent_area;
-  area->editor_empty.area = area;
+  area->editor_3dview.area = area;
   area->editor_raytrace.area = area;
   if (parent_area != NULL) {
     area->editor_type = parent_area->editor_type;
@@ -975,8 +976,8 @@ void User_Interface::draw_areas(Ray_Tracer *rt) {
 
     // Draw editor contents
     switch (area->editor_type) {
-      case Area_Editor_Type_Empty: {
-        area->editor_empty.draw();
+      case Area_Editor_Type_3DView: {
+        area->editor_3dview.draw();
       } break;
 
       case Area_Editor_Type_Raytrace: {
@@ -988,7 +989,7 @@ void User_Interface::draw_areas(Ray_Tracer *rt) {
   }
 }
 
-void Editor_Empty::draw() {
+void Editor_3DView::draw() {
   draw_rect(this->area->draw_buffer, this->area->draw_buffer->get_rect(), {0});
 }
 

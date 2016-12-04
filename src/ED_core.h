@@ -5,6 +5,19 @@
 #include "ED_ui.h"
 #include "raytrace/ED_raytrace.h"
 
+struct Face {
+  int v_ids[3];   // vertex
+  int vn_ids[3];  // vertex normal
+  int tx_ids[3];   // texture
+};
+
+struct Model {
+  v3 *vertices;
+  Face *faces;
+
+  void read_from_obj_file(char *);
+};
+
 struct Program_State {
   // Tmp mesh
   Mesh mesh;
@@ -13,6 +26,8 @@ struct Program_State {
   int kWindowHeight;
 
   User_Interface UI;
+
+  Model model;
 
   Ray_Tracer ray_tracer;
 

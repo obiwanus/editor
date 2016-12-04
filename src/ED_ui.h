@@ -103,7 +103,7 @@ struct UI_Select {
 };
 
 enum Area_Editor_Type {
-  Area_Editor_Type_Empty = 0,
+  Area_Editor_Type_3DView = 0,
   Area_Editor_Type_Raytrace,
 
   Area_Editor_Type__COUNT,
@@ -115,7 +115,7 @@ struct Area_Editor {
   void update_and_draw(Pixel_Buffer *, User_Input *){};
 };
 
-struct Editor_Empty : Area_Editor {
+struct Editor_3DView : Area_Editor {
   void draw();
 };
 
@@ -135,7 +135,7 @@ struct Area {
   Pixel_Buffer *draw_buffer = NULL;
 
   Area_Editor_Type editor_type;
-  Editor_Empty editor_empty;
+  Editor_3DView editor_3dview;
   Editor_Raytrace editor_raytrace;
 
 #define AREA_PANEL_HEIGHT 26

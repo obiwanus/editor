@@ -34,13 +34,14 @@ typedef unsigned int uint;
 #define COUNT_OF(x) \
   ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
-// 512 Mb
-#define MAX_INTERNAL_MEMORY_SIZE (512 * 1024 * 1024)
+// 256 Mb
+#define MAX_INTERNAL_MEMORY_SIZE (256 * 1024 * 1024)
 
 struct Program_Memory {
   void *free_memory;
   size_t allocated;
 
+  // TODO: do something with allocations finally
   void *allocate(size_t);
 };
 
