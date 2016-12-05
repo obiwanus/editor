@@ -6,6 +6,7 @@
 #include "ED_base.h"
 #include "ED_core.h"
 #include "ED_math.h"
+#include "ED_model.h"
 #include "raytrace/ED_raytrace.h"
 
 void *Program_Memory::allocate(size_t size) {
@@ -34,36 +35,6 @@ void *read_file_into_buffer(char *filename) {
   fclose(f);
 
   return buffer;
-}
-
-void Model::read_from_obj_file(char *filename) {
-  FILE *f = fopen(filename, "rb");
-  if (f == NULL) {
-    printf("Can't open file %s\n", filename);
-    exit(1);
-  }
-
-  this->vertices = NULL;  // stb_stretchy_buffer needs this
-  this->faces = NULL;
-
-  const int kBufSize = 100;
-  char string[kBufSize];
-  while (fgets(string, kBufSize, f) != NULL) {
-    if (string[0] == 'v' && string[1] == ' ') {
-      v3 vertex;
-      sscanf(string + 2, "%f %f %f", &vertex.x, &vertex.y, &vertex.z);
-      sb_push(v3 *, this->vertices, vertex);
-    }
-    if (string[0] == 'f' && string[1] == ' ') {
-      Face face;
-      sscanf(string + 2, "%d/%d/%d %d/%d/%d %d/%d/%d", &face.v_ids[0],
-             &face.vn_ids[0], &face.tx_ids[0], &face.v_ids[1], &face.vn_ids[1],
-             &face.tx_ids[1], &face.v_ids[2], &face.vn_ids[2], &face.tx_ids[2]);
-      sb_push(Face *, this->faces, face);
-    }
-  }
-
-  fclose(f);
 }
 
 void Program_State::init(Program_Memory *memory) {
@@ -155,7 +126,7 @@ Update_Result update_and_render(Program_Memory *program_memory,
                                 Pixel_Buffer *pixel_buffer, User_Input *input) {
   Update_Result result = {};
 
-  result = state->UI.update_and_draw(pixel_buffer, input);
+  result = state->UI.update_and_draw(pixel_buffer, input, state->model);
 
   return result;
 }

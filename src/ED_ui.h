@@ -3,6 +3,7 @@
 
 #include "ED_base.h"
 #include "ED_math.h"
+#include "ED_model.h"
 #include "raytrace/ED_raytrace.h"
 
 
@@ -111,12 +112,13 @@ enum Area_Editor_Type {
 
 struct Area_Editor {
   Area *area;
+  bool is_drawn;
 
   void update_and_draw(Pixel_Buffer *, User_Input *){};
 };
 
 struct Editor_3DView : Area_Editor {
-  void draw();
+  void draw(Model);
 };
 
 struct Editor_Raytrace : Area_Editor {
@@ -225,8 +227,8 @@ struct User_Interface {
   void _split_type_selectors(Area *, Area_Splitter *, bool);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
-  Update_Result update_and_draw(Pixel_Buffer *, User_Input *);
-  void draw_areas(Ray_Tracer *);
+  Update_Result update_and_draw(Pixel_Buffer *, User_Input *, Model);
+  void draw_areas(Ray_Tracer *, Model);
 };
 
 

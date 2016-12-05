@@ -61,6 +61,19 @@ union v3 {
   v3 cross(v3 Vector);
 };
 
+union v4 {
+  struct {
+    r32 x, y, z, w;
+  };
+  // struct {
+  //   r32 u, v, w;
+  // };
+  struct {
+    r32 r, g, b, a;
+  };
+  r32 E[4];
+};
+
 union m2x2 {
   struct {
     v2 rows[2];
@@ -87,6 +100,18 @@ union m3x3 {
 
   r32 determinant();
   m3x3 replace_column(int number, v3 column);
+};
+
+union m4x4 {
+  struct {
+    v4 rows[4];
+  };
+  struct {
+    r32 a, b, c, d;
+    r32 e, f, g, h;
+    r32 i, j, k, l;
+  };
+  r32 E[16];
 };
 
 // ==================== Construction ======================
@@ -367,6 +392,37 @@ inline bool operator==(v3 A, v3 B) {
 
 inline bool operator!=(v3 A, v3 B) {
   bool result = (A.x != B.x || A.y != B.y || A.z != B.z);
+
+  return result;
+}
+
+
+// ================= v4 and m4x4 ====================
+
+inline v4 operator*(m4x4 M, v4 V) {
+  v4 result = {};
+
+  result.x = M.rows[0].x * V.x + M.rows[0].y * V.y + M.rows[0].z * V.z + M.rows[0].w * V.w;
+  result.y = M.rows[1].x * V.x + M.rows[1].y * V.y + M.rows[1].z * V.z + M.rows[1].w * V.w;
+  result.z = M.rows[2].x * V.x + M.rows[2].y * V.y + M.rows[2].z * V.z + M.rows[2].w * V.w;
+  result.w = M.rows[3].x * V.x + M.rows[3].y * V.y + M.rows[3].z * V.z + M.rows[3].w * V.w;
+
+  return result;
+}
+
+// Affine transform
+inline v3 operator*(m4x4 M, v3 V) {
+  v3 result = {};
+
+  v4 V_ext;
+  V_ext.x = V.x;
+  V_ext.y = V.y;
+  V_ext.z = V.z;
+  V_ext.w = 1;
+
+  V_ext = M * V_ext;
+
+  result = V3(V_ext.x, V_ext.y, V_ext.z);
 
   return result;
 }

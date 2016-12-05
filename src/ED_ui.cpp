@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include "include/stb_stretchy_buffer.h"
+#include "ED_core.h"
 #include "ED_ui.h"
 
 inline u32 get_rgb_u32(v3 color) {
@@ -639,7 +640,7 @@ void User_Interface::resize_window(int new_width, int new_height) {
 }
 
 Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
-                                              User_Input *input) {
+                                              User_Input *input, Model model) {
   Update_Result result = {};
   User_Interface *ui = this;
 
@@ -754,7 +755,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   // ------- Draw area contents -------------------------------------------
 
   // Potentially will be in separate threads
-  ui->draw_areas(NULL);
+  ui->draw_areas(NULL, model);
 
   // Draw panels
   for (int i = 0; i < ui->num_areas; i++) {
@@ -966,7 +967,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   return result;
 }
 
-void User_Interface::draw_areas(Ray_Tracer *rt) {
+void User_Interface::draw_areas(Ray_Tracer *rt, Model model) {
   // Draw areas
   for (int i = 0; i < this->num_areas; i++) {
     Area *area = this->areas[i];
@@ -977,7 +978,10 @@ void User_Interface::draw_areas(Ray_Tracer *rt) {
     // Draw editor contents
     switch (area->editor_type) {
       case Area_Editor_Type_3DView: {
-        area->editor_3dview.draw();
+        if (!area->editor_3dview.is_drawn) {
+          area->editor_3dview.draw(model);
+          area->editor_3dview.is_drawn = true;
+        }
       } break;
 
       case Area_Editor_Type_Raytrace: {
@@ -989,8 +993,35 @@ void User_Interface::draw_areas(Ray_Tracer *rt) {
   }
 }
 
-void Editor_3DView::draw() {
-  draw_rect(this->area->draw_buffer, this->area->draw_buffer->get_rect(), {0});
+void Editor_3DView::draw(Model model) {
+  Pixel_Buffer *buffer = this->area->draw_buffer;
+  draw_rect(buffer, buffer->get_rect(), {0});
+  u32 color = 0x00123123;
+
+  r32 scale = (r32)buffer->height;
+  // clang-format off
+  m4x4 ScreenTransform = {
+    scale, 0,     0,     (r32)buffer->width / 2,
+    0,     scale, 0,     (r32)buffer->height / 2,
+    0,     0,     scale, 0,
+    0,     0,     0,     1,
+  };
+  // clang-format on
+
+  for (int i = 0; i < sb_count(model.faces); i++) {
+    Face face = model.faces[i];
+    v3 vert1 = ScreenTransform * model.vertices[face.v_ids[0]];
+    v3 vert2 = ScreenTransform * model.vertices[face.v_ids[1]];
+    v3 vert3 = ScreenTransform * model.vertices[face.v_ids[2]];
+
+    draw_line(buffer, V2i(vert1.x, vert1.y), V2i(vert2.x, vert2.y), color);
+
+    // TODO
+
+    // Fix the drawing
+    // Force redraw
+    // - draw_line is too slow
+  }
 }
 
 void Editor_Raytrace::draw(Ray_Tracer *rt) {

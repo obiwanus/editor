@@ -24,7 +24,7 @@ pushd build
 @del /Q *.pdb > NUL 2> NUL
 @del /Q *.gmi > NUL 2> NUL
 
-set FilesToCompile= ..\src\ED_win32.cpp ..\src\ED_core.cpp ..\src\ED_math.cpp ..\src\raytrace\ED_raytrace.cpp ..\src\ED_ui.cpp
+set FilesToCompile= ..\src\ED_win32.cpp ..\src\ED_core.cpp ..\src\ED_math.cpp ..\src\raytrace\ED_raytrace.cpp ..\src\ED_ui.cpp  ..\src\ED_model.cpp
 
 set run_compilation= cl -Feeditor.exe -I..\src %OptimizeFlags% %CommonCompilerFlags% %FilesToCompile% /link %CommonLinkerFlags%
 
