@@ -20,23 +20,6 @@ void *Program_Memory::allocate(size_t size) {
   return result;
 }
 
-void *read_file_into_buffer(char *filename) {
-  // Allocates memory
-
-  FILE *f = fopen(filename, "rb");
-  assert(f != NULL);
-
-  fseek(f, 0, SEEK_END);
-  size_t fsize = ftell(f);
-  fseek(f, 0, SEEK_SET);
-
-  void *buffer = malloc(fsize);
-  fread(buffer, fsize, 1, f);
-  fclose(f);
-
-  return buffer;
-}
-
 void Program_State::init(Program_Memory *memory) {
   Program_State *state = this;
 

@@ -14,7 +14,7 @@
 
 global bool gRunning;
 global Pixel_Buffer g_pixel_buffer;
-global void *g_program_memory;
+global Program_Memory g_program_memory;
 
 global const int kWindowWidth = 1000;
 global const int kWindowHeight = 700;
@@ -73,7 +73,13 @@ int main(int argc, char const *argv[]) {
     gc = XCreateGC(display, window, 0, &gcvalues);
   }
 
-  g_program_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
+  // Allocate main memory
+  g_program_memory.free_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
+
+  // Main program state
+  Program_State *state =
+      (Program_State *)g_program_memory.allocate(sizeof(Program_State));
+  state->init(&g_program_memory);
 
   User_Input inputs[2];
   User_Input *old_input = &inputs[0];
@@ -159,7 +165,7 @@ int main(int argc, char const *argv[]) {
       new_input->mouse_middle = mouse_mask & Button3Mask;
     }
 
-    update_and_render(g_program_memory, &g_pixel_buffer, new_input);
+    update_and_render(&g_program_memory, state, &g_pixel_buffer, new_input);
 
     XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
               kWindowHeight);
