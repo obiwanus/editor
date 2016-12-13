@@ -998,7 +998,7 @@ void Editor_3DView::draw(Model model) {
   draw_rect(buffer, buffer->get_rect(), {0});
   u32 color = 0x00123123;
 
-  r32 scale = (r32)buffer->height;
+  r32 scale = (r32)buffer->height / 2.0f;
   // clang-format off
   m4x4 ScreenTransform = {
     scale, 0,     0,     (r32)buffer->width / 2,
@@ -1010,17 +1010,16 @@ void Editor_3DView::draw(Model model) {
 
   for (int i = 0; i < sb_count(model.faces); i++) {
     Face face = model.faces[i];
-    v3 vert1 = ScreenTransform * model.vertices[face.v_ids[0]];
-    v3 vert2 = ScreenTransform * model.vertices[face.v_ids[1]];
-    v3 vert3 = ScreenTransform * model.vertices[face.v_ids[2]];
+    for (int j = 0; j < 3; j ++) {
+      v3 vert1 = ScreenTransform * model.vertices[face.v_ids[j] - 1];
+      v3 vert2 = ScreenTransform * model.vertices[face.v_ids[(j + 1) % 3] - 1];
 
-    draw_line(buffer, V2i(vert1.x, vert1.y), V2i(vert2.x, vert2.y), color);
+      draw_line(buffer, V2i(vert1.x, vert1.y), V2i(vert2.x, vert2.y), color);
+    }
 
     // TODO
-
-    // Fix the drawing
     // Force redraw
-    // - draw_line is too slow
+    // profile
   }
 }
 
