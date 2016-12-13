@@ -1,4 +1,5 @@
 #include <stdlib.h>
+#include <string.h>
 #include "include/stb_stretchy_buffer.h"
 #include "ED_core.h"
 #include "ED_ui.h"
@@ -980,7 +981,7 @@ void User_Interface::draw_areas(Ray_Tracer *rt, Model model) {
       case Area_Editor_Type_3DView: {
         if (!area->editor_3dview.is_drawn) {
           area->editor_3dview.draw(model);
-          area->editor_3dview.is_drawn = true;
+          // area->editor_3dview.is_drawn = true;
         }
       } break;
 
@@ -995,7 +996,8 @@ void User_Interface::draw_areas(Ray_Tracer *rt, Model model) {
 
 void Editor_3DView::draw(Model model) {
   Pixel_Buffer *buffer = this->area->draw_buffer;
-  draw_rect(buffer, buffer->get_rect(), {0});
+  // draw_rect(buffer, buffer->get_rect(), {0});
+  memset(buffer->memory, 0, buffer->width * buffer->height * sizeof(u32));
   u32 color = 0x00123123;
 
   r32 scale = (r32)buffer->height / 2.0f;
@@ -1016,10 +1018,6 @@ void Editor_3DView::draw(Model model) {
 
       draw_line(buffer, V2i(vert1.x, vert1.y), V2i(vert2.x, vert2.y), color);
     }
-
-    // TODO
-    // Force redraw
-    // profile
   }
 }
 
