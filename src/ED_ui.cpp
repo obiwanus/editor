@@ -17,26 +17,28 @@ inline u32 get_rgb_u32(v3 color) {
   return result;
 }
 
-inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2i point, u32 color) {
+inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2i point, u32 color, bool top_left = false) {
   int x = point.x;
   int y = point.y;
 
   if (x < 0 || x > pixel_buffer->width || y < 0 || y > pixel_buffer->height) {
     return;
   }
-  // y = pixel_buffer->height - y;  // Origin in bottom-left
+
+  if (!top_left) {
+    y = pixel_buffer->height - y;  // Origin in bottom-left
+  }
   u32 *pixel = (u32 *)pixel_buffer->memory + x + y * pixel_buffer->width;
   *pixel = color;
 }
 
-inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2 point, u32 color) {
+inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2 point, u32 color, bool top_left = false) {
   // A v2 version
   v2i point_i = {(int)point.x, (int)point.y};
-  draw_pixel(pixel_buffer, point_i, color);
+  draw_pixel(pixel_buffer, point_i, color, top_left);
 }
 
-void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color) {
-  // TODO: replace this with a fast version
+void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color, bool top_left = false) {
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
     int tmp = A.x;
@@ -60,9 +62,9 @@ void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color) {
   int y = A.y;
   for (int x = A.x; x <= B.x; x++) {
     if (!swapped) {
-      draw_pixel(pixel_buffer, V2i(x, y), color);
+      draw_pixel(pixel_buffer, V2i(x, y), color, top_left);
     } else {
-      draw_pixel(pixel_buffer, V2i(y, x), color);
+      draw_pixel(pixel_buffer, V2i(y, x), color, top_left);
     }
     error += sign * dy;
     if (error > 0) {
@@ -72,11 +74,15 @@ void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color) {
   }
 }
 
-void draw_line(Pixel_Buffer *pixel_buffer, v2 A, v2 B, u32 color) {
-  v2i a = {(int)A.x, (int)A.y};
-  v2i b = {(int)B.x, (int)B.y};
-  draw_line(pixel_buffer, a, b, color);
+void draw_ui_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color) {
+  // Draw line with the top left corner as the origin
+  draw_line(pixel_buffer, A, B, color, true);
 }
+// void draw_ui_line(Pixel_Buffer *pixel_buffer, v2 A, v2 B, u32 color) {
+//   v2i a = {(int)A.x, (int)A.y};
+//   v2i b = {(int)B.x, (int)B.y};
+//   draw_ui_line(pixel_buffer, a, b, color);
+// }
 
 void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, u32 color) {
   if (rect.left < 0) rect.left = 0;
@@ -87,7 +93,7 @@ void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, u32 color) {
   for (int x = rect.left; x < rect.right; x++) {
     for (int y = rect.top; y < rect.bottom; y++) {
       // Don't care about performance (yet)
-      draw_pixel(pixel_buffer, V2i(x, y), color);
+      draw_pixel(pixel_buffer, V2i(x, y), color, true);
     }
   }
 }
@@ -907,18 +913,18 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
       left = splitter->position;
       top = area->top;
       bottom = area->bottom;
-      draw_line(pixel_buffer, V2i(left - 1, top), V2i(left - 1, bottom),
+      draw_ui_line(pixel_buffer, V2i(left - 1, top), V2i(left - 1, bottom),
                 0x00323232);
-      draw_line(pixel_buffer, V2i(left, top), V2i(left, bottom), 0x00000000);
-      draw_line(pixel_buffer, V2i(left + 1, top), V2i(left + 1, bottom),
+      draw_ui_line(pixel_buffer, V2i(left, top), V2i(left, bottom), 0x00000000);
+      draw_ui_line(pixel_buffer, V2i(left + 1, top), V2i(left + 1, bottom),
                 0x00505050);
     } else {
       top = splitter->position;
       left = area->left;
       right = area->right;
-      draw_line(pixel_buffer, V2i(left, top - 1), V2i(right, top - 1),
+      draw_ui_line(pixel_buffer, V2i(left, top - 1), V2i(right, top - 1),
                 0x00000000);
-      draw_line(pixel_buffer, V2i(left, top), V2i(right, top), 0x00505050);
+      draw_ui_line(pixel_buffer, V2i(left, top), V2i(right, top), 0x00505050);
     }
   }
 

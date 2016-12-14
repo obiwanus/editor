@@ -23,5 +23,6 @@ fi
 
 g++ --std=c++11 -Isrc/ $CFLAGS $FILES_TO_COMPILE $LFLAGS -o build/editor
 
-build/editor
+cd build
+./editor
 

@@ -8,16 +8,17 @@
 - Use the buttons to rotate the cube
 - Use the middle mouse button to rotate
 
+LINUX:
+- window resize
+- cursors
+
 
 - Logging
 
 Features (subject to change):
-- Load models
 - Create models
 - Edit models
-- Multiple viewports/workspaces
 - Ray tracer for rendering
-- Interface panels, dropdowns etc
 - Render fonts
 - 2d editor?
 -
