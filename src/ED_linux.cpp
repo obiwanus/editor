@@ -2,6 +2,7 @@
 #include "ED_core.h"
 
 #include <X11/Xlib.h>
+#include <X11/cursorfont.h>
 #include <X11/Xos.h>
 #include <X11/Xutil.h>
 #include <dlfcn.h>
@@ -80,6 +81,17 @@ int main(int argc, char const *argv[]) {
   Program_State *state =
       (Program_State *)g_program_memory.allocate(sizeof(Program_State));
   state->init(&g_program_memory);
+
+  // Define cursors
+  Cursor_Type current_cursor = Cursor_Type_Arrow;
+  Cursor linux_cursors[Cursor_Type__COUNT];
+  linux_cursors[Cursor_Type_Arrow] = XCreateFontCursor(display, XC_left_ptr);
+  linux_cursors[Cursor_Type_Cross] = XCreateFontCursor(display, XC_cross);
+  linux_cursors[Cursor_Type_Hand] = XCreateFontCursor(display, XC_hand1);
+  linux_cursors[Cursor_Type_Resize_Vert] =
+      XCreateFontCursor(display, XC_sb_v_double_arrow);
+  linux_cursors[Cursor_Type_Resize_Horiz] =
+      XCreateFontCursor(display, XC_sb_h_double_arrow);
 
   User_Input inputs[2];
   User_Input *old_input = &inputs[0];
@@ -165,7 +177,11 @@ int main(int argc, char const *argv[]) {
       new_input->mouse_middle = mouse_mask & Button3Mask;
     }
 
-    update_and_render(&g_program_memory, state, &g_pixel_buffer, new_input);
+    Update_Result result =
+        update_and_render(&g_program_memory, state, &g_pixel_buffer, new_input);
+
+    assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
+    XDefineCursor(display, window, linux_cursors[result.cursor]);
 
     XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
               kWindowHeight);
