@@ -17,28 +17,31 @@ inline u32 get_rgb_u32(v3 color) {
   return result;
 }
 
-inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2i point, u32 color, bool top_left = false) {
+inline void draw_pixel(Pixel_Buffer *buffer, v2i point, u32 color,
+                       bool top_left = false) {
   int x = point.x;
   int y = point.y;
 
-  if (x < 0 || x > pixel_buffer->width || y < 0 || y > pixel_buffer->height) {
+  if (x < 0 || x > buffer->width || y < 0 || y > buffer->height) {
     return;
   }
 
   if (!top_left) {
-    y = pixel_buffer->height - y;  // Origin in bottom-left
+    y = buffer->height - y;  // Origin in bottom-left
   }
-  u32 *pixel = (u32 *)pixel_buffer->memory + x + y * pixel_buffer->width;
+  u32 *pixel = (u32 *)buffer->memory + x + y * buffer->width;
   *pixel = color;
 }
 
-inline void draw_pixel(Pixel_Buffer *pixel_buffer, v2 point, u32 color, bool top_left = false) {
+inline void draw_pixel(Pixel_Buffer *buffer, v2 point, u32 color,
+                       bool top_left = false) {
   // A v2 version
   v2i point_i = {(int)point.x, (int)point.y};
-  draw_pixel(pixel_buffer, point_i, color, top_left);
+  draw_pixel(buffer, point_i, color, top_left);
 }
 
-void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color, bool top_left = false) {
+void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color,
+               bool top_left = false) {
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
     int tmp = A.x;
@@ -62,9 +65,9 @@ void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color, bool top_lef
   int y = A.y;
   for (int x = A.x; x <= B.x; x++) {
     if (!swapped) {
-      draw_pixel(pixel_buffer, V2i(x, y), color, top_left);
+      draw_pixel(buffer, V2i(x, y), color, top_left);
     } else {
-      draw_pixel(pixel_buffer, V2i(y, x), color, top_left);
+      draw_pixel(buffer, V2i(y, x), color, top_left);
     }
     error += sign * dy;
     if (error > 0) {
@@ -74,32 +77,82 @@ void draw_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color, bool top_lef
   }
 }
 
-void draw_ui_line(Pixel_Buffer *pixel_buffer, v2i A, v2i B, u32 color) {
-  // Draw line with the top left corner as the origin
-  draw_line(pixel_buffer, A, B, color, true);
+void swap_v2i(v2i *p1, v2i *p2) {
+  v2i buf = *p1;
+  *p1 = *p2;
+  *p2 = buf;
 }
-// void draw_ui_line(Pixel_Buffer *pixel_buffer, v2 A, v2 B, u32 color) {
-//   v2i a = {(int)A.x, (int)A.y};
-//   v2i b = {(int)B.x, (int)B.y};
-//   draw_ui_line(pixel_buffer, a, b, color);
-// }
 
-void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, u32 color) {
-  if (rect.left < 0) rect.left = 0;
-  if (rect.top < 0) rect.top = 0;
-  if (rect.right > pixel_buffer->width) rect.right = pixel_buffer->width;
-  if (rect.bottom > pixel_buffer->height) rect.bottom = pixel_buffer->height;
+void swap_int(int *p1, int *p2) {
+  int buf = *p1;
+  *p1 = *p2;
+  *p2 = buf;
+}
 
-  for (int x = rect.left; x < rect.right; x++) {
-    for (int y = rect.top; y < rect.bottom; y++) {
-      // Don't care about performance (yet)
-      draw_pixel(pixel_buffer, V2i(x, y), color, true);
+void draw_triangle(Pixel_Buffer *buffer, v3 verts[], u32 color) {
+  v2i t0 = V2i(verts[0]);
+  v2i t1 = V2i(verts[1]);
+  v2i t2 = V2i(verts[2]);
+
+  if (t0.y == t1.y && t1.y == t2.y) return;
+  if (t0.x == t1.x && t1.x == t2.x) return;
+
+  if (t0.y > t1.y) swap_v2i(&t0, &t1);
+  if (t0.y > t2.y) swap_v2i(&t0, &t2);
+  if (t1.y > t2.y) swap_v2i(&t1, &t2);
+
+  int total_height = t2.y - t0.y;
+  int segment_height = t1.y - t0.y + 1;
+  for (int y = t0.y; y <= t1.y; y++) {
+    r32 dy_total = (r32)(y - t0.y) / total_height;
+    r32 dy_segment = (r32)(y - t0.y) / segment_height;
+    int x_left = t0.x + round_i32((t2.x - t0.x) * dy_total);
+    int x_right = t0.x + round_i32((t1.x - t0.x) * dy_segment);
+    if (x_left > x_right) swap_int(&x_left, &x_right);
+    for (int x = x_left; x <= x_right; x++) {
+      draw_pixel(buffer, V2i(x, y), color);
+    }
+  }
+  segment_height = t2.y - t1.y + 1;
+  for (int y = t1.y; y <= t2.y; y++) {
+    r32 dy_total = (r32)(y - t0.y) / total_height;
+    r32 dy_segment = (r32)(y - t1.y) / segment_height;
+    int x_left = t0.x + round_i32((t2.x - t0.x) * dy_total);
+    int x_right = t1.x + round_i32((t2.x - t1.x) * dy_segment);
+    if (x_left > x_right) swap_int(&x_left, &x_right);
+    for (int x = x_left; x <= x_right; x++) {
+      draw_pixel(buffer, V2i(x, y), color);
     }
   }
 }
 
-void draw_rect(Pixel_Buffer *pixel_buffer, Rect rect, v3 color) {
-  draw_rect(pixel_buffer, rect, get_rgb_u32(color));
+void draw_ui_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color) {
+  // Draw line with the top left corner as the origin
+  draw_line(buffer, A, B, color, true);
+}
+
+// void draw_ui_line(Pixel_Buffer *buffer, v2 A, v2 B, u32 color) {
+//   v2i a = {(int)A.x, (int)A.y};
+//   v2i b = {(int)B.x, (int)B.y};
+//   draw_ui_line(buffer, a, b, color);
+// }
+
+void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
+  if (rect.left < 0) rect.left = 0;
+  if (rect.top < 0) rect.top = 0;
+  if (rect.right > buffer->width) rect.right = buffer->width;
+  if (rect.bottom > buffer->height) rect.bottom = buffer->height;
+
+  for (int x = rect.left; x < rect.right; x++) {
+    for (int y = rect.top; y < rect.bottom; y++) {
+      // Don't care about performance (yet)
+      draw_pixel(buffer, V2i(x, y), color, true);
+    }
+  }
+}
+
+void draw_rect(Pixel_Buffer *buffer, Rect rect, v3 color) {
+  draw_rect(buffer, rect, get_rgb_u32(color));
 }
 
 bool Rect::contains(v2i point) {
@@ -646,14 +699,14 @@ void User_Interface::resize_window(int new_width, int new_height) {
   reposition_splitter(main_area, width_ratio, height_ratio);
 }
 
-Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
+Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
                                               User_Input *input, Model model) {
   Update_Result result = {};
   User_Interface *ui = this;
 
-  if (pixel_buffer->was_resized) {
-    ui->resize_window(pixel_buffer->width, pixel_buffer->height);
-    pixel_buffer->was_resized = false;
+  if (buffer->was_resized) {
+    ui->resize_window(buffer->width, buffer->height);
+    buffer->was_resized = false;
   }
 
   // ----- Update ----------------------------------------------------
@@ -891,8 +944,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     for (int y = 0; y < src_buffer->height; y++) {
       for (int x = 0; x < src_buffer->width; x++) {
         u32 *pixel_src = (u32 *)src_buffer->memory + x + y * src_buffer->width;
-        u32 *pixel_dest = (u32 *)pixel_buffer->memory + (client_rect.left + x) +
-                          (client_rect.top + y) * pixel_buffer->width;
+        u32 *pixel_dest = (u32 *)buffer->memory + (client_rect.left + x) +
+                          (client_rect.top + y) * buffer->width;
         *pixel_dest = *pixel_src;
       }
     }
@@ -906,25 +959,24 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
   // Draw splitters
   for (int i = 0; i < ui->num_splitters; i++) {
     Area_Splitter *splitter = ui->splitters[i];
-    // draw_rect(pixel_buffer, splitter->get_rect(), {1,1,1});
+    // draw_rect(buffer, splitter->get_rect(), {1,1,1});
     Area *area = splitter->parent_area;
     int left, top, right, bottom;
     if (splitter->is_vertical) {
       left = splitter->position;
       top = area->top;
       bottom = area->bottom;
-      draw_ui_line(pixel_buffer, V2i(left - 1, top), V2i(left - 1, bottom),
-                0x00323232);
-      draw_ui_line(pixel_buffer, V2i(left, top), V2i(left, bottom), 0x00000000);
-      draw_ui_line(pixel_buffer, V2i(left + 1, top), V2i(left + 1, bottom),
-                0x00505050);
+      draw_ui_line(buffer, V2i(left - 1, top), V2i(left - 1, bottom),
+                   0x00323232);
+      draw_ui_line(buffer, V2i(left, top), V2i(left, bottom), 0x00000000);
+      draw_ui_line(buffer, V2i(left + 1, top), V2i(left + 1, bottom),
+                   0x00505050);
     } else {
       top = splitter->position;
       left = area->left;
       right = area->right;
-      draw_ui_line(pixel_buffer, V2i(left, top - 1), V2i(right, top - 1),
-                0x00000000);
-      draw_ui_line(pixel_buffer, V2i(left, top), V2i(right, top), 0x00505050);
+      draw_ui_line(buffer, V2i(left, top - 1), V2i(right, top - 1), 0x00000000);
+      draw_ui_line(buffer, V2i(left, top), V2i(right, top), 0x00505050);
     }
   }
 
@@ -933,13 +985,13 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *pixel_buffer,
     if (!area->is_visible()) continue;
 
     // Draw split handles
-    draw_rect(pixel_buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
-    draw_rect(pixel_buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
+    draw_rect(buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
+    draw_rect(buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
 
     // Draw delete buttons
     if (i > 0) {
       // Can't delete area 0
-      draw_rect(pixel_buffer, area->get_delete_button(), {0.4f, 0.1f, 0.1f});
+      draw_rect(buffer, area->get_delete_button(), {0.4f, 0.1f, 0.1f});
     }
   }
 
@@ -1004,7 +1056,6 @@ void Editor_3DView::draw(Model model) {
   Pixel_Buffer *buffer = this->area->draw_buffer;
   // draw_rect(buffer, buffer->get_rect(), {0});
   memset(buffer->memory, 0, buffer->width * buffer->height * sizeof(u32));
-  u32 color = 0x00123123;
 
   r32 scale = (r32)buffer->height / 2.0f;
   // clang-format off
@@ -1016,14 +1067,19 @@ void Editor_3DView::draw(Model model) {
   };
   // clang-format on
 
+  u32 colors[] = {0x00123123, 0x00323232, 0x00686868, 0x00502241, 0x00431288};
+
   for (int i = 0; i < sb_count(model.faces); i++) {
     Face face = model.faces[i];
-    for (int j = 0; j < 3; j ++) {
-      v3 vert1 = ScreenTransform * model.vertices[face.v_ids[j] - 1];
-      v3 vert2 = ScreenTransform * model.vertices[face.v_ids[(j + 1) % 3] - 1];
+    u32 color = colors[i % COUNT_OF(colors)];
 
-      draw_line(buffer, V2i(vert1.x, vert1.y), V2i(vert2.x, vert2.y), color);
-    }
+    v3 verts[3] = {
+        ScreenTransform * model.vertices[face.v_ids[0] - 1],
+        ScreenTransform * model.vertices[face.v_ids[1] - 1],
+        ScreenTransform * model.vertices[face.v_ids[2] - 1],
+    };
+
+    draw_triangle(buffer, verts, color);
   }
 }
 

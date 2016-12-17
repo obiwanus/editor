@@ -8,6 +8,15 @@
 #define M_PI (r32)acos(-1.0)
 #endif // M_PI
 
+// ================ Misc ======================
+
+inline i32 round_i32(r32 value) {
+  i32 result = (int)(value + 0.5f);
+  return result;
+}
+
+// ================ Vectors ======================
+
 struct v2i {
   int x;
   int y;
@@ -137,6 +146,15 @@ inline v2i V2i(r32 X, r32 Y) {
   return result;
 }
 
+inline v2i V2i(v3 A) {
+  v2i result;
+
+  result.x = (int)A.x;
+  result.y = (int)A.y;
+
+  return result;
+}
+
 inline v2 V2(i32 X, i32 Y) {
   v2 result = {(r32)X, (r32)Y};
 
@@ -212,6 +230,15 @@ inline v2i operator-(v2i A, v2i B) {
 
   result.x = A.x - B.x;
   result.y = A.y - B.y;
+
+  return result;
+}
+
+inline v2i operator*(v2i A, r32 scalar) {
+  v2i result;
+
+  result.x = round_i32(scalar * A.x);
+  result.y = round_i32(scalar * A.y);
 
   return result;
 }
