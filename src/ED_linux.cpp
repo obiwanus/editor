@@ -53,6 +53,7 @@ int main(int argc, char const *argv[]) {
 
   GC gc;
   XGCValues gcvalues;
+  Pixmap pixmap;
 
   // Create x image
   {
@@ -62,16 +63,54 @@ int main(int argc, char const *argv[]) {
       if (e.type == MapNotify) break;
     }
 
-    gXImage = XGetImage(display, window, 0, 0, kWindowWidth, kWindowHeight,
-                        AllPlanes, ZPixmap);
+    // gXImage =
+    //     XGetImage(display, window, 0, 0, width, height, AllPlanes, ZPixmap);
 
-    g_pixel_buffer.memory = (void *)gXImage->data;
+    // g_pixel_buffer.memory = (void *)result->data;
+    // g_pixel_buffer.width = width;
+    // g_pixel_buffer.height = height - 1;
+    // g_pixel_buffer.max_width = 3000;
+    // g_pixel_buffer.max_height = 3000;
+
+    // assert(width <= g_pixel_buffer.max_width);
+    // assert(height <= g_pixel_buffer.max_height);
+
+    // int width = 100;
+    // int height = 100;
+    // int depth = 32;          // works fine with depth = 24
+    // int bitmap_pad = 32;     // 32 for 24 and 32 bpp, 16, for 15&16
+    // int bytes_per_line = 0;  // number of bytes in the client image between
+    // the
+    //                          // start of one scanline and the start of the
+    //                          next
+    // Display *display = XOpenDisplay(0);
+    // unsigned char *image32 = (unsigned char *)malloc(width * height * 4);
+    // XImage *img =
+    //     XCreateImage(display, CopyFromParent, depth, ZPixmap, 0, image32,
+    //     width,
+    //                  height, bitmap_pad, bytes_per_line);
+    // Pixmap p = XCreatePixmap(display, XDefaultRootWindow(display), width,
+    //                          height, depth);
+    // XGCValues gcvalues;
+    // GC gc = XCreateGC(display, p, 0, &gcvalues);
+    // XPutImage(display, p, gc, img, 0, 0, 0, 0, width,
+    //           height);  // 0, 0, 0, 0 are src x,y and dst x,y
+
     g_pixel_buffer.width = kWindowWidth;
     g_pixel_buffer.height = kWindowHeight - 1;
-    g_pixel_buffer.max_width = kWindowWidth;
-    g_pixel_buffer.max_height = kWindowHeight;
+    g_pixel_buffer.memory = malloc(g_pixel_buffer.max_width *
+                                   g_pixel_buffer.max_height * sizeof(u32));
+    int width = g_pixel_buffer.max_width = 3000;
+    int height = g_pixel_buffer.max_height = 3000;
+    int depth = 32;
+    int bitmap_pad = 32;
+    int bytes_per_line = 0;
 
-    gc = XCreateGC(display, window, 0, &gcvalues);
+    gXImage = XCreateImage(display, CopyFromParent, depth, ZPixmap, 0,
+                           (char *)g_pixel_buffer.memory, width, height,
+                           bitmap_pad, bytes_per_line);
+    pixmap = XCreatePixmap(display, window, width, height, depth);
+    gc = XCreateGC(display, pixmap, 0, &gcvalues);
   }
 
   // Allocate main memory
@@ -102,6 +141,7 @@ int main(int argc, char const *argv[]) {
          COUNT_OF(new_input->buttons));
 
   gRunning = true;
+  bool resize_window = false;
 
   while (gRunning) {
     // Process events
@@ -118,6 +158,22 @@ int main(int argc, char const *argv[]) {
 
       if (XLookupString(&event.xkey, buf, 255, &key, 0) == 1) {
         symbol = buf[0];
+      }
+
+      // Window resizing
+      if (event.type == ConfigureNotify) {
+        XConfigureEvent xce = event.xconfigure;
+        if (xce.width != gXImage->width || xce.height != gXImage->height) {
+          // Remember to resize the window
+          resize_window = true;
+          g_pixel_buffer.width = xce.width;
+          g_pixel_buffer.height = xce.height;
+          printf("resize event: w %d h %d\n", xce.width, xce.height);
+        }
+      }
+
+      if (event.type == MapNotify) {
+        printf("MapNotify event\n");
       }
 
       // Process user input
@@ -156,12 +212,20 @@ int main(int argc, char const *argv[]) {
           new_input->right = pressed;
         }
       }
+
       // Close window message
       if (event.type == ClientMessage) {
         if (event.xclient.data.l[0] == wmDeleteMessage) {
           gRunning = false;
         }
       }
+    }
+
+    if (resize_window) {
+      // Actually resize the window
+      resize_window = false;
+      printf("resize to %d:%d\n", g_pixel_buffer.width, g_pixel_buffer.height);
+      g_pixel_buffer.was_resized = true;
     }
 
     {
@@ -183,8 +247,8 @@ int main(int argc, char const *argv[]) {
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
 
-    XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
-              kWindowHeight);
+    XPutImage(display, pixmap, gc, gXImage, 0, 0, 0, 0, gXImage->width,
+              gXImage->height);
 
     // Swap inputs
     User_Input *tmp = old_input;
