@@ -23,6 +23,8 @@ fi
 
 g++ --std=c++11 -Isrc/ $CFLAGS $FILES_TO_COMPILE $LFLAGS -o build/editor
 
-cd build
-./editor
+if [ "$1" = "run" ]; then
+    cd build
+    ./editor
+fi
 
