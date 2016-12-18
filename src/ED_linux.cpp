@@ -90,10 +90,13 @@ int main(int argc, char const *argv[]) {
   XMapWindow(display, window);
   XStoreName(display, window, "Editor");
 
+  // Init OpenGL
   GLXContext glc = glXCreateContext(display, visual, NULL, GL_TRUE);
   glXMakeCurrent(display, window, glc);
-
   glEnable(GL_DEPTH_TEST);
+  GLuint texture_handle;
+  glGenTextures(1, &texture_handle);
+  // TODO: set swap interval
 
   Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
   XSetWMProtocols(display, window, &wmDeleteMessage, 1);
@@ -109,14 +112,16 @@ int main(int argc, char const *argv[]) {
       if (e.type == MapNotify) break;
     }
 
-    gXImage = XGetImage(display, window, 0, 0, kWindowWidth, kWindowHeight,
-                        AllPlanes, ZPixmap);
+    // gXImage = XGetImage(display, window, 0, 0, kWindowWidth, kWindowHeight,
+    //                     AllPlanes, ZPixmap);
 
-    g_pixel_buffer.memory = (void *)gXImage->data;
+    // g_pixel_buffer.memory = (void *)gXImage->data;
     g_pixel_buffer.width = kWindowWidth;
     g_pixel_buffer.height = kWindowHeight - 1;
     g_pixel_buffer.max_width = kWindowWidth;
     g_pixel_buffer.max_height = kWindowHeight;
+    g_pixel_buffer.memory = malloc(g_pixel_buffer.max_width *
+                                   g_pixel_buffer.max_height * sizeof(u32));
 
     gc = XCreateGC(display, window, 0, &gcvalues);
   }
@@ -150,8 +155,6 @@ int main(int argc, char const *argv[]) {
 
   gRunning = true;
 
-  bool redraw = false;
-
   while (gRunning) {
     // Process events
     while (XPending(display)) {
@@ -167,10 +170,6 @@ int main(int argc, char const *argv[]) {
 
       if (XLookupString(&event.xkey, buf, 255, &key, 0) == 1) {
         symbol = buf[0];
-      }
-
-      if (event.type == Expose) {
-        redraw = true;
       }
 
       // Process user input
@@ -217,15 +216,14 @@ int main(int argc, char const *argv[]) {
       }
     }
 
-    if (redraw) {
-      XWindowAttributes gwa;
-      XGetWindowAttributes(display, window, &gwa);
-      glViewport(0, 0, gwa.width, gwa.height);
-      DrawAQuad();
-      glXSwapBuffers(display, window);
-      printf("redraw\n");
-      redraw = false;
-    }
+    // if (redraw) {
+    //   XWindowAttributes gwa;
+    //   XGetWindowAttributes(display, window, &gwa);
+    //   glViewport(0, 0, gwa.width, gwa.height);
+    //   DrawAQuad();
+    //   glXSwapBuffers(display, window);
+    //   redraw = false;
+    // }
 
     {
       // Get mouse position
@@ -245,6 +243,57 @@ int main(int argc, char const *argv[]) {
 
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
+
+    // Update the screen
+    {
+      glViewport(0, 0, g_pixel_buffer.width, g_pixel_buffer.height);
+
+      glEnable(GL_TEXTURE_2D);
+
+      glBindTexture(GL_TEXTURE_2D, texture_handle);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, g_pixel_buffer.width,
+                   g_pixel_buffer.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE,
+                   g_pixel_buffer.memory);
+
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+
+      glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+      // glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+      // glClear(GL_COLOR_BUFFER_BIT);
+
+      glMatrixMode(GL_TEXTURE);
+      glLoadIdentity();
+
+      glMatrixMode(GL_MODELVIEW);
+      glLoadIdentity();
+
+      glMatrixMode(GL_PROJECTION);
+      glLoadIdentity();
+
+      glBegin(GL_TRIANGLES);
+      {
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex2i(-1, -1);
+        glTexCoord2f(1.0f, 1.0f);
+        glVertex2i(1, -1);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex2i(1, 1);
+
+        glTexCoord2f(0.0f, 1.0f);
+        glVertex2i(-1, -1);
+        glTexCoord2f(0.0f, 0.0f);
+        glVertex2i(-1, 1);
+        glTexCoord2f(1.0f, 0.0f);
+        glVertex2i(1, 1);
+      }
+      glEnd();
+
+      // glXSwapBuffers(display, window);
+    }
 
     // XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
     //           kWindowHeight);
