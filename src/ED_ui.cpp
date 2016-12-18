@@ -89,10 +89,10 @@ void swap_int(int *p1, int *p2) {
   *p2 = buf;
 }
 
-void draw_triangle(Pixel_Buffer *buffer, v3 verts[], u32 color) {
-  v2i t0 = V2i(verts[0]);
-  v2i t1 = V2i(verts[1]);
-  v2i t2 = V2i(verts[2]);
+void draw_triangle(Pixel_Buffer *buffer, v2i verts[], u32 color) {
+  v2i t0 = verts[0];
+  v2i t1 = verts[1];
+  v2i t2 = verts[2];
 
   if (t0.y == t1.y && t1.y == t2.y) return;
   if (t0.x == t1.x && t1.x == t2.x) return;
@@ -412,7 +412,7 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
 void User_Interface::remove_area(Area *area) {
   Area *sister_area = NULL;
   Area *parent_area = area->parent_area;
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 2; ++i) {
     if (parent_area->splitter->areas[i] != area) {
       sister_area = parent_area->splitter->areas[i];
     }
@@ -422,7 +422,7 @@ void User_Interface::remove_area(Area *area) {
   // Remove splitter
   {
     int splitter_id = -1;
-    for (int i = 0; i < this->num_splitters; i++) {
+    for (int i = 0; i < this->num_splitters; ++i) {
       Area_Splitter *splitter = this->splitters[i];
       if (parent_area->splitter == splitter) {
         splitter_id = i;
@@ -440,7 +440,7 @@ void User_Interface::remove_area(Area *area) {
   // Find type selects
   UI_Select *area_select = NULL;
   UI_Select *sister_select = NULL;
-  for (int i = 0; i < this->num_selects; i++) {
+  for (int i = 0; i < this->num_selects; ++i) {
     UI_Select *select = this->selects[i];
     if (select->parent_area == area) {
       area_select = select;
@@ -465,7 +465,7 @@ void User_Interface::remove_area(Area *area) {
   // Delete area select
   {
     int select_id = -1;
-    for (int i = 0; i < this->num_selects; i++) {
+    for (int i = 0; i < this->num_selects; ++i) {
       UI_Select *select = this->selects[i];
       if (area_select == select) {
         select_id = i;
@@ -483,7 +483,7 @@ void User_Interface::remove_area(Area *area) {
   {
     int area_id = -1;
     int sister_area_id = -1;
-    for (int i = 0; i < this->num_areas; i++) {
+    for (int i = 0; i < this->num_areas; ++i) {
       Area *a = this->areas[i];
       if (a == area) {
         area_id = i;
@@ -561,7 +561,7 @@ void User_Interface::_split_type_selectors(Area *area, Area_Splitter *splitter,
                                            bool is_vertical) {
   // Find old select for this area
   UI_Select *old_select = NULL;
-  for (int i = 0; i < this->num_selects; i++) {
+  for (int i = 0; i < this->num_selects; ++i) {
     UI_Select *select = this->selects[i];
     if (select->parent_area == area) {
       old_select = select;
@@ -639,7 +639,7 @@ void User_Interface::set_movement_boundaries(Area_Splitter *splitter) {
   }
 
   // Look at all splitters which are under our parent area
-  for (int i = 0; i < this->num_splitters; i++) {
+  for (int i = 0; i < this->num_splitters; ++i) {
     Area_Splitter *s = this->splitters[i];
     if (!s->is_under(splitter->parent_area) || s == splitter) continue;
     if (s->is_vertical != splitter->is_vertical) continue;
@@ -715,7 +715,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     if (ui->area_being_split == NULL && ui->can_split_area &&
         ui->splitter_being_moved == NULL) {
       // See if we're splitting any area
-      for (int i = 0; i < ui->num_areas; i++) {
+      for (int i = 0; i < ui->num_areas; ++i) {
         Area *area = ui->areas[i];
         if (area->is_visible() && area->mouse_over_split_handle(input->mouse)) {
           ui->area_being_split = area;
@@ -756,7 +756,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     } else {
       // Only look at splitters if areas are not being split
       if (ui->can_pick_splitter && ui->splitter_being_moved == NULL) {
-        for (int i = 0; i < ui->num_splitters; i++) {
+        for (int i = 0; i < ui->num_splitters; ++i) {
           Area_Splitter *splitter = ui->splitters[i];
           if (input->mouse_left && ui->can_pick_splitter &&
               splitter->is_mouse_over(input->mouse)) {
@@ -776,7 +776,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
 
     // Maybe we're deleting an area?
     if (ui->can_delete_area == 0) {
-      for (int i = 1; i < ui->num_areas; i++) {
+      for (int i = 1; i < ui->num_areas; ++i) {
         // Note we're not considering area 0
         Area *area = ui->areas[i];
         if (!area->is_visible()) continue;
@@ -798,7 +798,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     // every frame, consider putting it here
 
     // If we've released LMB we may be deleting an area
-    for (int i = 1; i < ui->num_areas; i++) {
+    for (int i = 1; i < ui->num_areas; ++i) {
       // Note we're not considering area 0
       Area *area = ui->areas[i];
       if (!area->is_visible()) continue;
@@ -818,7 +818,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   ui->draw_areas(NULL, model);
 
   // Draw panels
-  for (int i = 0; i < ui->num_areas; i++) {
+  for (int i = 0; i < ui->num_areas; ++i) {
     Area *area = ui->areas[i];
     if (!area->is_visible()) continue;
 
@@ -831,7 +831,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   bool mouse_over_any_select = false;
 
   // Draw ui selects
-  for (int i = 0; i < ui->num_selects; i++) {
+  for (int i = 0; i < ui->num_selects; ++i) {
     UI_Select *select = ui->selects[i];
     if (select->parent_area && !select->parent_area->is_visible()) continue;
 
@@ -936,7 +936,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   }
 
   // Copy area buffers into the main buffer
-  for (int i = 0; i < ui->num_areas; i++) {
+  for (int i = 0; i < ui->num_areas; ++i) {
     Area *area = ui->areas[i];
     if (!area->is_visible()) continue;
     Rect client_rect = area->get_client_rect();
@@ -957,7 +957,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   // ------ Draw UI elements ----------------------------------------------
 
   // Draw splitters
-  for (int i = 0; i < ui->num_splitters; i++) {
+  for (int i = 0; i < ui->num_splitters; ++i) {
     Area_Splitter *splitter = ui->splitters[i];
     // draw_rect(buffer, splitter->get_rect(), {1,1,1});
     Area *area = splitter->parent_area;
@@ -980,7 +980,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     }
   }
 
-  for (int i = 0; i < ui->num_areas; i++) {
+  for (int i = 0; i < ui->num_areas; ++i) {
     Area *area = ui->areas[i];
     if (!area->is_visible()) continue;
 
@@ -998,7 +998,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   // -- Cursors ---------------
 
   // Splitter resize cursor
-  for (int i = 0; i < ui->num_splitters; i++) {
+  for (int i = 0; i < ui->num_splitters; ++i) {
     Area_Splitter *splitter = ui->splitters[i];
     if (splitter->get_rect().contains(input->mouse)) {
       result.cursor = splitter->is_vertical ? Cursor_Type_Resize_Horiz
@@ -1007,7 +1007,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   }
 
   // Area split cursor
-  for (int i = 0; i < ui->num_areas; i++) {
+  for (int i = 0; i < ui->num_areas; ++i) {
     Area *area = ui->areas[i];
     if (area->mouse_over_split_handle(input->mouse)) {
       result.cursor = Cursor_Type_Cross;
@@ -1028,7 +1028,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
 
 void User_Interface::draw_areas(Ray_Tracer *rt, Model model) {
   // Draw areas
-  for (int i = 0; i < this->num_areas; i++) {
+  for (int i = 0; i < this->num_areas; ++i) {
     Area *area = this->areas[i];
     if (!area->is_visible()) continue;  // ignore wrapper areas
     area->draw_buffer->width = area->get_width();
@@ -1067,19 +1067,46 @@ void Editor_3DView::draw(Model model) {
   };
   // clang-format on
 
-  u32 colors[] = {0x00123123, 0x00323232, 0x00686868, 0x00502241, 0x00431288};
+  u32 colors[] = {
+      0x0047B0A8, 0x0083B9EA, 0x00FF580D, 0x0072EA6C, 0x004F43E8, 0x00F2FA29,
+      0x003BDF5B, 0x0094BFDC, 0x00D4EBE5, 0x00834D62, 0x00654507, 0x00F33D28,
+      0x008CD4CA, 0x0009EF5D, 0x004D08A7, 0x00B0D06D, 0x00861B34, 0x003C010C,
+      0x00B16A1B, 0x007588E3, 0x00FA4CAB, 0x00921BD5, 0x00F11F32, 0x00CE4295,
+      0x00A83F4E, 0x00BE0D9E, 0x00280483, 0x00652B8B, 0x0006CBD5, 0x0048E883,
+      0x0063170B, 0x0053458D, 0x009F2BAA, 0x006A035D, 0x008A672E, 0x00A91B02,
+      0x00756BBE, 0x0094DB07, 0x005616A7, 0x00331AA4, 0x0084DA0D, 0x00C7333E,
+      0x001C3E73, 0x005DA734, 0x00E77012, 0x00496146, 0x00F1E241, 0x0015E545,
+      0x0070EF0F, 0x0015986D, 0x00E6EC93, 0x00EA8CFC, 0x001865B8, 0x00B38A39,
+      0x0095E3D5, 0x001CB084, 0x0037FC3F, 0x00858FA3, 0x00767F0B, 0x009A07DE,
+      0x00DFA8F3, 0x00D2BDEE, 0x00C7356E, 0x008E40D5, 0x00C7FCED, 0x00BCC64B,
+      0x00A2E50D, 0x003D572C, 0x005BAAB8, 0x00F7FF4E, 0x00C0A86F, 0x00412362,
+      0x0028CC28, 0x00420415, 0x002D6D6C, 0x00CBEEE5, 0x000F0062, 0x0018AE5D,
+      0x007A08E1, 0x00D1F3E5, 0x000B0F9F, 0x004AE4A5, 0x007CE2A3, 0x00F2EFAD,
+      0x0018F0CD, 0x006D87C2, 0x0060C557, 0x00AC38EE,
+  };
 
-  for (int i = 0; i < sb_count(model.faces); i++) {
+  v3 light_direction = V3(0, 0, -1);
+
+  for (int i = 0; i < sb_count(model.faces); ++i) {
     Face face = model.faces[i];
-    u32 color = colors[i % COUNT_OF(colors)];
+    v3 world_verts[3];
+    v2i screen_verts[3];
 
-    v3 verts[3] = {
-        ScreenTransform * model.vertices[face.v_ids[0] - 1],
-        ScreenTransform * model.vertices[face.v_ids[1] - 1],
-        ScreenTransform * model.vertices[face.v_ids[2] - 1],
-    };
+    for (int j = 0; j < 3; ++j) {
+      world_verts[j] = model.vertices[face.v_ids[j] - 1];
+      screen_verts[j] = V2i(ScreenTransform * world_verts[j]);
+    }
 
-    draw_triangle(buffer, verts, color);
+    v3 n = (world_verts[1] - world_verts[0])
+               .cross(world_verts[1] - world_verts[2]);
+    n = n.normalized();
+    r32 intensity = n * light_direction;
+    if (intensity > 0 || intensity < 0) {
+      u8 grey = (u8)(255.0f * intensity);
+      // u32 color = (grey << 16) | (grey << 8) | (grey << 0);
+      u32 color = colors[i % COUNT_OF(colors)];
+      draw_triangle(buffer, screen_verts, color);
+    }
   }
 }
 
@@ -1122,7 +1149,7 @@ void Editor_Raytrace::draw(Ray_Tracer *rt) {
       color += ray.get_color(rt, 0, rt->kMaxRecursion);
 
       // Crop
-      for (int i = 0; i < 3; i++) {
+      for (int i = 0; i < 3; ++i) {
         if (color.E[i] > 1) {
           color.E[i] = 1;
         }
