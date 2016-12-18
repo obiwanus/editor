@@ -5,6 +5,11 @@
 #include <X11/cursorfont.h>
 #include <X11/Xos.h>
 #include <X11/Xutil.h>
+
+#include <GL/gl.h>
+#include <GL/glx.h>
+#include <GL/glu.h>
+
 #include <dlfcn.h>
 #include <limits.h>
 #include <stdio.h>
@@ -22,8 +27,33 @@ global const int kWindowHeight = 700;
 
 global XImage *gXImage;
 
+void DrawAQuad() {
+  glClearColor(1.0, 1.0, 1.0, 1.0);
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+  glMatrixMode(GL_PROJECTION);
+  glLoadIdentity();
+  glOrtho(-1., 1., -1., 1., 1., 20.);
+
+  glMatrixMode(GL_MODELVIEW);
+  glLoadIdentity();
+  gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
+
+  glBegin(GL_QUADS);
+  glColor3f(1., 0., 0.);
+  glVertex3f(-.75, -.75, 0.);
+  glColor3f(0., 1., 0.);
+  glVertex3f(.75, -.75, 0.);
+  glColor3f(0., 0., 1.);
+  glVertex3f(.75, .75, 0.);
+  glColor3f(1., 1., 0.);
+  glVertex3f(-.75, .75, 0.);
+  glEnd();
+}
+
 int main(int argc, char const *argv[]) {
   Display *display;
+  Window root_window;
   Window window;
   int screen;
 
@@ -34,19 +64,36 @@ int main(int argc, char const *argv[]) {
   }
 
   screen = DefaultScreen(display);
-
+  root_window = RootWindow(display, screen);
   u32 border_color = WhitePixel(display, screen);
   u32 bg_color = BlackPixel(display, screen);
 
-  window = XCreateSimpleWindow(display, RootWindow(display, screen), 300, 300,
-                               kWindowWidth, kWindowHeight, 0, border_color,
-                               bg_color);
+  // Choose visual
+  GLint attrs[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
+  XVisualInfo *visual = glXChooseVisual(display, 0, attrs);
+  if (visual == NULL) {
+    printf("No appropriate visual found\n");
+    exit(1);
+  }
 
-  XSetStandardProperties(display, window, "Editor", "Hi!", None, NULL, 0, NULL);
+  Colormap colormap =
+      XCreateColormap(display, root_window, visual->visual, AllocNone);
+  XSetWindowAttributes window_attrs;
+  window_attrs.colormap = colormap;
+  window_attrs.event_mask = (ExposureMask | KeyPressMask | KeyReleaseMask |
+                             ButtonPressMask | StructureNotifyMask);
 
-  XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask |
-                                    ButtonPressMask | StructureNotifyMask);
-  XMapRaised(display, window);
+  window = XCreateWindow(
+      display, root_window, 0, 0, kWindowWidth, kWindowHeight, 0, visual->depth,
+      InputOutput, visual->visual, CWColormap | CWEventMask, &window_attrs);
+
+  XMapWindow(display, window);
+  XStoreName(display, window, "Editor");
+
+  GLXContext glc = glXCreateContext(display, visual, NULL, GL_TRUE);
+  glXMakeCurrent(display, window, glc);
+
+  glEnable(GL_DEPTH_TEST);
 
   Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
   XSetWMProtocols(display, window, &wmDeleteMessage, 1);
@@ -103,6 +150,8 @@ int main(int argc, char const *argv[]) {
 
   gRunning = true;
 
+  bool redraw = false;
+
   while (gRunning) {
     // Process events
     while (XPending(display)) {
@@ -118,6 +167,10 @@ int main(int argc, char const *argv[]) {
 
       if (XLookupString(&event.xkey, buf, 255, &key, 0) == 1) {
         symbol = buf[0];
+      }
+
+      if (event.type == Expose) {
+        redraw = true;
       }
 
       // Process user input
@@ -164,6 +217,16 @@ int main(int argc, char const *argv[]) {
       }
     }
 
+    if (redraw) {
+      XWindowAttributes gwa;
+      XGetWindowAttributes(display, window, &gwa);
+      glViewport(0, 0, gwa.width, gwa.height);
+      DrawAQuad();
+      glXSwapBuffers(display, window);
+      printf("redraw\n");
+      redraw = false;
+    }
+
     {
       // Get mouse position
       int root_x, root_y;
@@ -183,8 +246,8 @@ int main(int argc, char const *argv[]) {
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
 
-    XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
-              kWindowHeight);
+    // XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
+    //           kWindowHeight);
 
     // Swap inputs
     User_Input *tmp = old_input;
