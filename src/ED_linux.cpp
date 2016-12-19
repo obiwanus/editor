@@ -96,6 +96,8 @@ int main(int argc, char const *argv[]) {
   glEnable(GL_DEPTH_TEST);
   GLuint texture_handle;
   glGenTextures(1, &texture_handle);
+  GLuint VBO;
+  glGenBuffers(1, &VBO);
   // TODO: set swap interval
 
   Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
@@ -161,6 +163,7 @@ int main(int argc, char const *argv[]) {
       XEvent event;
       XNextEvent(display, &event);
 
+      // Process key input
       if (event.type == KeyPress || event.type == KeyRelease) {
         KeySym key;
         char buf[256];
@@ -173,7 +176,6 @@ int main(int argc, char const *argv[]) {
           symbol = buf[0];
         }
 
-        // Process user input
         if (event.type == KeyPress) {
           pressed = true;
         }
@@ -259,49 +261,52 @@ int main(int argc, char const *argv[]) {
       };
       // clang-format on
 
-      glEnable(GL_TEXTURE_2D);
+      glBindBuffer(GL_ARRAY_BUFFER, VBO);
+      glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
 
-      glBindTexture(GL_TEXTURE_2D, texture_handle);
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, g_pixel_buffer.width,
-                   g_pixel_buffer.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE,
-                   g_pixel_buffer.memory);
+      // glEnable(GL_TEXTURE_2D);
 
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-      glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
+      // glBindTexture(GL_TEXTURE_2D, texture_handle);
+      // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, g_pixel_buffer.width,
+      //              g_pixel_buffer.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE,
+      //              g_pixel_buffer.memory);
 
-      glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
+      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
 
-      glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-      glClear(GL_COLOR_BUFFER_BIT);
+      // glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-      glMatrixMode(GL_TEXTURE);
-      glLoadIdentity();
+      // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+      // glClear(GL_COLOR_BUFFER_BIT);
 
-      glMatrixMode(GL_MODELVIEW);
-      glLoadIdentity();
+      // glMatrixMode(GL_TEXTURE);
+      // glLoadIdentity();
 
-      glMatrixMode(GL_PROJECTION);
-      glLoadIdentity();
+      // glMatrixMode(GL_MODELVIEW);
+      // glLoadIdentity();
 
-      glBegin(GL_TRIANGLES);
-      {
-        glTexCoord2f(0.0f, 1.0f);
-        glVertex2i(-1, -1);
-        glTexCoord2f(1.0f, 1.0f);
-        glVertex2i(1, -1);
-        glTexCoord2f(1.0f, 0.0f);
-        glVertex2i(1, 1);
+      // glMatrixMode(GL_PROJECTION);
+      // glLoadIdentity();
 
-        glTexCoord2f(0.0f, 1.0f);
-        glVertex2i(-1, -1);
-        glTexCoord2f(0.0f, 0.0f);
-        glVertex2i(-1, 1);
-        glTexCoord2f(1.0f, 0.0f);
-        glVertex2i(1, 1);
-      }
-      glEnd();
+      // glBegin(GL_TRIANGLES);
+      // {
+      //   glTexCoord2f(0.0f, 1.0f);
+      //   glVertex2i(-1, -1);
+      //   glTexCoord2f(1.0f, 1.0f);
+      //   glVertex2i(1, -1);
+      //   glTexCoord2f(1.0f, 0.0f);
+      //   glVertex2i(1, 1);
+
+      //   glTexCoord2f(0.0f, 1.0f);
+      //   glVertex2i(-1, -1);
+      //   glTexCoord2f(0.0f, 0.0f);
+      //   glVertex2i(-1, 1);
+      //   glTexCoord2f(1.0f, 0.0f);
+      //   glVertex2i(1, 1);
+      // }
+      // glEnd();
 
       glXSwapBuffers(display, window);
     }
