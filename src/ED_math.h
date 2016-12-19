@@ -479,6 +479,7 @@ r32 AngleBetween(v2 A, v2 B);
 v2 Transform(m3x3 Matrix, v2 Vector);
 v2 Rotate(m3x3 Matrix, v2 Vector, v2 Base);
 v3 Rotate(m3x3 Matrix, v3 Vector, v3 Base);
+v3 Rotate(m4x4 Matrix, v3 Vector, v3 Base);
 v3 Hadamard(v3 A, v3 B);
 
 #endif  // EDITOR_MATH_H

@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "include/stb_stretchy_buffer.h"
@@ -1071,14 +1072,22 @@ void Editor_3DView::draw(Model model) {
     0,     0,     scale, 0,
     0,     0,     0,     1,
   };
-  r32 angle = M_PI / 4;
+  static r32 angle = 0;
+  angle += 0.02f;
   m4x4 RotationMatrix = {
     (r32)cos(angle), 0, (r32)-sin(angle),  0,
     0,          1,            0, 0,
     (r32)sin(angle), 0, (r32)cos(angle),   0,
     0,          0,            0, 1,
   };
-  m4x4 ResultTransform = ScreenTransform * RotationMatrix;
+  r32 tilt = M_PI / 8;
+  m4x4 TiltMatrix = {
+    1, 0, 0, 0,
+    0, (r32)cos(angle), (r32)-sin(angle),  0,
+    0, (r32)sin(angle), (r32)cos(angle),   0,
+    0,          0,            0, 1,
+  };
+  m4x4 ResultTransform = ScreenTransform * RotationMatrix * TiltMatrix;
   // clang-format on
 
   u32 colors[] = {
@@ -1101,6 +1110,8 @@ void Editor_3DView::draw(Model model) {
 
   v3 light_direction = V3(0, 0, -1);
 
+  light_direction =
+      Rotate(RotationMatrix * TiltMatrix, light_direction, V3(0, 0, 0));
 
   for (int i = 0; i < sb_count(model.faces); ++i) {
     Face face = model.faces[i];
@@ -1116,12 +1127,12 @@ void Editor_3DView::draw(Model model) {
                .cross(world_verts[1] - world_verts[2]);
     n = n.normalized();
     r32 intensity = n * light_direction;
-    if (intensity > 0 || intensity < 0) {
+    if (intensity > 0) {
       u8 grey = (u8)(255.0f * intensity);
-      // u32 color = (grey << 16) | (grey << 8) | (grey << 0);
-      // u32 color = colors[i % COUNT_OF(colors)];
-      // draw_triangle(buffer, screen_verts, color);
-      debug_triangle(buffer, screen_verts, 0x00FFFFFF);
+      u32 color = (grey << 16) | (grey << 8) | (grey << 0);
+      // u32 color = colors[0];//i % COUNT_OF(colors)];
+      draw_triangle(buffer, screen_verts, color);
+      // debug_triangle(buffer, screen_verts, 0x00FFFFFF);
     }
   }
 }

@@ -21,7 +21,7 @@ v3 v3::cross(v3 Vector) {
 
   result.x = y * Vector.z - z * Vector.y;
   result.y = z * Vector.x - x * Vector.z;
-  result.z = x * Vector.z - y * Vector.x;
+  result.z = x * Vector.y - y * Vector.x;
 
   return result;
 }
@@ -94,6 +94,19 @@ v3 Rotate(m3x3 Matrix, v3 Vector, v3 Base) {
   result = Matrix * result;
   result += Base;
 
+  return result;
+}
+
+v3 Rotate(m4x4 Matrix, v3 Vector, v3 Base) {
+  v3 result = Vector - Base;
+  m3x3 TruncatedMatrix = {
+    Matrix.E[0], Matrix.E[1], Matrix.E[2],
+    Matrix.E[4], Matrix.E[5], Matrix.E[6],
+    Matrix.E[8], Matrix.E[9], Matrix.E[10],
+  };
+
+  result = TruncatedMatrix * result;
+  result += Base;
   return result;
 }
 
