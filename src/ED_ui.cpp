@@ -1110,9 +1110,6 @@ void Editor_3DView::draw(Model model) {
 
   v3 light_direction = V3(0, 0, -1);
 
-  light_direction =
-      Rotate(RotationMatrix * TiltMatrix, light_direction, V3(0, 0, 0));
-
   for (int i = 0; i < sb_count(model.faces); ++i) {
     Face face = model.faces[i];
     v3 world_verts[3];
@@ -1121,6 +1118,7 @@ void Editor_3DView::draw(Model model) {
     for (int j = 0; j < 3; ++j) {
       world_verts[j] = model.vertices[face.v_ids[j] - 1];
       screen_verts[j] = V2i(ResultTransform * world_verts[j]);
+      world_verts[j] = Rotate(RotationMatrix * TiltMatrix, world_verts[j], V3(0, 0, 0));
     }
 
     v3 n = (world_verts[1] - world_verts[0])
