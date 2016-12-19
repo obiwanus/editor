@@ -49,6 +49,16 @@ m3x3 m3x3::replace_column(int number, v3 column) {
   return result;
 }
 
+v4 m4x4::column(int number) {
+  v4 result;
+
+  for (int row = 0; row < 4; ++row) {
+    result.E[row] = this->E[4 * row + number];
+  }
+
+  return result;
+}
+
 r32 AngleBetween(v2 A, v2 B) {
   r32 cosine = (A * B) / (A.len() * B.len());
   r32 result = (r32)acos(cosine);

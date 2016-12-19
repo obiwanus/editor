@@ -89,6 +89,12 @@ void swap_int(int *p1, int *p2) {
   *p2 = buf;
 }
 
+void debug_triangle(Pixel_Buffer *buffer, v2i verts[], u32 color) {
+  draw_line(buffer, verts[0], verts[1], color);
+  draw_line(buffer, verts[0], verts[2], color);
+  draw_line(buffer, verts[1], verts[2], color);
+}
+
 void draw_triangle(Pixel_Buffer *buffer, v2i verts[], u32 color) {
   v2i t0 = verts[0];
   v2i t1 = verts[1];
@@ -1065,6 +1071,14 @@ void Editor_3DView::draw(Model model) {
     0,     0,     scale, 0,
     0,     0,     0,     1,
   };
+  r32 angle = M_PI / 4;
+  m4x4 RotationMatrix = {
+    (r32)cos(angle), 0, (r32)-sin(angle),  0,
+    0,          1,            0, 0,
+    (r32)sin(angle), 0, (r32)cos(angle),   0,
+    0,          0,            0, 1,
+  };
+  m4x4 ResultTransform = ScreenTransform * RotationMatrix;
   // clang-format on
 
   u32 colors[] = {
@@ -1087,6 +1101,7 @@ void Editor_3DView::draw(Model model) {
 
   v3 light_direction = V3(0, 0, -1);
 
+
   for (int i = 0; i < sb_count(model.faces); ++i) {
     Face face = model.faces[i];
     v3 world_verts[3];
@@ -1094,7 +1109,7 @@ void Editor_3DView::draw(Model model) {
 
     for (int j = 0; j < 3; ++j) {
       world_verts[j] = model.vertices[face.v_ids[j] - 1];
-      screen_verts[j] = V2i(ScreenTransform * world_verts[j]);
+      screen_verts[j] = V2i(ResultTransform * world_verts[j]);
     }
 
     v3 n = (world_verts[1] - world_verts[0])
@@ -1104,8 +1119,9 @@ void Editor_3DView::draw(Model model) {
     if (intensity > 0 || intensity < 0) {
       u8 grey = (u8)(255.0f * intensity);
       // u32 color = (grey << 16) | (grey << 8) | (grey << 0);
-      u32 color = colors[i % COUNT_OF(colors)];
-      draw_triangle(buffer, screen_verts, color);
+      // u32 color = colors[i % COUNT_OF(colors)];
+      // draw_triangle(buffer, screen_verts, color);
+      debug_triangle(buffer, screen_verts, 0x00FFFFFF);
     }
   }
 }

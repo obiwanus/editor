@@ -121,6 +121,7 @@ union m4x4 {
     r32 i, j, k, l;
   };
   r32 E[16];
+  v4 column(int);
 };
 
 // ==================== Construction ======================
@@ -426,6 +427,12 @@ inline bool operator!=(v3 A, v3 B) {
 
 // ================= v4 and m4x4 ====================
 
+inline r32 operator*(v4 A, v4 B) {
+  r32 result = A.x * B.x + A.y * B.y + A.z * B.z + A.w * B.w;
+
+  return result;
+}
+
 inline v4 operator*(m4x4 M, v4 V) {
   v4 result = {};
 
@@ -450,6 +457,18 @@ inline v3 operator*(m4x4 M, v3 V) {
   V_ext = M * V_ext;
 
   result = V3(V_ext.x, V_ext.y, V_ext.z);
+
+  return result;
+}
+
+inline m4x4 operator*(m4x4 M1, m4x4 M2) {
+  m4x4 result;
+
+  for (int i = 0; i < 4 * 4; ++i) {
+    int row = i / 4;
+    int col = i % 4;
+    result.E[i] = M1.rows[row] * M2.column(col);
+  }
 
   return result;
 }
