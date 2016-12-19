@@ -118,8 +118,8 @@ int main(int argc, char const *argv[]) {
     // g_pixel_buffer.memory = (void *)gXImage->data;
     g_pixel_buffer.width = kWindowWidth;
     g_pixel_buffer.height = kWindowHeight - 1;
-    g_pixel_buffer.max_width = kWindowWidth;
-    g_pixel_buffer.max_height = kWindowHeight;
+    g_pixel_buffer.max_width = 3000;
+    g_pixel_buffer.max_height = 3000;
     g_pixel_buffer.memory = malloc(g_pixel_buffer.max_width *
                                    g_pixel_buffer.max_height * sizeof(u32));
 
@@ -161,53 +161,56 @@ int main(int argc, char const *argv[]) {
       XEvent event;
       XNextEvent(display, &event);
 
-      KeySym key;
-      char buf[256];
-      char symbol = 0;
-      b32 pressed = false;
-      b32 released = false;
-      b32 retriggered = false;
+      if (event.type == KeyPress || event.type == KeyRelease) {
+        KeySym key;
+        char buf[256];
+        char symbol = 0;
+        b32 pressed = false;
+        b32 released = false;
+        b32 retriggered = false;
 
-      if (XLookupString(&event.xkey, buf, 255, &key, 0) == 1) {
-        symbol = buf[0];
-      }
+        if (XLookupString(&event.xkey, buf, 255, &key, 0) == 1) {
+          symbol = buf[0];
+        }
 
-      // Process user input
-      if (event.type == KeyPress) {
-        pressed = true;
-      }
+        // Process user input
+        if (event.type == KeyPress) {
+          pressed = true;
+        }
 
-      if (event.type == KeyRelease) {
-        if (XEventsQueued(display, QueuedAfterReading)) {
-          XEvent nev;
-          XPeekEvent(display, &nev);
+        if (event.type == KeyRelease) {
+          if (XEventsQueued(display, QueuedAfterReading)) {
+            XEvent nev;
+            XPeekEvent(display, &nev);
 
-          if (nev.type == KeyPress && nev.xkey.time == event.xkey.time &&
-              nev.xkey.keycode == event.xkey.keycode) {
-            // Ignore. Key wasn't actually released
-            XNextEvent(display, &event);
-            retriggered = true;
+            if (nev.type == KeyPress && nev.xkey.time == event.xkey.time &&
+                nev.xkey.keycode == event.xkey.keycode) {
+              // Ignore. Key wasn't actually released
+              XNextEvent(display, &event);
+              retriggered = true;
+            }
+          }
+
+          if (!retriggered) {
+            released = true;
           }
         }
 
-        if (!retriggered) {
-          released = true;
+        if (pressed || released) {
+          if (key == XK_Escape) {
+            gRunning = false;
+          } else if (key == XK_Up) {
+            new_input->up = pressed;
+          } else if (key == XK_Down) {
+            new_input->down = pressed;
+          } else if (key == XK_Left) {
+            new_input->left = pressed;
+          } else if (key == XK_Right) {
+            new_input->right = pressed;
+          }
         }
       }
 
-      if (pressed || released) {
-        if (key == XK_Escape) {
-          gRunning = false;
-        } else if (key == XK_Up) {
-          new_input->up = pressed;
-        } else if (key == XK_Down) {
-          new_input->down = pressed;
-        } else if (key == XK_Left) {
-          new_input->left = pressed;
-        } else if (key == XK_Right) {
-          new_input->right = pressed;
-        }
-      }
       // Close window message
       if (event.type == ClientMessage) {
         if (event.xclient.data.l[0] == wmDeleteMessage) {
@@ -248,6 +251,14 @@ int main(int argc, char const *argv[]) {
     {
       glViewport(0, 0, g_pixel_buffer.width, g_pixel_buffer.height);
 
+      // clang-format off
+      GLfloat vertices[] = {
+        -0.5f, -0.5f, 0.0f,
+        -0.5f,  0.5f, 0.0f,
+         0.5f, -0.3f, 0.0f,
+      };
+      // clang-format on
+
       glEnable(GL_TEXTURE_2D);
 
       glBindTexture(GL_TEXTURE_2D, texture_handle);
@@ -262,8 +273,8 @@ int main(int argc, char const *argv[]) {
 
       glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-      // glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
-      // glClear(GL_COLOR_BUFFER_BIT);
+      glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+      glClear(GL_COLOR_BUFFER_BIT);
 
       glMatrixMode(GL_TEXTURE);
       glLoadIdentity();
@@ -292,7 +303,7 @@ int main(int argc, char const *argv[]) {
       }
       glEnd();
 
-      // glXSwapBuffers(display, window);
+      glXSwapBuffers(display, window);
     }
 
     // XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
