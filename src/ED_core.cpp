@@ -33,7 +33,8 @@ void Program_State::init(Program_Memory *memory) {
   state->UI.new_type_selector(area);
 
   // Load test model
-  state->model.read_from_obj_file("../models/african_head.obj");
+  state->model.read_from_obj_file("../models/african_head/african_head.wobj");
+  state->model.read_texture("../models/african_head/african_head_diffuse.tga");
   // state->model.read_from_obj_file("../models/cube/cube.wobj");
 
   // Main ray tracer (tmp)
