@@ -78,8 +78,8 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color,
   }
 }
 
-void swap_v2i(v2i *p1, v2i *p2) {
-  v2i buf = *p1;
+void swap_v3i(v3i *p1, v3i *p2) {
+  v3i buf = *p1;
   *p1 = *p2;
   *p2 = buf;
 }
@@ -96,39 +96,40 @@ void debug_triangle(Pixel_Buffer *buffer, v2i verts[], u32 color) {
   draw_line(buffer, verts[1], verts[2], color);
 }
 
-void draw_triangle(Pixel_Buffer *buffer, v2i verts[], u32 color) {
-  v2i t0 = verts[0];
-  v2i t1 = verts[1];
-  v2i t2 = verts[2];
+void draw_triangle(Pixel_Buffer *buffer, v3i verts[], u32 color,
+                   r32 *z_buffer) {
+  v3i t0 = verts[0];
+  v3i t1 = verts[1];
+  v3i t2 = verts[2];
 
   if (t0.y == t1.y && t1.y == t2.y) return;
   if (t0.x == t1.x && t1.x == t2.x) return;
 
-  if (t0.y > t1.y) swap_v2i(&t0, &t1);
-  if (t0.y > t2.y) swap_v2i(&t0, &t2);
-  if (t1.y > t2.y) swap_v2i(&t1, &t2);
+  if (t0.y > t1.y) swap_v3i(&t0, &t1);
+  if (t0.y > t2.y) swap_v3i(&t0, &t2);
+  if (t1.y > t2.y) swap_v3i(&t1, &t2);
 
   int total_height = t2.y - t0.y;
-  int segment_height = t1.y - t0.y + 1;
-  for (int y = t0.y; y <= t1.y; y++) {
+  for (int y = t0.y; y <= t2.y; y++) {
+    if (y < 0 || y >= buffer->height) break;
+    bool second_half = y > t1.y || t1.y == t0.y;
+    int segment_height = second_half ? (t2.y - t1.y + 1) : (t1.y - t0.y + 1);
     r32 dy_total = (r32)(y - t0.y) / total_height;
-    r32 dy_segment = (r32)(y - t0.y) / segment_height;
-    int x_left = t0.x + round_i32((t2.x - t0.x) * dy_total);
-    int x_right = t0.x + round_i32((t1.x - t0.x) * dy_segment);
-    if (x_left > x_right) swap_int(&x_left, &x_right);
-    for (int x = x_left; x <= x_right; x++) {
-      draw_pixel(buffer, V2i(x, y), color);
-    }
-  }
-  segment_height = t2.y - t1.y + 1;
-  for (int y = t1.y; y <= t2.y; y++) {
-    r32 dy_total = (r32)(y - t0.y) / total_height;
-    r32 dy_segment = (r32)(y - t1.y) / segment_height;
-    int x_left = t0.x + round_i32((t2.x - t0.x) * dy_total);
-    int x_right = t1.x + round_i32((t2.x - t1.x) * dy_segment);
-    if (x_left > x_right) swap_int(&x_left, &x_right);
-    for (int x = x_left; x <= x_right; x++) {
-      draw_pixel(buffer, V2i(x, y), color);
+    r32 dy_segment =
+        (r32)(second_half ? (y - t1.y) : (y - t0.y)) / segment_height;
+    v3i A = t0 + V3i(dy_total * V3(t2 - t0));
+    v3i B = second_half ? t1 + V3i(dy_segment * V3(t2 - t1))
+                        : t0 + V3i(dy_segment * V3(t1 - t0));
+    if (A.x > B.x) swap_v3i(&A, &B);
+    for (int x = A.x; x <= B.x; x++) {
+      if (x < 0 || x >= buffer->width) continue;
+      r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
+      r32 z = (1.0f - t) *A.z + t * B.z;
+      int index = buffer->width * y + x;
+      if (z_buffer[index] < z) {
+        z_buffer[index] = z;
+        draw_pixel(buffer, V2i(x, y), color);
+      }
     }
   }
 }
@@ -1090,35 +1091,23 @@ void Editor_3DView::draw(Model model) {
   m4x4 ResultTransform = ScreenTransform * RotationMatrix * TiltMatrix;
   // clang-format on
 
-  u32 colors[] = {
-      0x0047B0A8, 0x0083B9EA, 0x00FF580D, 0x0072EA6C, 0x004F43E8, 0x00F2FA29,
-      0x003BDF5B, 0x0094BFDC, 0x00D4EBE5, 0x00834D62, 0x00654507, 0x00F33D28,
-      0x008CD4CA, 0x0009EF5D, 0x004D08A7, 0x00B0D06D, 0x00861B34, 0x003C010C,
-      0x00B16A1B, 0x007588E3, 0x00FA4CAB, 0x00921BD5, 0x00F11F32, 0x00CE4295,
-      0x00A83F4E, 0x00BE0D9E, 0x00280483, 0x00652B8B, 0x0006CBD5, 0x0048E883,
-      0x0063170B, 0x0053458D, 0x009F2BAA, 0x006A035D, 0x008A672E, 0x00A91B02,
-      0x00756BBE, 0x0094DB07, 0x005616A7, 0x00331AA4, 0x0084DA0D, 0x00C7333E,
-      0x001C3E73, 0x005DA734, 0x00E77012, 0x00496146, 0x00F1E241, 0x0015E545,
-      0x0070EF0F, 0x0015986D, 0x00E6EC93, 0x00EA8CFC, 0x001865B8, 0x00B38A39,
-      0x0095E3D5, 0x001CB084, 0x0037FC3F, 0x00858FA3, 0x00767F0B, 0x009A07DE,
-      0x00DFA8F3, 0x00D2BDEE, 0x00C7356E, 0x008E40D5, 0x00C7FCED, 0x00BCC64B,
-      0x00A2E50D, 0x003D572C, 0x005BAAB8, 0x00F7FF4E, 0x00C0A86F, 0x00412362,
-      0x0028CC28, 0x00420415, 0x002D6D6C, 0x00CBEEE5, 0x000F0062, 0x0018AE5D,
-      0x007A08E1, 0x00D1F3E5, 0x000B0F9F, 0x004AE4A5, 0x007CE2A3, 0x00F2EFAD,
-      0x0018F0CD, 0x006D87C2, 0x0060C557, 0x00AC38EE,
-  };
-
   v3 light_direction = V3(0, 0, -1);
+
+  r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));
+  for (int i = 0; i < buffer->width * buffer->height; ++i) {
+    z_buffer[i] = -INFINITY;
+  }
 
   for (int i = 0; i < sb_count(model.faces); ++i) {
     Face face = model.faces[i];
     v3 world_verts[3];
-    v2i screen_verts[3];
+    v3i screen_verts[3];
 
     for (int j = 0; j < 3; ++j) {
       world_verts[j] = model.vertices[face.v_ids[j] - 1];
-      screen_verts[j] = V2i(ResultTransform * world_verts[j]);
-      world_verts[j] = Rotate(RotationMatrix * TiltMatrix, world_verts[j], V3(0, 0, 0));
+      screen_verts[j] = V3i(ResultTransform * world_verts[j]);
+      world_verts[j] =
+          Rotate(RotationMatrix * TiltMatrix, world_verts[j], V3(0, 0, 0));
     }
 
     v3 n = (world_verts[1] - world_verts[0])
@@ -1128,11 +1117,13 @@ void Editor_3DView::draw(Model model) {
     if (intensity > 0) {
       u8 grey = (u8)(255.0f * intensity);
       u32 color = (grey << 16) | (grey << 8) | (grey << 0);
-      // u32 color = colors[0];//i % COUNT_OF(colors)];
-      draw_triangle(buffer, screen_verts, color);
+
+      draw_triangle(buffer, screen_verts, color, z_buffer);
       // debug_triangle(buffer, screen_verts, 0x00FFFFFF);
     }
   }
+
+  free(z_buffer);
 }
 
 void Editor_Raytrace::draw(Ray_Tracer *rt) {

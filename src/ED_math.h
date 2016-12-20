@@ -24,6 +24,14 @@ struct v2i {
   r32 len();
 };
 
+struct v3i {
+  int x;
+  int y;
+  int z;
+
+  r32 len();
+};
+
 union v2 {
   struct {
     r32 x, y;
@@ -141,8 +149,8 @@ inline v2i V2i(u32 X, u32 Y) {
 inline v2i V2i(r32 X, r32 Y) {
   v2i result;
 
-  result.x = (int)X;
-  result.y = (int)Y;
+  result.x = round_i32(X);
+  result.y = round_i32(Y);
 
   return result;
 }
@@ -150,8 +158,18 @@ inline v2i V2i(r32 X, r32 Y) {
 inline v2i V2i(v3 A) {
   v2i result;
 
-  result.x = (int)A.x;
-  result.y = (int)A.y;
+  result.x = round_i32(A.x);
+  result.y = round_i32(A.y);
+
+  return result;
+}
+
+inline v3i V3i(v3 A) {
+  v3i result;
+
+  result.x = round_i32(A.x);
+  result.y = round_i32(A.y);
+  result.z = round_i32(A.z);
 
   return result;
 }
@@ -173,6 +191,16 @@ inline v2 V2(r32 X, r32 Y) {
 
   result.x = X;
   result.y = Y;
+
+  return result;
+}
+
+inline v3 V3(v3i A) {
+  v3 result;
+
+  result.x = (r32)A.x;
+  result.y = (r32)A.y;
+  result.z = (r32)A.z;
 
   return result;
 }
@@ -376,6 +404,16 @@ inline v3 operator-(v3 A) {
   return result;
 }
 
+inline v3i operator+(v3i A, v3i B) {
+  v3i result;
+
+  result.x = A.x + B.x;
+  result.y = A.y + B.y;
+  result.z = A.z + B.z;
+
+  return result;
+}
+
 inline v3 operator+(v3 A, v3 B) {
   v3 result;
 
@@ -390,6 +428,16 @@ inline v3 &operator+=(v3 &A, v3 B) {
   A = A + B;
 
   return A;
+}
+
+inline v3i operator-(v3i A, v3i B) {
+  v3i result;
+
+  result.x = A.x - B.x;
+  result.y = A.y - B.y;
+  result.z = A.z - B.z;
+
+  return result;
 }
 
 inline v3 operator-(v3 A, v3 B) {
