@@ -6,8 +6,11 @@
 #include <X11/Xos.h>
 #include <X11/Xutil.h>
 
+#define GL_GLEXT_PROTOTYPES
 #include <GL/gl.h>
+#include <GL/glext.h>
 #include <GL/glx.h>
+#include <GL/glxext.h>
 #include <GL/glu.h>
 
 #include <dlfcn.h>
@@ -27,28 +30,17 @@ global const int kWindowHeight = 700;
 
 global XImage *gXImage;
 
-void DrawAQuad() {
-  glClearColor(1.0, 1.0, 1.0, 1.0);
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-  glMatrixMode(GL_PROJECTION);
-  glLoadIdentity();
-  glOrtho(-1., 1., -1., 1., 1., 20.);
-
-  glMatrixMode(GL_MODELVIEW);
-  glLoadIdentity();
-  gluLookAt(0., 0., 10., 0., 0., 0., 0., 1., 0.);
-
-  glBegin(GL_QUADS);
-  glColor3f(1., 0., 0.);
-  glVertex3f(-.75, -.75, 0.);
-  glColor3f(0., 1., 0.);
-  glVertex3f(.75, -.75, 0.);
-  glColor3f(0., 0., 1.);
-  glVertex3f(.75, .75, 0.);
-  glColor3f(1., 1., 0.);
-  glVertex3f(-.75, .75, 0.);
-  glEnd();
+void compile_shader(GLuint shader, const GLchar *source) {
+  GLint success;
+  GLchar info_log[512];
+  glShaderSource(shader, 1, &source, NULL);
+  glCompileShader(shader);
+  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+  if (!success) {
+    glGetShaderInfoLog(shader, 512, NULL, info_log);
+    printf("Error: shader compilation failed:\n%s\n", info_log);
+    exit(1);
+  }
 }
 
 int main(int argc, char const *argv[]) {
@@ -98,6 +90,31 @@ int main(int argc, char const *argv[]) {
   glGenTextures(1, &texture_handle);
   GLuint VBO;
   glGenBuffers(1, &VBO);
+
+  {
+    // Vertex shader
+    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+    const GLchar *vertex_shader_src =
+        "#version 330 core\n"
+        "layout (location = 0) in vec3 position;\n"
+        "void main()\n"
+        "{\n"
+        "gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
+        "}\0";
+    compile_shader(vertex_shader, vertex_shader_src);
+
+    // Fragment shader
+    GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+    const GLchar *fragment_shader_src =
+        "#version 330 core\n"
+        "out vec4 color;\n"
+        "void main()\n"
+        "{\n"
+        "color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+        "}\n\0";
+    compile_shader(fragment_shader, fragment_shader_src);
+  }
+
   // TODO: set swap interval
 
   Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
