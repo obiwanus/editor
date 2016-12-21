@@ -90,6 +90,10 @@ int main(int argc, char const *argv[]) {
   glGenTextures(1, &texture_handle);
   GLuint VBO;
   glGenBuffers(1, &VBO);
+  GLuint EBO;
+  glGenBuffers(1, &EBO);
+  GLuint VAO;
+  glGenVertexArrays(1, &VAO);
 
   {
     // Vertex shader
@@ -113,7 +117,51 @@ int main(int argc, char const *argv[]) {
         "color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
         "}\n\0";
     compile_shader(fragment_shader, fragment_shader_src);
+
+    GLuint shader_program = glCreateProgram();
+    glAttachShader(shader_program, vertex_shader);
+    glAttachShader(shader_program, fragment_shader);
+    glLinkProgram(shader_program);
+
+    GLint success;
+    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
+    if (!success) {
+      GLchar info_log[512];
+      glGetProgramInfoLog(shader_program, 512, NULL, info_log);
+      printf("Error when linking shader program:\n%s", info_log);
+      exit(1);
+    }
+    glUseProgram(shader_program);
+    glDeleteShader(vertex_shader);
+    glDeleteShader(fragment_shader);
   }
+
+  // Define VAO
+  glBindVertexArray(VAO);
+  {
+    // clang-format off
+    GLfloat vertices[] = {
+       0.5f,  0.5f, 0.0f,
+       0.5f, -0.5f, 0.0f,
+      -0.5f, -0.5f, 0.0f,
+      -0.5f,  0.5f, 0.0f,
+    };
+    GLuint indices[] = {
+      0, 1, 3,
+      1, 2, 3,
+    };
+    // clang-format on
+
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
+                 GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat),
+                          (GLvoid *)0);
+    glEnableVertexAttribArray(0);
+  }
+  glBindVertexArray(0);
 
   // TODO: set swap interval
 
@@ -270,16 +318,10 @@ int main(int argc, char const *argv[]) {
     {
       glViewport(0, 0, g_pixel_buffer.width, g_pixel_buffer.height);
 
-      // clang-format off
-      GLfloat vertices[] = {
-        -0.5f, -0.5f, 0.0f,
-        -0.5f,  0.5f, 0.0f,
-         0.5f, -0.3f, 0.0f,
-      };
-      // clang-format on
-
-      glBindBuffer(GL_ARRAY_BUFFER, VBO);
-      glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+      glBindVertexArray(VAO);
+      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+      glBindVertexArray(0);
 
       // glEnable(GL_TEXTURE_2D);
 
