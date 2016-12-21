@@ -122,7 +122,7 @@ struct Editor_3DView : Area_Editor {
 };
 
 struct Editor_Raytrace : Area_Editor {
-  void draw(Ray_Tracer *);
+  void draw(Ray_Tracer *, Model);
 };
 
 struct Area {

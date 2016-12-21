@@ -78,36 +78,47 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color,
   }
 }
 
-void swap_v3i(v3i *p1, v3i *p2) {
-  v3i buf = *p1;
-  *p1 = *p2;
-  *p2 = buf;
+template <typename T>
+void swap(T &p1, T &p2) {
+  T buf = p1;
+  p1 = p2;
+  p2 = buf;
 }
 
-void swap_int(int *p1, int *p2) {
-  int buf = *p1;
-  *p1 = *p2;
-  *p2 = buf;
+void debug_triangle(Pixel_Buffer *buffer, v3i verts[], u32 color) {
+  v2i vert0 = V2i(verts[0]);
+  v2i vert1 = V2i(verts[1]);
+  v2i vert2 = V2i(verts[2]);
+  draw_line(buffer, vert0, vert1, color);
+  draw_line(buffer, vert0, vert2, color);
+  draw_line(buffer, vert1, vert2, color);
 }
 
-void debug_triangle(Pixel_Buffer *buffer, v2i verts[], u32 color) {
-  draw_line(buffer, verts[0], verts[1], color);
-  draw_line(buffer, verts[0], verts[2], color);
-  draw_line(buffer, verts[1], verts[2], color);
-}
-
-void draw_triangle(Pixel_Buffer *buffer, v3i verts[], u32 color,
+void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], Image texture,
                    r32 *z_buffer) {
   v3i t0 = verts[0];
   v3i t1 = verts[1];
   v3i t2 = verts[2];
 
+  v2 tex0 = vts[0];
+  v2 tex1 = vts[1];
+  v2 tex2 = vts[2];
+
   if (t0.y == t1.y && t1.y == t2.y) return;
   if (t0.x == t1.x && t1.x == t2.x) return;
 
-  if (t0.y > t1.y) swap_v3i(&t0, &t1);
-  if (t0.y > t2.y) swap_v3i(&t0, &t2);
-  if (t1.y > t2.y) swap_v3i(&t1, &t2);
+  if (t0.y > t1.y) {
+    swap(t0, t1);
+    swap(tex0, tex1);
+  }
+  if (t0.y > t2.y) {
+    swap(t0, t2);
+    swap(tex0, tex2);
+  }
+  if (t1.y > t2.y) {
+    swap(t1, t2);
+    swap(tex1, tex2);
+  }
 
   int total_height = t2.y - t0.y;
   for (int y = t0.y; y <= t2.y; y++) {
@@ -118,16 +129,32 @@ void draw_triangle(Pixel_Buffer *buffer, v3i verts[], u32 color,
     r32 dy_segment =
         (r32)(second_half ? (y - t1.y) : (y - t0.y)) / segment_height;
     v3i A = t0 + V3i(dy_total * V3(t2 - t0));
-    v3i B = second_half ? t1 + V3i(dy_segment * V3(t2 - t1))
-                        : t0 + V3i(dy_segment * V3(t1 - t0));
-    if (A.x > B.x) swap_v3i(&A, &B);
+    v3i B;
+    v2 Atex = tex0 + dy_total * (tex2 - tex0);
+    v2 Btex;
+    if (!second_half) {
+      B = t0 + V3i(dy_segment * V3(t1 - t0));
+      Btex = tex0 + dy_segment * (tex1 - tex0);
+    } else {
+      B = t1 + V3i(dy_segment * V3(t2 - t1));
+      Btex = tex1 + dy_segment * (tex2 - tex1);
+    }
+    if (A.x > B.x) {
+      swap(A, B);
+      swap(Atex, Btex);
+    };
     for (int x = A.x; x <= B.x; x++) {
       if (x < 0 || x >= buffer->width) continue;
       r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
-      r32 z = (1.0f - t) *A.z + t * B.z;
+      r32 z = (1.0f - t) * A.z + t * B.z;
       int index = buffer->width * y + x;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
+        // Get color from texture
+        v2 texel = (1.0f - t) * Atex + t * Btex;
+        v2i tex_coords = V2i(texture.width * texel.u, texture.height * texel.v);
+        u32 color =
+            texture.color(tex_coords.x, (texture.height - tex_coords.y));
         draw_pixel(buffer, V2i(x, y), color);
       }
     }
@@ -1052,7 +1079,7 @@ void User_Interface::draw_areas(Ray_Tracer *rt, Model model) {
       } break;
 
       case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.draw(rt);
+        area->editor_raytrace.draw(rt, model);
       } break;
 
       default: { assert(!"Unknown editor type"); } break;
@@ -1102,9 +1129,11 @@ void Editor_3DView::draw(Model model) {
     Face face = model.faces[i];
     v3 world_verts[3];
     v3i screen_verts[3];
+    v2 texture_verts[3];
 
     for (int j = 0; j < 3; ++j) {
-      world_verts[j] = model.vertices[face.v_ids[j] - 1];
+      world_verts[j] = model.vertices[face.v_ids[j]];
+      texture_verts[j] = model.vts[face.vt_ids[j]];
       screen_verts[j] = V3i(ResultTransform * world_verts[j]);
       world_verts[j] =
           Rotate(RotationMatrix * TiltMatrix, world_verts[j], V3(0, 0, 0));
@@ -1118,21 +1147,37 @@ void Editor_3DView::draw(Model model) {
       u8 grey = (u8)(255.0f * intensity);
       u32 color = (grey << 16) | (grey << 8) | (grey << 0);
 
-      draw_triangle(buffer, screen_verts, color, z_buffer);
-      // debug_triangle(buffer, screen_verts, 0x00FFFFFF);
+      draw_triangle(buffer, screen_verts, texture_verts, model.texture,
+                    z_buffer);
+      // debug_triangle(buffer, screen_verts, 0x00777777);
     }
   }
 
   free(z_buffer);
 }
 
-void Editor_Raytrace::draw(Ray_Tracer *rt) {
+void Editor_Raytrace::draw(Ray_Tracer *rt, Model model) {
   // TODO: ray tracer should probably be member and not
   // a function parameter
 
+  // Debug draw texture image
+  // u32 *pitch = model.texture.width
+  Pixel_Buffer *buffer = this->area->draw_buffer;
+
+  u32 *src = model.texture.data;
+  for (int y = 0; y < model.texture.height; ++y) {
+    if (y >= buffer->height) break;
+    for (int x = 0; x < model.texture.width; ++x) {
+      if (x >= buffer->width) continue;
+      u32 *pixel = (u32 *)buffer->memory + x + y * buffer->width;
+      *pixel = *(src + x);
+    }
+    src += model.texture.width;
+  }
+
   if (rt == NULL) {
-    draw_rect(this->area->draw_buffer, this->area->draw_buffer->get_rect(),
-              0x00123123);
+    // draw_rect(this->area->draw_buffer, this->area->draw_buffer->get_rect(),
+    //           0x00123123);
     return;
   }
 

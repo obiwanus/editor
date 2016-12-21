@@ -13,6 +13,8 @@ struct Image {
   int width;
   int height;
   u32 *data;
+
+  u32 color(int x, int y);
 };
 
 struct Model {

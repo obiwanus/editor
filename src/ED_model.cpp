@@ -32,8 +32,14 @@ void Model::read_from_obj_file(char *filename) {
     if (string[0] == 'f' && string[1] == ' ') {
       Face face;
       sscanf(string + 2, "%d/%d/%d %d/%d/%d %d/%d/%d", &face.v_ids[0],
-             &face.vn_ids[0], &face.vt_ids[0], &face.v_ids[1], &face.vn_ids[1],
-             &face.vt_ids[1], &face.v_ids[2], &face.vn_ids[2], &face.vt_ids[2]);
+             &face.vt_ids[0], &face.vn_ids[0], &face.v_ids[1], &face.vt_ids[1],
+             &face.vn_ids[1], &face.v_ids[2], &face.vt_ids[2], &face.vn_ids[2]);
+      for (int i = 0; i < 3; i++) {
+        // All indices should start from 0
+        face.v_ids[i]--;
+        face.vn_ids[i]--;
+        face.vt_ids[i]--;
+      }
       sb_push(Face *, this->faces, face);
     }
     if (string[0] == 'v' && string[1] == 't' && string[2] == ' ') {
@@ -58,4 +64,12 @@ void Model::read_texture(char *filename) {
   }
 
   this->texture = image;
+}
+
+u32 Image::color(int x, int y) {
+  u32 result;
+  u32 raw_pixel = *(this->data + this->width * y + x);
+  u32 A = 0x000000FF & raw_pixel;
+  result = (u32)(A << 24 | raw_pixel >> 8);
+  return result;
 }

@@ -36,6 +36,9 @@ void Program_State::init(Program_Memory *memory) {
   state->model.read_from_obj_file("../models/african_head/african_head.wobj");
   state->model.read_texture("../models/african_head/african_head_diffuse.tga");
   // state->model.read_from_obj_file("../models/cube/cube.wobj");
+  // state->model.read_texture("../models/cube/cube.png");
+  // state->model.read_from_obj_file("../models/capsule/capsule.wobj");
+  // state->model.read_texture("../models/capsule/capsule0.jpg");
 
   // Main ray tracer (tmp)
   Ray_Tracer *rt = &state->ray_tracer;

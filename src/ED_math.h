@@ -155,6 +155,24 @@ inline v2i V2i(r32 X, r32 Y) {
   return result;
 }
 
+inline v2i V2i(v2 A) {
+  v2i result;
+
+  result.x = round_i32(A.x);
+  result.y = round_i32(A.y);
+
+  return result;
+}
+
+inline v2i V2i(v3i A) {
+  v2i result;
+
+  result.x = A.x;
+  result.y = A.y;
+
+  return result;
+}
+
 inline v2i V2i(v3 A) {
   v2i result;
 
