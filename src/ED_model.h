@@ -20,6 +20,7 @@ struct Image {
 
 struct Model {
   v3 *vertices;
+  v3 *vns;
   v2 *vts;
   Face *faces;
   Image texture;

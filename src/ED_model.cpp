@@ -25,6 +25,7 @@ void Model::read_from_obj_file(char *filename) {
   this->vertices = NULL;  // stb_stretchy_buffer needs this
   this->faces = NULL;
   this->vts = NULL;
+  this->vns = NULL;
 
   const int kBufSize = 100;
   char string[kBufSize];
@@ -51,6 +52,11 @@ void Model::read_from_obj_file(char *filename) {
       v2 vt;  // only expecting 2d textures
       sscanf(string + 3, "%f %f", &vt.x, &vt.y);
       sb_push(v2 *, this->vts, vt);
+    }
+    if (string[0] == 'v' && string[1] == 'n' && string[2] == ' ') {
+      v3 vn;
+      sscanf(string + 3, "%f %f %f", &vn.x, &vn.y, &vn.z);
+      sb_push(v3 *, this->vns, vn);
     }
   }
 

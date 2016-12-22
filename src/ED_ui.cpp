@@ -94,8 +94,8 @@ void debug_triangle(Pixel_Buffer *buffer, v3i verts[], u32 color) {
   draw_line(buffer, vert1, vert2, color);
 }
 
-void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], Image texture,
-                   r32 *z_buffer, r32 intensity) {
+void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
+                   Image texture, r32 *z_buffer) {
   v3i t0 = verts[0];
   v3i t1 = verts[1];
   v3i t2 = verts[2];
@@ -104,21 +104,33 @@ void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], Image texture,
   v2 tex1 = vts[1];
   v2 tex2 = vts[2];
 
+  v3 n0 = vns[0];
+  v3 n1 = vns[1];
+  v3 n2 = vns[2];
+
   if (t0.y == t1.y && t1.y == t2.y) return;
   if (t0.x == t1.x && t1.x == t2.x) return;
 
   if (t0.y > t1.y) {
     swap(t0, t1);
     swap(tex0, tex1);
+    swap(n0, n1);
   }
   if (t0.y > t2.y) {
     swap(t0, t2);
     swap(tex0, tex2);
+    swap(n0, n2);
   }
   if (t1.y > t2.y) {
     swap(t1, t2);
     swap(tex1, tex2);
+    swap(n1, n2);
   }
+
+  // v3 n = (world_verts[1] - world_verts[0])
+  //            .cross(world_verts[1] - world_verts[2]);
+  // n = n.normalized();
+  // r32 intensity = n * light_direction;
 
   int total_height = t2.y - t0.y;
   for (int y = t0.y; y <= t2.y; y++) {
@@ -132,16 +144,21 @@ void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], Image texture,
     v3i B;
     v2 Atex = tex0 + dy_total * (tex2 - tex0);
     v2 Btex;
+    v3 An = n0 + dy_total * (n2 - n0);
+    v3 Bn;
     if (!second_half) {
       B = t0 + V3i(dy_segment * V3(t1 - t0));
       Btex = tex0 + dy_segment * (tex1 - tex0);
+      Bn = n0 + dy_segment * (n1 - n0);
     } else {
       B = t1 + V3i(dy_segment * V3(t2 - t1));
       Btex = tex1 + dy_segment * (tex2 - tex1);
+      Bn = n1 + dy_segment * (n2 - n1);
     }
     if (A.x > B.x) {
       swap(A, B);
       swap(Atex, Btex);
+      swap(An, Bn);
     };
     for (int x = A.x; x <= B.x; x++) {
       if (x < 0 || x >= buffer->width) continue;
@@ -150,12 +167,16 @@ void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], Image texture,
       int index = buffer->width * y + x;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
-        // Get color from texture
-        v2 texel = (1.0f - t) * Atex + t * Btex;
-        v2i tex_coords = V2i(texture.width * texel.u, texture.height * texel.v);
-        u32 color = texture.color(tex_coords.x, (texture.height - tex_coords.y),
-                                  intensity);
-        draw_pixel(buffer, V2i(x, y), color);
+        v3 n = ((1.0f - t) * An + t * Bn).normalized();
+        r32 intensity = n * V3(0, 0, 1);
+        if (intensity > 0) {
+          // Get color from texture
+          v2 texel = (1.0f - t) * Atex + t * Btex;
+          v2i tex_coords = V2i(texture.width * texel.u, texture.height * texel.v);
+          u32 color = texture.color(tex_coords.x, (texture.height - tex_coords.y),
+                                    intensity);
+          draw_pixel(buffer, V2i(x, y), color);
+        }
       }
     }
   }
@@ -1118,8 +1139,6 @@ void Editor_3DView::draw(Model model) {
   m4x4 ResultTransform = ScreenTransform * RotationMatrix * TiltMatrix;
   // clang-format on
 
-  v3 light_direction = V3(0, 0, -1);
-
   r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));
   for (int i = 0; i < buffer->width * buffer->height; ++i) {
     z_buffer[i] = -INFINITY;
@@ -1130,27 +1149,19 @@ void Editor_3DView::draw(Model model) {
     v3 world_verts[3];
     v3i screen_verts[3];
     v2 texture_verts[3];
+    v3 vns[3];
 
     for (int j = 0; j < 3; ++j) {
       world_verts[j] = model.vertices[face.v_ids[j]];
       texture_verts[j] = model.vts[face.vt_ids[j]];
       screen_verts[j] = V3i(ResultTransform * world_verts[j]);
-      world_verts[j] =
-          Rotate(RotationMatrix * TiltMatrix, world_verts[j], V3(0, 0, 0));
+      vns[j] = Rotate(RotationMatrix * TiltMatrix, model.vns[face.vn_ids[j]],
+                      V3(0, 0, 0));
     }
 
-    v3 n = (world_verts[1] - world_verts[0])
-               .cross(world_verts[1] - world_verts[2]);
-    n = n.normalized();
-    r32 intensity = n * light_direction;
-    if (intensity > 0) {
-      u8 grey = (u8)(255.0f * intensity);
-      u32 color = (grey << 16) | (grey << 8) | (grey << 0);
-
-      draw_triangle(buffer, screen_verts, texture_verts, model.texture,
-                    z_buffer, intensity);
-      // debug_triangle(buffer, screen_verts, 0x00777777);
-    }
+    draw_triangle(buffer, screen_verts, texture_verts, vns, model.texture,
+                  z_buffer);
+    // debug_triangle(buffer, screen_verts, 0x00777777);
   }
 
   free(z_buffer);
