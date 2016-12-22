@@ -3,15 +3,7 @@
 
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
-#include <X11/Xos.h>
 #include <X11/Xutil.h>
-
-#define GL_GLEXT_PROTOTYPES
-#include <GL/gl.h>
-#include <GL/glext.h>
-#include <GL/glx.h>
-#include <GL/glxext.h>
-#include <GL/glu.h>
 
 #include <dlfcn.h>
 #include <limits.h>
@@ -30,22 +22,8 @@ global const int kWindowHeight = 700;
 
 global XImage *gXImage;
 
-void compile_shader(GLuint shader, const GLchar *source) {
-  GLint success;
-  GLchar info_log[512];
-  glShaderSource(shader, 1, &source, NULL);
-  glCompileShader(shader);
-  glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
-  if (!success) {
-    glGetShaderInfoLog(shader, 512, NULL, info_log);
-    printf("Error: shader compilation failed:\n%s\n", info_log);
-    exit(1);
-  }
-}
-
 int main(int argc, char const *argv[]) {
   Display *display;
-  Window root_window;
   Window window;
   int screen;
 
@@ -56,114 +34,19 @@ int main(int argc, char const *argv[]) {
   }
 
   screen = DefaultScreen(display);
-  root_window = RootWindow(display, screen);
+
   u32 border_color = WhitePixel(display, screen);
   u32 bg_color = BlackPixel(display, screen);
 
-  // Choose visual
-  GLint attrs[] = {GLX_RGBA, GLX_DEPTH_SIZE, 24, GLX_DOUBLEBUFFER, None};
-  XVisualInfo *visual = glXChooseVisual(display, 0, attrs);
-  if (visual == NULL) {
-    printf("No appropriate visual found\n");
-    exit(1);
-  }
+  window = XCreateSimpleWindow(display, RootWindow(display, screen), 300, 300,
+                               kWindowWidth, kWindowHeight, 0, border_color,
+                               bg_color);
 
-  Colormap colormap =
-      XCreateColormap(display, root_window, visual->visual, AllocNone);
-  XSetWindowAttributes window_attrs;
-  window_attrs.colormap = colormap;
-  window_attrs.event_mask = (ExposureMask | KeyPressMask | KeyReleaseMask |
-                             ButtonPressMask | StructureNotifyMask);
+  XSetStandardProperties(display, window, "Editor", "Hi!", None, NULL, 0, NULL);
 
-  window = XCreateWindow(
-      display, root_window, 0, 0, kWindowWidth, kWindowHeight, 0, visual->depth,
-      InputOutput, visual->visual, CWColormap | CWEventMask, &window_attrs);
-
-  XMapWindow(display, window);
-  XStoreName(display, window, "Editor");
-
-  // Init OpenGL
-  GLXContext glc = glXCreateContext(display, visual, NULL, GL_TRUE);
-  glXMakeCurrent(display, window, glc);
-  glEnable(GL_DEPTH_TEST);
-  GLuint texture_handle;
-  glGenTextures(1, &texture_handle);
-  GLuint VBO;
-  glGenBuffers(1, &VBO);
-  GLuint EBO;
-  glGenBuffers(1, &EBO);
-  GLuint VAO;
-  glGenVertexArrays(1, &VAO);
-
-  {
-    // Vertex shader
-    GLuint vertex_shader = glCreateShader(GL_VERTEX_SHADER);
-    const GLchar *vertex_shader_src =
-        "#version 330 core\n"
-        "layout (location = 0) in vec3 position;\n"
-        "void main()\n"
-        "{\n"
-        "gl_Position = vec4(position.x, position.y, position.z, 1.0);\n"
-        "}\0";
-    compile_shader(vertex_shader, vertex_shader_src);
-
-    // Fragment shader
-    GLuint fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
-    const GLchar *fragment_shader_src =
-        "#version 330 core\n"
-        "out vec4 color;\n"
-        "void main()\n"
-        "{\n"
-        "color = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
-        "}\n\0";
-    compile_shader(fragment_shader, fragment_shader_src);
-
-    GLuint shader_program = glCreateProgram();
-    glAttachShader(shader_program, vertex_shader);
-    glAttachShader(shader_program, fragment_shader);
-    glLinkProgram(shader_program);
-
-    GLint success;
-    glGetProgramiv(shader_program, GL_LINK_STATUS, &success);
-    if (!success) {
-      GLchar info_log[512];
-      glGetProgramInfoLog(shader_program, 512, NULL, info_log);
-      printf("Error when linking shader program:\n%s", info_log);
-      exit(1);
-    }
-    glUseProgram(shader_program);
-    glDeleteShader(vertex_shader);
-    glDeleteShader(fragment_shader);
-  }
-
-  // Define VAO
-  glBindVertexArray(VAO);
-  {
-    // clang-format off
-    GLfloat vertices[] = {
-       0.5f,  0.5f, 0.0f,
-       0.5f, -0.5f, 0.0f,
-      -0.5f, -0.5f, 0.0f,
-      -0.5f,  0.5f, 0.0f,
-    };
-    GLuint indices[] = {
-      0, 1, 3,
-      1, 2, 3,
-    };
-    // clang-format on
-
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices,
-                 GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat),
-                          (GLvoid *)0);
-    glEnableVertexAttribArray(0);
-  }
-  glBindVertexArray(0);
-
-  // TODO: set swap interval
+  XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask |
+                                    ButtonPressMask | StructureNotifyMask);
+  XMapRaised(display, window);
 
   Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
   XSetWMProtocols(display, window, &wmDeleteMessage, 1);
@@ -179,16 +62,14 @@ int main(int argc, char const *argv[]) {
       if (e.type == MapNotify) break;
     }
 
-    // gXImage = XGetImage(display, window, 0, 0, kWindowWidth, kWindowHeight,
-    //                     AllPlanes, ZPixmap);
+    gXImage = XGetImage(display, window, 0, 0, kWindowWidth, kWindowHeight,
+                        AllPlanes, ZPixmap);
 
-    // g_pixel_buffer.memory = (void *)gXImage->data;
+    g_pixel_buffer.memory = (void *)gXImage->data;
     g_pixel_buffer.width = kWindowWidth;
     g_pixel_buffer.height = kWindowHeight - 1;
     g_pixel_buffer.max_width = 3000;
     g_pixel_buffer.max_height = 3000;
-    g_pixel_buffer.memory = malloc(g_pixel_buffer.max_width *
-                                   g_pixel_buffer.max_height * sizeof(u32));
 
     gc = XCreateGC(display, window, 0, &gcvalues);
   }
@@ -228,7 +109,6 @@ int main(int argc, char const *argv[]) {
       XEvent event;
       XNextEvent(display, &event);
 
-      // Process key input
       if (event.type == KeyPress || event.type == KeyRelease) {
         KeySym key;
         char buf[256];
@@ -241,6 +121,7 @@ int main(int argc, char const *argv[]) {
           symbol = buf[0];
         }
 
+        // Process user input
         if (event.type == KeyPress) {
           pressed = true;
         }
@@ -286,15 +167,6 @@ int main(int argc, char const *argv[]) {
       }
     }
 
-    // if (redraw) {
-    //   XWindowAttributes gwa;
-    //   XGetWindowAttributes(display, window, &gwa);
-    //   glViewport(0, 0, gwa.width, gwa.height);
-    //   DrawAQuad();
-    //   glXSwapBuffers(display, window);
-    //   redraw = false;
-    // }
-
     {
       // Get mouse position
       int root_x, root_y;
@@ -314,64 +186,8 @@ int main(int argc, char const *argv[]) {
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
 
-    // Update the screen
-    {
-      glViewport(0, 0, g_pixel_buffer.width, g_pixel_buffer.height);
-
-      glBindVertexArray(VAO);
-      glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-      glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-      glBindVertexArray(0);
-
-      // glEnable(GL_TEXTURE_2D);
-
-      // glBindTexture(GL_TEXTURE_2D, texture_handle);
-      // glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, g_pixel_buffer.width,
-      //              g_pixel_buffer.height, 0, GL_BGRA_EXT, GL_UNSIGNED_BYTE,
-      //              g_pixel_buffer.memory);
-
-      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP);
-      // glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP);
-
-      // glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-
-      // glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-      // glClear(GL_COLOR_BUFFER_BIT);
-
-      // glMatrixMode(GL_TEXTURE);
-      // glLoadIdentity();
-
-      // glMatrixMode(GL_MODELVIEW);
-      // glLoadIdentity();
-
-      // glMatrixMode(GL_PROJECTION);
-      // glLoadIdentity();
-
-      // glBegin(GL_TRIANGLES);
-      // {
-      //   glTexCoord2f(0.0f, 1.0f);
-      //   glVertex2i(-1, -1);
-      //   glTexCoord2f(1.0f, 1.0f);
-      //   glVertex2i(1, -1);
-      //   glTexCoord2f(1.0f, 0.0f);
-      //   glVertex2i(1, 1);
-
-      //   glTexCoord2f(0.0f, 1.0f);
-      //   glVertex2i(-1, -1);
-      //   glTexCoord2f(0.0f, 0.0f);
-      //   glVertex2i(-1, 1);
-      //   glTexCoord2f(1.0f, 0.0f);
-      //   glVertex2i(1, 1);
-      // }
-      // glEnd();
-
-      glXSwapBuffers(display, window);
-    }
-
-    // XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
-    //           kWindowHeight);
+    XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
+              kWindowHeight);
 
     // Swap inputs
     User_Input *tmp = old_input;
