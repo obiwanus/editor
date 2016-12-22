@@ -34,7 +34,7 @@ void Program_State::init(Program_Memory *memory) {
 
   // Load test model
   state->model.read_from_obj_file("../models/african_head/african_head.wobj");
-  state->model.read_texture("../models/african_head/african_head_diffuse.tga");
+  state->model.read_texture("../models/african_head/african_head_diffuse.jpg");
   // state->model.read_from_obj_file("../models/cube/cube.wobj");
   // state->model.read_texture("../models/cube/cube.png");
   // state->model.read_from_obj_file("../models/capsule/capsule.wobj");

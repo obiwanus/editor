@@ -15,7 +15,7 @@ struct Image {
   int bytes_per_pixel;
   u32 *data;
 
-  u32 color(int x, int y);
+  u32 color(int, int, r32);
 };
 
 struct Model {

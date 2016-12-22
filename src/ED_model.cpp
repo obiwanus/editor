@@ -60,7 +60,7 @@ void Model::read_from_obj_file(char *filename) {
 void Model::read_texture(char *filename) {
   Image image = {};
   image.data = (u32 *)stbi_load(filename, &image.width, &image.height,
-                                &image.bytes_per_pixel, 0);
+                                &image.bytes_per_pixel, 4);
   if (image.bytes_per_pixel < 3 || image.bytes_per_pixel > 4) {
     printf("Image format not supported: %s\n", filename);
     exit(1);
@@ -72,19 +72,22 @@ void Model::read_texture(char *filename) {
   this->texture = image;
 }
 
-u32 Image::color(int x, int y) {
+u32 Image::color(int x, int y, r32 intensity = 1.0f) {
   u32 result;
-  if (this->bytes_per_pixel == 4) {
-    result = *(this->data + this->width * y + x);
-  } else {
-    u8 *pixel_byte = (u8 *)this->data + (this->width * y + x) * 3;
-    result = *((u32 *)pixel_byte) >> 8;
-  }
-  // u32 raw_pixel = ;
-  // u32 R = (0x000000FF & raw_pixel) >> 0;
-  // u32 G = (0x0000FF00 & raw_pixel) >> 8;
-  // u32 B = (0x00FF0000 & raw_pixel) >> 16;
-  // u32 A = (0xFF000000 & raw_pixel) >> 24;
-  // result = (A << 24 | R << 16 | G << 8 | B << 0);
+  // if (this->bytes_per_pixel == 4) {
+  //   result = *(this->data + this->width * y + x);
+  // } else {
+  //   assert(!"TODO: add support for this");
+  //   u8 *pixel_byte = (u8 *)this->data + (this->width * y + x) * 3;
+  //   result = *((u32 *)pixel_byte) >> 8;
+  // }
+
+  // TODO: fix the images
+  u32 raw_pixel = *(this->data + this->width * y + x);
+  u32 R = intensity * ((0x000000FF & raw_pixel) >> 0);
+  u32 G = intensity * ((0x0000FF00 & raw_pixel) >> 8);
+  u32 B = intensity * ((0x00FF0000 & raw_pixel) >> 16);
+  u32 A = (0xFF000000 & raw_pixel) >> 24;
+  result = (A << 24 | R << 16 | G << 8 | B << 0);
   return result;
 }

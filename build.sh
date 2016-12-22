@@ -24,7 +24,7 @@ if [ "$1" = "run" ]; then
 fi
 
 if $OPTIMIZE; then
-    CFLAGS="$CFLAGS -O2"
+    CFLAGS="$CFLAGS -O3"
 fi
 
 g++ --std=c++11 -Isrc/ $CFLAGS $FILES_TO_COMPILE $LFLAGS -o build/editor

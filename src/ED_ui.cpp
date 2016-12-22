@@ -95,7 +95,7 @@ void debug_triangle(Pixel_Buffer *buffer, v3i verts[], u32 color) {
 }
 
 void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], Image texture,
-                   r32 *z_buffer) {
+                   r32 *z_buffer, r32 intensity) {
   v3i t0 = verts[0];
   v3i t1 = verts[1];
   v3i t2 = verts[2];
@@ -153,8 +153,8 @@ void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], Image texture,
         // Get color from texture
         v2 texel = (1.0f - t) * Atex + t * Btex;
         v2i tex_coords = V2i(texture.width * texel.u, texture.height * texel.v);
-        u32 color =
-            texture.color(tex_coords.x, (texture.height - tex_coords.y));
+        u32 color = texture.color(tex_coords.x, (texture.height - tex_coords.y),
+                                  intensity);
         draw_pixel(buffer, V2i(x, y), color);
       }
     }
@@ -1148,7 +1148,7 @@ void Editor_3DView::draw(Model model) {
       u32 color = (grey << 16) | (grey << 8) | (grey << 0);
 
       draw_triangle(buffer, screen_verts, texture_verts, model.texture,
-                    z_buffer);
+                    z_buffer, intensity);
       // debug_triangle(buffer, screen_verts, 0x00777777);
     }
   }
@@ -1164,13 +1164,15 @@ void Editor_Raytrace::draw(Ray_Tracer *rt, Model model) {
   // u32 *pitch = model.texture.width
   Pixel_Buffer *buffer = this->area->draw_buffer;
 
+  // TMP - buggy with bytes per pixel = 3
   u32 *src = model.texture.data;
   for (int y = 0; y < model.texture.height; ++y) {
     if (y >= buffer->height) break;
     for (int x = 0; x < model.texture.width; ++x) {
       if (x >= buffer->width) continue;
       u32 *pixel = (u32 *)buffer->memory + x + y * buffer->width;
-      *pixel = *(src + x);
+      u32 value = *(src + x);
+      *pixel = value;
     }
     src += model.texture.width;
   }
