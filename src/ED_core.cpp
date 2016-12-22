@@ -23,8 +23,8 @@ void *Program_Memory::allocate(size_t size) {
 void Program_State::init(Program_Memory *memory) {
   Program_State *state = this;
 
-  state->kWindowWidth = 1000;
-  state->kWindowHeight = 700;
+  state->kWindowWidth = 1200;
+  state->kWindowHeight = 900;
 
   memset(&state->UI, 0, sizeof(state->UI));
   state->UI.memory = memory;

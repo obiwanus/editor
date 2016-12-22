@@ -17,12 +17,17 @@ global bool gRunning;
 global Pixel_Buffer g_pixel_buffer;
 global Program_Memory g_program_memory;
 
-global const int kWindowWidth = 1000;
-global const int kWindowHeight = 700;
-
 global XImage *gXImage;
 
 int main(int argc, char const *argv[]) {
+  // Allocate main memory
+  g_program_memory.free_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
+
+  // Main program state
+  Program_State *state =
+      (Program_State *)g_program_memory.allocate(sizeof(Program_State));
+  state->init(&g_program_memory);
+
   Display *display;
   Window window;
   int screen;
@@ -39,8 +44,8 @@ int main(int argc, char const *argv[]) {
   u32 bg_color = BlackPixel(display, screen);
 
   window = XCreateSimpleWindow(display, RootWindow(display, screen), 300, 300,
-                               kWindowWidth, kWindowHeight, 0, border_color,
-                               bg_color);
+                               state->kWindowWidth, state->kWindowHeight, 0,
+                               border_color, bg_color);
 
   XSetStandardProperties(display, window, "Editor", "Hi!", None, NULL, 0, NULL);
 
@@ -62,25 +67,17 @@ int main(int argc, char const *argv[]) {
       if (e.type == MapNotify) break;
     }
 
-    gXImage = XGetImage(display, window, 0, 0, kWindowWidth, kWindowHeight,
-                        AllPlanes, ZPixmap);
+    gXImage = XGetImage(display, window, 0, 0, state->kWindowWidth,
+                        state->kWindowHeight, AllPlanes, ZPixmap);
 
     g_pixel_buffer.memory = (void *)gXImage->data;
-    g_pixel_buffer.width = kWindowWidth;
-    g_pixel_buffer.height = kWindowHeight - 1;
+    g_pixel_buffer.width = state->kWindowWidth;
+    g_pixel_buffer.height = state->kWindowHeight - 1;
     g_pixel_buffer.max_width = 3000;
     g_pixel_buffer.max_height = 3000;
 
     gc = XCreateGC(display, window, 0, &gcvalues);
   }
-
-  // Allocate main memory
-  g_program_memory.free_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
-
-  // Main program state
-  Program_State *state =
-      (Program_State *)g_program_memory.allocate(sizeof(Program_State));
-  state->init(&g_program_memory);
 
   // Define cursors
   Cursor_Type current_cursor = Cursor_Type_Arrow;
@@ -186,8 +183,8 @@ int main(int argc, char const *argv[]) {
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
 
-    XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, kWindowWidth,
-              kWindowHeight);
+    XPutImage(display, window, gc, gXImage, 0, 0, 0, 0, state->kWindowWidth,
+              state->kWindowHeight);
 
     // Swap inputs
     User_Input *tmp = old_input;
