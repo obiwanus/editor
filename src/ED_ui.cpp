@@ -172,9 +172,10 @@ void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
         if (intensity > 0) {
           // Get color from texture
           v2 texel = (1.0f - t) * Atex + t * Btex;
-          v2i tex_coords = V2i(texture.width * texel.u, texture.height * texel.v);
-          u32 color = texture.color(tex_coords.x, (texture.height - tex_coords.y),
-                                    intensity);
+          v2i tex_coords =
+              V2i(texture.width * texel.u, texture.height * texel.v);
+          u32 color = texture.color(tex_coords.x,
+                                    (texture.height - tex_coords.y), intensity);
           draw_pixel(buffer, V2i(x, y), color);
         }
       }
@@ -1114,28 +1115,23 @@ void Editor_3DView::draw(Model model) {
   memset(buffer->memory, 0, buffer->width * buffer->height * sizeof(u32));
 
   r32 scale = (r32)buffer->height / 2.0f;
-  // clang-format off
+
+  m4x4 ProjectionMatrix =
+      Matrix::ortho_projection(-2.0f, 2.0f, -2.0f, 2.0f, 2.0f, -2.0f);
+
+      // clang-format off
   m4x4 ScreenTransform = {
     scale, 0,     0,     (r32)buffer->width / 2,
     0,     scale, 0,     (r32)buffer->height / 2,
     0,     0,     scale, 0,
     0,     0,     0,     1,
   };
-  static r32 angle = 0;
+
+  local_persist r32 angle = 0;
   angle += 0.02f;
-  m4x4 RotationMatrix = {
-    (r32)cos(angle), 0, (r32)-sin(angle),  0,
-    0,          1,            0, 0,
-    (r32)sin(angle), 0, (r32)cos(angle),   0,
-    0,          0,            0, 1,
-  };
+  m4x4 RotationMatrix = Matrix::Ry(angle);
   r32 tilt = M_PI / 8;
-  m4x4 TiltMatrix = {
-    1, 0, 0, 0,
-    0, (r32)cos(angle), (r32)-sin(angle),  0,
-    0, (r32)sin(angle), (r32)cos(angle),   0,
-    0,          0,            0, 1,
-  };
+  m4x4 TiltMatrix = Matrix::Rx(angle);
   m4x4 ResultTransform = ScreenTransform * RotationMatrix * TiltMatrix;
   // clang-format on
 

@@ -91,6 +91,28 @@ union v4 {
   r32 E[4];
 };
 
+union basis3 {
+  struct {
+    v3 vectors[3];
+  };
+  struct {
+    v3 vect0, vect1, vect2;
+  };
+  struct {
+    v3 r, s, t;
+  };
+  struct {
+    r32 x0, y0, z0;
+    r32 x1, y1, z1;
+    r32 x2, y2, z2;
+  };
+  r32 E[9];
+
+  static basis3 build_from(v3);
+};
+
+// =========================== Matrices ======================================
+
 union m2x2 {
   struct {
     v2 rows[2];
@@ -130,6 +152,14 @@ union m4x4 {
   };
   r32 E[16];
   v4 column(int);
+};
+
+namespace Matrix {
+  m4x4 Rx(r32 angle);
+  m4x4 Ry(r32 angle);
+  m4x4 Rz(r32 angle);
+  m4x4 R(v3 axis, v3 angle, v3 point = {0, 0, 0});
+  m4x4 ortho_projection(r32, r32, r32, r32, r32, r32);
 };
 
 // ==================== Construction ======================

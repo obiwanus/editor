@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "ED_math.h"
 
 r32 v2i::len() { return (r32)sqrt(x * x + y * y); }
@@ -100,9 +101,8 @@ v3 Rotate(m3x3 Matrix, v3 Vector, v3 Base) {
 v3 Rotate(m4x4 Matrix, v3 Vector, v3 Base) {
   v3 result = Vector - Base;
   m3x3 TruncatedMatrix = {
-    Matrix.E[0], Matrix.E[1], Matrix.E[2],
-    Matrix.E[4], Matrix.E[5], Matrix.E[6],
-    Matrix.E[8], Matrix.E[9], Matrix.E[10],
+      Matrix.E[0], Matrix.E[1], Matrix.E[2], Matrix.E[4],  Matrix.E[5],
+      Matrix.E[6], Matrix.E[8], Matrix.E[9], Matrix.E[10],
   };
 
   result = TruncatedMatrix * result;
@@ -118,4 +118,95 @@ v3 Hadamard(v3 A, v3 B) {
   result.z = A.z * B.z;
 
   return result;
+}
+
+basis3 basis3::build_from(v3 r) {
+  basis3 result;
+  assert(r != V3(0, 0, 0));
+
+  result.r = r.normalized();
+  if (abs(r.x) <= abs(r.y) && abs(r.x) <= abs(r.z)) {
+    result.s = V3(0.0f, -r.z, r.y);
+  } else if (abs(r.y) <= abs(r.x) && abs(r.y) <= abs(r.z)) {
+    result.s = V3(-r.z, 0.0f, r.x);
+  } else {
+    result.s= V3(-r.y, r.x, 0.0f);
+  }
+  result.s = result.s.normalized();
+  result.t = result.r.cross(result.s);
+
+  return result;
+}
+
+m4x4 Matrix::ortho_projection(r32 l, r32 r, r32 b, r32 t, r32 n, r32 f) {
+  assert(n > f && l < r && b < t);
+
+  // clang-format off
+  m4x4 result = {
+    2.0f/(r-l), 0,          0,          -(r+l)/(r-l),
+    0,          2.0f/(t-b), 0,          -(t+b)/(t-b),
+    0,          0,          2.0f/(f-n), -(f+n)/(f-n),
+    0,          0,          0,          1,
+  };
+  // clang-format on
+
+  return result;
+}
+
+m4x4 Matrix::Rx(r32 angle) {
+  r32 c = (r32)cos(angle);
+  r32 s = (r32)sin(angle);
+  // clang-format off
+  m4x4 result = {
+    1, 0,  0, 0,
+    0, c, -s, 0,
+    0, s,  c, 0,
+    0, 0,  0, 1,
+  };
+  //clang-format on
+  return result;
+}
+
+m4x4 Matrix::Ry(r32 angle) {
+  r32 c = (r32)cos(angle);
+  r32 s = (r32)sin(angle);
+  // clang-format off
+  m4x4 result = {
+    c, 0, s, 0,
+    0, 1, 0, 0,
+   -s, 0, c, 0,
+    0, 0, 0, 1,
+  };
+  //clang-format on
+  return result;
+}
+
+m4x4 Matrix::Rz(r32 angle) {
+  r32 c = (r32)cos(angle);
+  r32 s = (r32)sin(angle);
+  // clang-format off
+  m4x4 result = {
+    c, -s, 0, 0,
+    s,  c, 0, 0,
+    0,  0, 1, 0,
+    0,  0, 0, 1,
+  };
+  //clang-format on
+  return result;
+}
+
+
+m4x4 get_rotation_matrix(v3 axis, r32 angle) {
+  // assert(n > f && l < r && b < t);
+
+  // // clang-format off
+  // m4x4 result = {
+  //   2.0f/(r-l), 0,          0,          -(r+l)/(r-l),
+  //   0,          2.0f/(t-b), 0,          -(t+b)/(t-b),
+  //   0,          0,          2.0f/(f-n), -(f+n)/(f-n),
+  //   0,          0,          0,          1,
+  // };
+  // // clang-format on
+
+  // return result;
 }
