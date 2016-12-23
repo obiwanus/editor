@@ -139,6 +139,7 @@ union m3x3 {
 
   r32 determinant();
   m3x3 replace_column(int number, v3 column);
+  m3x3 transposed();
 };
 
 union m4x4 {
@@ -149,16 +150,24 @@ union m4x4 {
     r32 a, b, c, d;
     r32 e, f, g, h;
     r32 i, j, k, l;
+    r32 m, n, o, p;
   };
   r32 E[16];
   v4 column(int);
+  m4x4 transposed();
 };
 
 namespace Matrix {
+  // Rotation
   m4x4 Rx(r32 angle);
   m4x4 Ry(r32 angle);
   m4x4 Rz(r32 angle);
   m4x4 R(v3 axis, v3 angle, v3 point = {0, 0, 0});
+  // Scaling
+  m4x4 S(r32, r32, r32);
+  // Translation
+  m4x4 T(r32, r32, r32);
+  // Projection
   m4x4 ortho_projection(r32, r32, r32, r32, r32, r32);
 };
 

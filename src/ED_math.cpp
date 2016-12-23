@@ -50,6 +50,17 @@ m3x3 m3x3::replace_column(int number, v3 column) {
   return result;
 }
 
+m3x3 m3x3::transposed() {
+  // clang-format off
+  m3x3 result = {
+    a, d, g,
+    b, e, h,
+    c, f, i,
+  };
+  // clang-format on
+  return result;
+}
+
 v4 m4x4::column(int number) {
   v4 result;
 
@@ -57,6 +68,18 @@ v4 m4x4::column(int number) {
     result.E[row] = this->E[4 * row + number];
   }
 
+  return result;
+}
+
+m4x4 m4x4::transposed() {
+  // clang-format off
+  m4x4 result = {
+    a, e, i, m,
+    b, f, j, n,
+    c, g, k, o,
+    d, h, l, p,
+  };
+  // clang-format on
   return result;
 }
 
@@ -130,7 +153,7 @@ basis3 basis3::build_from(v3 r) {
   } else if (abs(r.y) <= abs(r.x) && abs(r.y) <= abs(r.z)) {
     result.s = V3(-r.z, 0.0f, r.x);
   } else {
-    result.s= V3(-r.y, r.x, 0.0f);
+    result.s = V3(-r.y, r.x, 0.0f);
   }
   result.s = result.s.normalized();
   result.t = result.r.cross(result.s);
@@ -195,18 +218,34 @@ m4x4 Matrix::Rz(r32 angle) {
   return result;
 }
 
+m4x4 Matrix::R(v3 axis, v3 angle, v3 point) {
+  m4x4 result = {};
 
-m4x4 get_rotation_matrix(v3 axis, r32 angle) {
-  // assert(n > f && l < r && b < t);
+  // TODO
 
-  // // clang-format off
-  // m4x4 result = {
-  //   2.0f/(r-l), 0,          0,          -(r+l)/(r-l),
-  //   0,          2.0f/(t-b), 0,          -(t+b)/(t-b),
-  //   0,          0,          2.0f/(f-n), -(f+n)/(f-n),
-  //   0,          0,          0,          1,
-  // };
-  // // clang-format on
+  return result;
+}
 
-  // return result;
+m4x4 Matrix::S(r32 sx, r32 sy, r32 sz) {
+  // clang-format off
+  m4x4 result = {
+    sx,  0,  0, 0,
+    0,  sy,  0, 0,
+    0,   0, sz, 0,
+    0,   0,  0, 1,
+  };
+  // clang-format on
+  return result;
+}
+
+m4x4 Matrix::T(r32 tx, r32 ty, r32 tz) {
+  // clang-format off
+  m4x4 result = {
+    1,  0,  0, tx,
+    0,  1,  0, ty,
+    0,  0,  1, tz,
+    0,  0,  0,  1,
+  };
+  // clang-format on
+  return result;
 }
