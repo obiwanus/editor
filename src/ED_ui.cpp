@@ -1111,29 +1111,38 @@ void User_Interface::draw_areas(Ray_Tracer *rt, Model model) {
 
 void Editor_3DView::draw(Model model) {
   Pixel_Buffer *buffer = this->area->draw_buffer;
-  // draw_rect(buffer, buffer->get_rect(), {0});
   memset(buffer->memory, 0, buffer->width * buffer->height * sizeof(u32));
 
-  r32 scale = (r32)buffer->height / 2.0f;
+  // Get projection
+  m4x4 ProjectionMatrix;
+  {
+    // We want to preserve aspect ratio
+    const r32 MIN_DIMENSION = 1.3f;
+    r32 right, top, near;
+    r32 ratio = (r32)buffer->height / buffer->width;
+    if (ratio < 1.0f) {
+      top = MIN_DIMENSION;
+      right = top / ratio;
+    } else {
+      right = MIN_DIMENSION;
+      top = right * ratio;
+    }
+    near = MIN_DIMENSION;
+    ProjectionMatrix =
+        Matrix::ortho_projection(-right, right, -top, top, near, -near);
+  }
 
-  m4x4 ProjectionMatrix =
-      Matrix::ortho_projection(-2.0f, 2.0f, -2.0f, 2.0f, 2.0f, -2.0f);
-
-      // clang-format off
-  m4x4 ScreenTransform = {
-    scale, 0,     0,     (r32)buffer->width / 2,
-    0,     scale, 0,     (r32)buffer->height / 2,
-    0,     0,     scale, 0,
-    0,     0,     0,     1,
-  };
+  m4x4 ScreenTransform =
+      Matrix::T((r32)buffer->width / 2, (r32)buffer->height / 2, 0) *
+      Matrix::S((r32)buffer->width / 2, (r32)buffer->height / 2, 1);
 
   local_persist r32 angle = 0;
   angle += 0.02f;
   m4x4 RotationMatrix = Matrix::Ry(angle);
   r32 tilt = M_PI / 8;
   m4x4 TiltMatrix = Matrix::Rx(angle);
-  m4x4 ResultTransform = ScreenTransform * RotationMatrix * TiltMatrix;
-  // clang-format on
+  m4x4 ResultTransform =
+      ScreenTransform * ProjectionMatrix * RotationMatrix * TiltMatrix;
 
   r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));
   for (int i = 0; i < buffer->width * buffer->height; ++i) {
@@ -1155,9 +1164,10 @@ void Editor_3DView::draw(Model model) {
                       V3(0, 0, 0));
     }
 
-    draw_triangle(buffer, screen_verts, texture_verts, vns, model.texture,
-                  z_buffer);
-    // debug_triangle(buffer, screen_verts, 0x00777777);
+    // TODO: fix the textures
+    // draw_triangle(buffer, screen_verts, texture_verts, vns, model.texture,
+    //               z_buffer);
+    debug_triangle(buffer, screen_verts, 0x00777777);
   }
 
   free(z_buffer);

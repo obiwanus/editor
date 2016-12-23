@@ -169,7 +169,7 @@ m4x4 Matrix::ortho_projection(r32 l, r32 r, r32 b, r32 t, r32 n, r32 f) {
     2.0f/(r-l), 0,          0,          -(r+l)/(r-l),
     0,          2.0f/(t-b), 0,          -(t+b)/(t-b),
     0,          0,          2.0f/(f-n), -(f+n)/(f-n),
-    0,          0,          0,          1,
+    0,          0,          0,           1,
   };
   // clang-format on
 
@@ -236,6 +236,11 @@ m4x4 Matrix::S(r32 sx, r32 sy, r32 sz) {
   };
   // clang-format on
   return result;
+}
+
+m4x4 Matrix::S(r32 s) {
+  // Uniform scaling
+  return Matrix::S(s, s, s);
 }
 
 m4x4 Matrix::T(r32 tx, r32 ty, r32 tz) {

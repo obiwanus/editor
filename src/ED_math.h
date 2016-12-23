@@ -164,6 +164,7 @@ namespace Matrix {
   m4x4 Rz(r32 angle);
   m4x4 R(v3 axis, v3 angle, v3 point = {0, 0, 0});
   // Scaling
+  m4x4 S(r32);
   m4x4 S(r32, r32, r32);
   // Translation
   m4x4 T(r32, r32, r32);
