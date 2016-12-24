@@ -89,6 +89,8 @@ union v4 {
     r32 r, g, b, a;
   };
   r32 E[4];
+
+  v4 homogenized();
 };
 
 union basis3 {
@@ -97,6 +99,9 @@ union basis3 {
   };
   struct {
     v3 vect0, vect1, vect2;
+  };
+  struct {
+    v3 u, v, w;
   };
   struct {
     v3 r, s, t;
@@ -170,6 +175,9 @@ namespace Matrix {
   m4x4 T(r32, r32, r32);
   // Projection
   m4x4 ortho_projection(r32, r32, r32, r32, r32, r32);
+  // Change frame
+  m4x4 frame_to_canonical(basis3, v3);
+  m4x4 canonical_to_frame(basis3, v3);
 };
 
 // ==================== Construction ======================

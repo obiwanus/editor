@@ -1113,13 +1113,16 @@ void Editor_3DView::draw(Model model) {
   Pixel_Buffer *buffer = this->area->draw_buffer;
   memset(buffer->memory, 0, buffer->width * buffer->height * sizeof(u32));
 
+  r32 width = (r32)buffer->width;
+  r32 height = (r32)buffer->height;
+
   // Get projection
   m4x4 ProjectionMatrix;
   {
     // We want to preserve aspect ratio
     const r32 MIN_DIMENSION = 1.3f;
     r32 right, top, near;
-    r32 ratio = (r32)buffer->height / buffer->width;
+    r32 ratio = height / width;
     if (ratio < 1.0f) {
       top = MIN_DIMENSION;
       right = top / ratio;
@@ -1132,9 +1135,9 @@ void Editor_3DView::draw(Model model) {
         Matrix::ortho_projection(-right, right, -top, top, near, -near);
   }
 
-  m4x4 ScreenTransform =
-      Matrix::T((r32)buffer->width / 2, (r32)buffer->height / 2, 0) *
-      Matrix::S((r32)buffer->width / 2, (r32)buffer->height / 2, 1);
+  m4x4 ViewportTransform =
+      Matrix::T(width / 2, height / 2, 0) *
+      Matrix::S(width / 2, height / 2, 1);
 
   local_persist r32 angle = 0;
   angle += 0.02f;
@@ -1142,8 +1145,9 @@ void Editor_3DView::draw(Model model) {
   r32 tilt = M_PI / 8;
   m4x4 TiltMatrix = Matrix::Rx(angle);
   m4x4 ResultTransform =
-      ScreenTransform * ProjectionMatrix * RotationMatrix * TiltMatrix;
+      ViewportTransform * ProjectionMatrix * RotationMatrix * TiltMatrix;
 
+  // TODO: move it
   r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));
   for (int i = 0; i < buffer->width * buffer->height; ++i) {
     z_buffer[i] = -INFINITY;

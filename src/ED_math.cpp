@@ -27,6 +27,20 @@ v3 v3::cross(v3 Vector) {
   return result;
 }
 
+v4 v4::homogenized() {
+  v4 result;
+
+  if (this->w == 0 && this->w == 1) {
+    return *this;
+  }
+  result.x = this->x / this->w;
+  result.y = this->y / this->w;
+  result.z = this->z / this->w;
+  result.w = 1;
+
+  return result;
+}
+
 r32 m2x2::determinant() {
   r32 result = a * b - c * d;
 
@@ -209,10 +223,10 @@ m4x4 Matrix::Rz(r32 angle) {
   r32 s = (r32)sin(angle);
   // clang-format off
   m4x4 result = {
-    c, -s, 0, 0,
-    s,  c, 0, 0,
-    0,  0, 1, 0,
-    0,  0, 0, 1,
+    c, -s,  0,  0,
+    s,  c,  0,  0,
+    0,  0,  1,  0,
+    0,  0,  0,  1,
   };
   //clang-format on
   return result;
@@ -229,10 +243,10 @@ m4x4 Matrix::R(v3 axis, v3 angle, v3 point) {
 m4x4 Matrix::S(r32 sx, r32 sy, r32 sz) {
   // clang-format off
   m4x4 result = {
-    sx,  0,  0, 0,
-    0,  sy,  0, 0,
-    0,   0, sz, 0,
-    0,   0,  0, 1,
+    sx,  0,  0,  0,
+     0, sy,  0,  0,
+     0,  0, sz,  0,
+     0,  0,  0,  1,
   };
   // clang-format on
   return result;
@@ -250,6 +264,30 @@ m4x4 Matrix::T(r32 tx, r32 ty, r32 tz) {
     0,  1,  0, ty,
     0,  0,  1, tz,
     0,  0,  0,  1,
+  };
+  // clang-format on
+  return result;
+}
+
+m4x4 Matrix::frame_to_canonical(basis3 frame, v3 origin) {
+  // clang-format off
+  m4x4 result = {
+    frame.u.x, frame.u.y, frame.u.z, origin.x,
+    frame.v.x, frame.v.y, frame.v.z, origin.y,
+    frame.w.x, frame.w.y, frame.w.z, origin.z,
+            0,         0,         0,        1,
+  };
+  // clang-format on
+  return result;
+}
+
+m4x4 Matrix::canonical_to_frame(basis3 frame, v3 origin) {
+  // clang-format off
+  m4x4 result = {
+    frame.u.x, frame.v.x, frame.w.x, -origin.x,
+    frame.u.y, frame.v.y, frame.w.y, -origin.y,
+    frame.u.z, frame.v.z, frame.w.z, -origin.z,
+            0,         0,         0,        1,
   };
   // clang-format on
   return result;
