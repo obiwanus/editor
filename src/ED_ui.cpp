@@ -1132,7 +1132,7 @@ void Editor_3DView::draw(Model model) {
     }
     near = MIN_DIMENSION;
     ProjectionMatrix =
-        Matrix::ortho_projection(-right, right, -top, top, near, -near);
+        Matrix::persp_projection(-right, right, -top, top, near, -near);
   }
 
   m4x4 ViewportTransform =
@@ -1145,7 +1145,7 @@ void Editor_3DView::draw(Model model) {
   r32 tilt = M_PI / 8;
   m4x4 TiltMatrix = Matrix::Rx(angle);
   m4x4 ResultTransform =
-      ViewportTransform * ProjectionMatrix * RotationMatrix * TiltMatrix;
+      ViewportTransform * ProjectionMatrix; //* RotationMatrix * TiltMatrix;
 
   // TODO: move it
   r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));

@@ -175,6 +175,7 @@ namespace Matrix {
   m4x4 T(r32, r32, r32);
   // Projection
   m4x4 ortho_projection(r32, r32, r32, r32, r32, r32);
+  m4x4 persp_projection(r32, r32, r32, r32, r32, r32);
   // Change frame
   m4x4 frame_to_canonical(basis3, v3);
   m4x4 canonical_to_frame(basis3, v3);
@@ -570,7 +571,12 @@ inline v3 operator*(m4x4 M, v3 V) {
 
   V_ext = M * V_ext;
 
-  result = V3(V_ext.x, V_ext.y, V_ext.z);
+  // Homogenize on the fly
+  if (V_ext.w != 0.0f && V_ext.w != 1.0f) {
+    result = V3(V_ext.x / V_ext.w, V_ext.y / V_ext.w, V_ext.z / V_ext.w);
+  } else {
+    result = V3(V_ext.x, V_ext.y, V_ext.z);
+  }
 
   return result;
 }
