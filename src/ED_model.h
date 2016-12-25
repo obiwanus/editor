@@ -1,6 +1,7 @@
 #ifndef ED_MODEL_H
 #define ED_MODEL_H
 
+#include "ED_math.h"
 #include "ED_base.h"
 
 struct Face {
@@ -27,6 +28,14 @@ struct Model {
 
   void read_from_obj_file(char *);
   void read_texture(char *);
+};
+
+struct Camera {
+  v3 position;
+  v3 up;
+  v3 direction;
+
+  m4x4 get_transform();
 };
 
 #endif  // ED_MODEL_H

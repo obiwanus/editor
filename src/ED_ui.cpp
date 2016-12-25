@@ -1116,36 +1116,76 @@ void Editor_3DView::draw(Model model) {
   r32 width = (r32)buffer->width;
   r32 height = (r32)buffer->height;
 
+  m4x4 ModelTransform =
+      Matrix::S(1.3f) *  Matrix::T(0.3f, -0.3f, 0.0f);
+
+  Camera camera;
+  camera.position = V3(0, 1, 3);
+  camera.up = V3(0, 1, 0);
+  camera.direction = V3(0.0f, -1.0f, -1.0f);
+  // camera.position = V3(0, 5, 0);
+  // camera.up = V3(1, 3, 1);
+  // camera.direction = V3(3, -1, 3);
+  m4x4 CameraTransform = camera.get_transform();
+
   // Get projection
+  // m4x4 ProjectionMatrix;
+  // {
+  //   // We want to preserve aspect ratio
+  //   const r32 MIN_DIMENSION = 1.3f;
+  //   r32 right, top, near;
+  //   r32 ratio = height / width;
+  //   if (ratio < 1.0f) {
+  //     top = MIN_DIMENSION;
+  //     right = top / ratio;
+  //   } else {
+  //     right = MIN_DIMENSION;
+  //     top = right * ratio;
+  //   }
+  //   near = MIN_DIMENSION;
+  //   ProjectionMatrix =
+  //       Matrix::persp_projection(-right, right, -top, top, near, -near);
+  // }
   m4x4 ProjectionMatrix;
   {
-    // We want to preserve aspect ratio
-    const r32 MIN_DIMENSION = 1.3f;
-    r32 right, top, near;
-    r32 ratio = height / width;
-    if (ratio < 1.0f) {
-      top = MIN_DIMENSION;
-      right = top / ratio;
-    } else {
-      right = MIN_DIMENSION;
-      top = right * ratio;
-    }
-    near = MIN_DIMENSION;
+    r32 right = 2.0f;
+    r32 top = (height / width) * right;
+    r32 near = -3.0f;
+    r32 far = -10.0f;
     ProjectionMatrix =
-        Matrix::persp_projection(-right, right, -top, top, near, -near);
+        Matrix::persp_projection(-right, right, -top, top, near, far);
   }
 
   m4x4 ViewportTransform =
-      Matrix::T(width / 2, height / 2, 0) *
-      Matrix::S(width / 2, height / 2, 1);
+      Matrix::T(width / 2, height / 2, 0) * Matrix::S(width / 2, height / 2, 1);
+  m4x4 Scale = Matrix::S(width / 2, height / 2, 1);
 
   local_persist r32 angle = 0;
   angle += 0.02f;
   m4x4 RotationMatrix = Matrix::Ry(angle);
   r32 tilt = M_PI / 8;
   m4x4 TiltMatrix = Matrix::Rx(angle);
-  m4x4 ResultTransform =
-      ViewportTransform * ProjectionMatrix; //* RotationMatrix * TiltMatrix;
+
+  m4x4 WorldTransform = ViewportTransform * ProjectionMatrix * CameraTransform;
+
+  m4x4 ResultTransform = WorldTransform * ModelTransform;// * ProjectionMatrix * CameraTransform * ModelTransform;
+
+  // test transforms
+  // for (int i = 0; i < sb_count(model.faces); ++i) {
+  //   Face face = model.faces[i];
+  //   v3 world_verts[3];
+  //   v3 transformed_verts[3];
+  //   v3i screen_verts[3];
+
+  //   for (int j = 0; j < 3; ++j) {
+  //     world_verts[j] = model.vertices[face.v_ids[j]];
+  //     v3 vert = world_verts[j];
+  //     vert = (Scale * CameraTransform) * vert;
+  //     transformed_verts[j] = vert;
+  //     screen_verts[j] = V3i(ResultTransform * world_verts[j]);
+  //   }
+  //   int a = 2;
+  // }
 
   // TODO: move it
   r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));
@@ -1166,12 +1206,44 @@ void Editor_3DView::draw(Model model) {
       screen_verts[j] = V3i(ResultTransform * world_verts[j]);
       vns[j] = Rotate(RotationMatrix * TiltMatrix, model.vns[face.vn_ids[j]],
                       V3(0, 0, 0));
+      // vns[j] = CameraTransform * model.vns[face.vn_ids[j]];
     }
 
     // TODO: fix the textures
     // draw_triangle(buffer, screen_verts, texture_verts, vns, model.texture,
     //               z_buffer);
     debug_triangle(buffer, screen_verts, 0x00777777);
+  }
+
+  // Draw grid
+  const int kLineCount = 16;
+  v3 grid_frame[] = {V3(-1, 0, -1), V3(-1, 0, 1), V3(1, 0, 1), V3(1, 0 , -1)};
+  for (size_t i = 0; i < COUNT_OF(grid_frame); i++) {
+    v3 vert1 = grid_frame[i];
+    v3 vert2 = grid_frame[(i + 1) % COUNT_OF(grid_frame)];
+    vert1 = WorldTransform * vert1;
+    vert2 = WorldTransform * vert2;
+    draw_line(buffer, V2i(vert1), V2i(vert2), 0x00FFFFFF);
+  }
+  for (int i = 0; i < kLineCount; ++i) {
+    // Along the z axis
+    {
+      r32 z = -1.0f + i * 2.0f / (kLineCount - 1);
+      v3 vert1 = V3(-1.0f, 0.0f, z);
+      v3 vert2 = V3(1.0f, 0.0f, z);
+      vert1 = WorldTransform * vert1;
+      vert2 = WorldTransform * vert2;
+      draw_line(buffer, V2i(vert1), V2i(vert2), 0x00FFFFFF);
+    }
+    // Along the x axis
+    {
+      r32 x = -1.0f + i * 2.0f / (kLineCount - 1);
+      v3 vert1 = V3(x, 0.0f, -1.0);
+      v3 vert2 = V3(x, 0.0f, 1.0);
+      vert1 = WorldTransform * vert1;
+      vert2 = WorldTransform * vert2;
+      draw_line(buffer, V2i(vert1), V2i(vert2), 0x00FFFFFF);
+    }
   }
 
   free(z_buffer);

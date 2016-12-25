@@ -80,7 +80,6 @@ int main(int argc, char const *argv[]) {
   }
 
   // Define cursors
-  Cursor_Type current_cursor = Cursor_Type_Arrow;
   Cursor linux_cursors[Cursor_Type__COUNT];
   linux_cursors[Cursor_Type_Arrow] = XCreateFontCursor(display, XC_left_ptr);
   linux_cursors[Cursor_Type_Cross] = XCreateFontCursor(display, XC_cross);
@@ -109,13 +108,13 @@ int main(int argc, char const *argv[]) {
       if (event.type == KeyPress || event.type == KeyRelease) {
         KeySym key;
         char buf[256];
-        char symbol = 0;
+        // char symbol = 0;
         b32 pressed = false;
         b32 released = false;
         b32 retriggered = false;
 
         if (XLookupString(&event.xkey, buf, 255, &key, 0) == 1) {
-          symbol = buf[0];
+          // symbol = buf[0];
         }
 
         // Process user input
@@ -158,7 +157,7 @@ int main(int argc, char const *argv[]) {
 
       // Close window message
       if (event.type == ClientMessage) {
-        if (event.xclient.data.l[0] == wmDeleteMessage) {
+        if ((unsigned)event.xclient.data.l[0] == wmDeleteMessage) {
           gRunning = false;
         }
       }
@@ -195,7 +194,7 @@ int main(int argc, char const *argv[]) {
     *new_input = {};
 
     // Retain the button state
-    for (int i = 0; i < COUNT_OF(new_input->buttons); i++) {
+    for (size_t i = 0; i < COUNT_OF(new_input->buttons); i++) {
       new_input->buttons[i] = old_input->buttons[i];
     }
 

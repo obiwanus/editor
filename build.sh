@@ -2,7 +2,7 @@
 
 set -e
 
-CFLAGS="-g -std=c++11 -DBUILD_INTERNAL=1 -DBUILD_SLOW=1 -Wno-write-strings"
+CFLAGS="-g -std=c++11 -DBUILD_INTERNAL=1 -DBUILD_SLOW=1 -Wall -Wextra -Wno-write-strings -Wno-missing-field-initializers -Wno-unused -Werror"
 LFLAGS="$(pkg-config --cflags --libs x11) -ldl -lpthread"
 
 mkdir -p build
@@ -24,7 +24,7 @@ if [ "$1" = "run" ]; then
 fi
 
 if $OPTIMIZE; then
-    CFLAGS="$CFLAGS -O3"
+    CFLAGS="$CFLAGS -O3 -Wdisabled-optimization"
 fi
 
 g++ --std=c++11 -Isrc/ $CFLAGS $FILES_TO_COMPILE $LFLAGS -o build/editor

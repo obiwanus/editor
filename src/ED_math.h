@@ -179,7 +179,7 @@ namespace Matrix {
   // Change frame
   m4x4 frame_to_canonical(basis3, v3);
   m4x4 canonical_to_frame(basis3, v3);
-};
+}
 
 // ==================== Construction ======================
 
