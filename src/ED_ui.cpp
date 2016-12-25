@@ -1114,92 +1114,42 @@ void Editor_3DView::draw(Model model, User_Input *input) {
   Pixel_Buffer *buffer = this->area->draw_buffer;
   memset(buffer->memory, 0, buffer->width * buffer->height * sizeof(u32));
 
-  r32 width = (r32)buffer->width;
-  r32 height = (r32)buffer->height;
+  local_persist r32 dir_x = 0;
+  local_persist r32 dir_y = 0;
 
-  local_persist r32 x = 0.0f;
-  local_persist r32 y = 0.0f;
-  local_persist r32 angle = 0;
-
+  if (input->up) {
+    dir_y += 0.1f;
+  }
+  if (input->down) {
+    dir_y -= 0.1f;
+  }
+  if (input->left) {
+    dir_x -= 0.1f;
+  }
+  if (input->right) {
+    dir_x += 0.1f;
+  }
 
   Camera camera;
-  camera.position = V3(1.5f, y, 3.0f);
-  camera.up = V3(0.0f, 1.0f, 1.0f);
-  camera.direction = V3(0.0f, 0.0f, -1.0f);
+  camera.position = V3(0.0f, 0.0f, 3.0f);
+  camera.up = V3(0.0f, 1.0f, -1.0f);
+  camera.direction = V3(dir_x, dir_y, -1.0f);
   camera.adjust_frustum(buffer->width, buffer->height);
-  // camera.position = V3(0, 5, 0);
-  // camera.up = V3(1, 3, 1);
-  // camera.direction = V3(3, -1, 3);
+
   m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
   m4x4 ModelTransform =
-      Matrix::S(1.3f) * Matrix::T(0.0f, 0.3f, 0.0f) * Matrix::Ry(angle);
+      Matrix::S(1.0f) * Matrix::T(0.0f, 0.0f, 0.0f) * Matrix::Ry(0);
 
   m4x4 ProjectionMatrix = camera.persp_projection();
-  // Get projection
-  // m4x4 ProjectionMatrix;
-  // {
-  //   // We want to preserve aspect ratio
-  //   const r32 MIN_DIMENSION = 1.3f;
-  //   r32 right, top, near;
-  //   r32 ratio = height / width;
-  //   if (ratio < 1.0f) {
-  //     top = MIN_DIMENSION;
-  //     right = top / ratio;
-  //   } else {
-  //     right = MIN_DIMENSION;
-  //     top = right * ratio;
-  //   }
-  //   near = MIN_DIMENSION;
-  //   ProjectionMatrix =
-  //       Matrix::persp_projection(-right, right, -top, top, near, -near);
-  // }
-  // m4x4 ProjectionMatrix;
-  // {
-  //   local_persist r32 right = 1.0f;
-  //   r32 top = (height / width) * right;
-  //   r32 near = -1.0f;
-  //   r32 far = -10.0f;
-  //   if (input->up) {
-  //     // y += 0.1f;
-  //   } else if (input->down) {
-  //     // y -= 0.1f;
-  //   } else if (input->left) {
-  //     right -= 0.1f;
-  //   } else if (input->right) {
-  //     right += 0.1f;
-  //   }
-  //   ProjectionMatrix =
-  //       Matrix::persp_projection(-right, right, -top, top, near, far);
-  // }
 
   m4x4 ViewportTransform =
-      Matrix::T(width / 2, height / 2, 0) * Matrix::S(width / 2, height / 2, 1);
-  m4x4 Scale = Matrix::S(width / 2, height / 2, 1);
+      Matrix::viewport(0, 0, buffer->width, buffer->height);
+  // Matrix::T(width / 2, height / 2, 0) * Matrix::S(width / 2, height / 2, 1);
 
   m4x4 WorldTransform =
       ViewportTransform * ProjectionMatrix * CameraSpaceTransform;
 
-  m4x4 ResultTransform =
-      WorldTransform * ModelTransform;  // * ProjectionMatrix *
-                                        // CameraSpaceTransform *
-                                        // ModelTransform;
-
-  // test transforms
-  // for (int i = 0; i < sb_count(model.faces); ++i) {
-  //   Face face = model.faces[i];
-  //   v3 world_verts[3];
-  //   v3 transformed_verts[3];
-  //   v3i screen_verts[3];
-
-  //   for (int j = 0; j < 3; ++j) {
-  //     world_verts[j] = model.vertices[face.v_ids[j]];
-  //     v3 vert = world_verts[j];
-  //     vert = (Scale * CameraSpaceTransform) * vert;
-  //     transformed_verts[j] = vert;
-  //     screen_verts[j] = V3i(ResultTransform * world_verts[j]);
-  //   }
-  //   int a = 2;
-  // }
+  m4x4 ResultTransform = WorldTransform * ModelTransform;
 
   // TODO: move it
   r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));

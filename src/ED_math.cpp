@@ -158,6 +158,7 @@ v3 Hadamard(v3 A, v3 B) {
 }
 
 basis3 basis3::build_from(v3 r) {
+  // Builds a right-handed basis with vector r in the direction of x
   basis3 result;
   assert(r != V3(0, 0, 0));
 
@@ -287,9 +288,9 @@ m4x4 Matrix::T(r32 tx, r32 ty, r32 tz) {
 m4x4 Matrix::frame_to_canonical(basis3 frame, v3 origin) {
   // clang-format off
   m4x4 result = {
-    frame.u.x, frame.u.y, frame.u.z, origin.x,
-    frame.v.x, frame.v.y, frame.v.z, origin.y,
-    frame.w.x, frame.w.y, frame.w.z, origin.z,
+    frame.u.x, frame.v.x, frame.w.x, origin.x,
+    frame.u.y, frame.v.y, frame.w.y, origin.y,
+    frame.u.z, frame.v.z, frame.w.z, origin.z,
             0,         0,         0,        1,
   };
   // clang-format on
@@ -299,10 +300,24 @@ m4x4 Matrix::frame_to_canonical(basis3 frame, v3 origin) {
 m4x4 Matrix::canonical_to_frame(basis3 frame, v3 origin) {
   // clang-format off
   m4x4 result = {
-    frame.u.x, frame.v.x, frame.w.x, -origin.x,
-    frame.u.y, frame.v.y, frame.w.y, -origin.y,
-    frame.u.z, frame.v.z, frame.w.z, -origin.z,
-            0,         0,         0,        1,
+    frame.u.x, frame.u.y, frame.u.z, -origin.x,
+    frame.v.x, frame.v.y, frame.v.z, -origin.y,
+    frame.w.x, frame.w.y, frame.w.z, -origin.z,
+            0,         0,         0,         1,
+  };
+  // clang-format on
+  return result;
+}
+
+m4x4 Matrix::viewport(int x, int y, int width, int height) {
+  r32 w = (r32)width;
+  r32 h = (r32)height;
+  // clang-format off
+  m4x4 result = {
+    w/2, 0,   0,   x + w/2,
+    0,   h/2, 0,   y + h/2,
+    0,   0,   1,   0,
+    0,   0,   0,   1,
   };
   // clang-format on
   return result;

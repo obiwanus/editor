@@ -173,6 +173,7 @@ namespace Matrix {
   m4x4 S(r32, r32, r32);
   // Translation
   m4x4 T(r32, r32, r32);
+  m4x4 viewport(int, int, int, int);
   // Projection
   m4x4 ortho_projection(r32, r32, r32, r32, r32, r32);
   m4x4 persp_projection(r32, r32, r32, r32, r32, r32);
