@@ -19,7 +19,16 @@ struct Image {
   u32 color(int, int, r32);
 };
 
-struct Model {
+struct Entity {
+  v3 position;
+  v3 up;
+  v3 direction;
+
+  basis3 get_basis();
+  m4x4 get_transform();
+};
+
+struct Model : Entity {
   v3 *vertices;
   v3 *vns;
   v2 *vts;
@@ -30,12 +39,7 @@ struct Model {
   void read_texture(char *);
 };
 
-struct Camera {
-  v3 position;
-  v3 up;
-  v3 direction;
-
-  m4x4 get_transform();
+struct Camera : Entity {
 };
 
 #endif  // ED_MODEL_H

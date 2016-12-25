@@ -872,7 +872,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   // ------- Draw area contents -------------------------------------------
 
   // Potentially will be in separate threads
-  ui->draw_areas(NULL, model);
+  ui->draw_areas(NULL, model, input);
 
   // Draw panels
   for (int i = 0; i < ui->num_areas; ++i) {
@@ -1083,7 +1083,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   return result;
 }
 
-void User_Interface::draw_areas(Ray_Tracer *rt, Model model) {
+void User_Interface::draw_areas(Ray_Tracer *rt, Model model,
+                                User_Input *input) {
   // Draw areas
   for (int i = 0; i < this->num_areas; ++i) {
     Area *area = this->areas[i];
@@ -1095,7 +1096,7 @@ void User_Interface::draw_areas(Ray_Tracer *rt, Model model) {
     switch (area->editor_type) {
       case Area_Editor_Type_3DView: {
         if (!area->editor_3dview.is_drawn) {
-          area->editor_3dview.draw(model);
+          area->editor_3dview.draw(model, input);
           // area->editor_3dview.is_drawn = true;
         }
       } break;
@@ -1109,24 +1110,36 @@ void User_Interface::draw_areas(Ray_Tracer *rt, Model model) {
   }
 }
 
-void Editor_3DView::draw(Model model) {
+void Editor_3DView::draw(Model model, User_Input *input) {
   Pixel_Buffer *buffer = this->area->draw_buffer;
   memset(buffer->memory, 0, buffer->width * buffer->height * sizeof(u32));
 
   r32 width = (r32)buffer->width;
   r32 height = (r32)buffer->height;
 
-  m4x4 ModelTransform =
-      Matrix::S(1.3f) *  Matrix::T(0.3f, -0.3f, 0.0f);
+  local_persist r32 x = 0.0f;
+  local_persist r32 y = 0.0f;
+  local_persist r32 angle = 0;
+  if (input->up) {
+    y += 0.1f;
+  } else if (input->down) {
+    y -= 0.1f;
+  } else if (input->left) {
+    x -= 0.1f;
+  } else if (input->right) {
+    x += 0.1f;
+  }
 
   Camera camera;
-  camera.position = V3(0, 1, 3);
-  camera.up = V3(0, 1, 0);
-  camera.direction = V3(0.0f, -1.0f, -1.0f);
+  camera.position = V3(x, y, 3.0f);
+  camera.up = V3(0.0f, 1.0f, 1.0f);
+  camera.direction = V3(0.0f, 0.0f, -1.0f);
   // camera.position = V3(0, 5, 0);
   // camera.up = V3(1, 3, 1);
   // camera.direction = V3(3, -1, 3);
-  m4x4 CameraTransform = camera.get_transform();
+  m4x4 CameraSpaceTransform = camera.get_transform();
+  m4x4 ModelTransform =
+      Matrix::S(1.3f) * Matrix::T(0.0f, 0.3f, 0.0f) * Matrix::Ry(angle);
 
   // Get projection
   // m4x4 ProjectionMatrix;
@@ -1148,9 +1161,9 @@ void Editor_3DView::draw(Model model) {
   // }
   m4x4 ProjectionMatrix;
   {
-    r32 right = 2.0f;
+    r32 right = 1.0f;
     r32 top = (height / width) * right;
-    r32 near = -3.0f;
+    r32 near = -1.0f;
     r32 far = -10.0f;
     ProjectionMatrix =
         Matrix::persp_projection(-right, right, -top, top, near, far);
@@ -1160,15 +1173,13 @@ void Editor_3DView::draw(Model model) {
       Matrix::T(width / 2, height / 2, 0) * Matrix::S(width / 2, height / 2, 1);
   m4x4 Scale = Matrix::S(width / 2, height / 2, 1);
 
-  local_persist r32 angle = 0;
-  angle += 0.02f;
-  m4x4 RotationMatrix = Matrix::Ry(angle);
-  r32 tilt = M_PI / 8;
-  m4x4 TiltMatrix = Matrix::Rx(angle);
+  m4x4 WorldTransform =
+      ViewportTransform * ProjectionMatrix * CameraSpaceTransform;
 
-  m4x4 WorldTransform = ViewportTransform * ProjectionMatrix * CameraTransform;
-
-  m4x4 ResultTransform = WorldTransform * ModelTransform;// * ProjectionMatrix * CameraTransform * ModelTransform;
+  m4x4 ResultTransform =
+      WorldTransform * ModelTransform;  // * ProjectionMatrix *
+                                        // CameraSpaceTransform *
+                                        // ModelTransform;
 
   // test transforms
   // for (int i = 0; i < sb_count(model.faces); ++i) {
@@ -1180,7 +1191,7 @@ void Editor_3DView::draw(Model model) {
   //   for (int j = 0; j < 3; ++j) {
   //     world_verts[j] = model.vertices[face.v_ids[j]];
   //     v3 vert = world_verts[j];
-  //     vert = (Scale * CameraTransform) * vert;
+  //     vert = (Scale * CameraSpaceTransform) * vert;
   //     transformed_verts[j] = vert;
   //     screen_verts[j] = V3i(ResultTransform * world_verts[j]);
   //   }
@@ -1204,26 +1215,26 @@ void Editor_3DView::draw(Model model) {
       world_verts[j] = model.vertices[face.v_ids[j]];
       texture_verts[j] = model.vts[face.vt_ids[j]];
       screen_verts[j] = V3i(ResultTransform * world_verts[j]);
-      vns[j] = Rotate(RotationMatrix * TiltMatrix, model.vns[face.vn_ids[j]],
-                      V3(0, 0, 0));
-      // vns[j] = CameraTransform * model.vns[face.vn_ids[j]];
+      // vns[j] = Rotate(RotationMatrix * TiltMatrix, model.vns[face.vn_ids[j]],
+      //                 V3(0, 0, 0));
+      vns[j] = WorldTransform * model.vns[face.vn_ids[j]];
     }
 
     // TODO: fix the textures
     // draw_triangle(buffer, screen_verts, texture_verts, vns, model.texture,
     //               z_buffer);
-    debug_triangle(buffer, screen_verts, 0x00777777);
+    debug_triangle(buffer, screen_verts, 0x00999999);
   }
 
   // Draw grid
   const int kLineCount = 16;
-  v3 grid_frame[] = {V3(-1, 0, -1), V3(-1, 0, 1), V3(1, 0, 1), V3(1, 0 , -1)};
+  v3 grid_frame[] = {V3(-1, 0, -1), V3(-1, 0, 1), V3(1, 0, 1), V3(1, 0, -1)};
   for (size_t i = 0; i < COUNT_OF(grid_frame); i++) {
     v3 vert1 = grid_frame[i];
     v3 vert2 = grid_frame[(i + 1) % COUNT_OF(grid_frame)];
     vert1 = WorldTransform * vert1;
     vert2 = WorldTransform * vert2;
-    draw_line(buffer, V2i(vert1), V2i(vert2), 0x00FFFFFF);
+    draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
   }
   for (int i = 0; i < kLineCount; ++i) {
     // Along the z axis
@@ -1233,7 +1244,7 @@ void Editor_3DView::draw(Model model) {
       v3 vert2 = V3(1.0f, 0.0f, z);
       vert1 = WorldTransform * vert1;
       vert2 = WorldTransform * vert2;
-      draw_line(buffer, V2i(vert1), V2i(vert2), 0x00FFFFFF);
+      draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
     }
     // Along the x axis
     {
@@ -1242,7 +1253,7 @@ void Editor_3DView::draw(Model model) {
       v3 vert2 = V3(x, 0.0f, 1.0);
       vert1 = WorldTransform * vert1;
       vert2 = WorldTransform * vert2;
-      draw_line(buffer, V2i(vert1), V2i(vert2), 0x00FFFFFF);
+      draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
     }
   }
 

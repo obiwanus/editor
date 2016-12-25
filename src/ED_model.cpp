@@ -98,16 +98,17 @@ u32 Image::color(int x, int y, r32 intensity = 1.0f) {
   return result;
 }
 
-m4x4 Camera::get_transform() {
+m4x4 Entity::get_transform() {
   m4x4 result;
-
-  // Get camera frame
-  basis3 basis;
-  basis.w = -this->direction.normalized();
-  basis.u = this->up.cross(basis.w).normalized();
-  basis.v = basis.w.cross(basis.u);
-
+  basis3 basis = this->get_basis();
   result = Matrix::canonical_to_frame(basis, this->position);
+  return result;
+}
 
+basis3 Entity::get_basis() {
+  basis3 result;
+  result.w = -this->direction.normalized();
+  result.u = this->up.cross(result.w).normalized();
+  result.v = result.w.cross(result.u);
   return result;
 }

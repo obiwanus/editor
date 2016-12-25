@@ -118,7 +118,7 @@ struct Area_Editor {
 };
 
 struct Editor_3DView : Area_Editor {
-  void draw(Model);
+  void draw(Model, User_Input *);
 };
 
 struct Editor_Raytrace : Area_Editor {
@@ -228,7 +228,7 @@ struct User_Interface {
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
   Update_Result update_and_draw(Pixel_Buffer *, User_Input *, Model);
-  void draw_areas(Ray_Tracer *, Model);
+  void draw_areas(Ray_Tracer *, Model, User_Input *);
 };
 
 
