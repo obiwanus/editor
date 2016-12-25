@@ -25,7 +25,7 @@ struct Entity {
   v3 direction;
 
   basis3 get_basis();
-  m4x4 get_transform();
+  m4x4 transform_to_entity_space();
 };
 
 struct Model : Entity {
@@ -40,6 +40,16 @@ struct Model : Entity {
 };
 
 struct Camera : Entity {
+  static constexpr r32 vertical_FOV = M_PI / 3;
+
+  // View frustum
+  r32 near = -1.0f;
+  r32 far = -20.0f;
+  r32 top;
+  r32 right;
+
+  void adjust_frustum(int, int);
+  m4x4 persp_projection();
 };
 
 #endif  // ED_MODEL_H

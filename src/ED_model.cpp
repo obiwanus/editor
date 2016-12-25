@@ -98,7 +98,7 @@ u32 Image::color(int x, int y, r32 intensity = 1.0f) {
   return result;
 }
 
-m4x4 Entity::get_transform() {
+m4x4 Entity::transform_to_entity_space() {
   m4x4 result;
   basis3 basis = this->get_basis();
   result = Matrix::canonical_to_frame(basis, this->position);
@@ -110,5 +110,18 @@ basis3 Entity::get_basis() {
   result.w = -this->direction.normalized();
   result.u = this->up.cross(result.w).normalized();
   result.v = result.w.cross(result.u);
+  return result;
+}
+
+void Camera::adjust_frustum(int width, int height) {
+  assert (width > 0 && height > 0);
+  r32 aspect_ratio = (r32)width / (r32)height;
+  // Vertical field of view is fixed at 60 degrees
+  this->top = abs(this->near) * tan(this->vertical_FOV / 2);
+  this->right = this->top * aspect_ratio;
+}
+
+m4x4 Camera::persp_projection() {
+  m4x4 result = Matrix::persp_projection(-right, right, -top, top, near, far);
   return result;
 }

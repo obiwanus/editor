@@ -1120,27 +1120,21 @@ void Editor_3DView::draw(Model model, User_Input *input) {
   local_persist r32 x = 0.0f;
   local_persist r32 y = 0.0f;
   local_persist r32 angle = 0;
-  if (input->up) {
-    y += 0.1f;
-  } else if (input->down) {
-    y -= 0.1f;
-  } else if (input->left) {
-    x -= 0.1f;
-  } else if (input->right) {
-    x += 0.1f;
-  }
+
 
   Camera camera;
-  camera.position = V3(x, y, 3.0f);
+  camera.position = V3(1.5f, y, 3.0f);
   camera.up = V3(0.0f, 1.0f, 1.0f);
   camera.direction = V3(0.0f, 0.0f, -1.0f);
+  camera.adjust_frustum(buffer->width, buffer->height);
   // camera.position = V3(0, 5, 0);
   // camera.up = V3(1, 3, 1);
   // camera.direction = V3(3, -1, 3);
-  m4x4 CameraSpaceTransform = camera.get_transform();
+  m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
   m4x4 ModelTransform =
       Matrix::S(1.3f) * Matrix::T(0.0f, 0.3f, 0.0f) * Matrix::Ry(angle);
 
+  m4x4 ProjectionMatrix = camera.persp_projection();
   // Get projection
   // m4x4 ProjectionMatrix;
   // {
@@ -1159,15 +1153,24 @@ void Editor_3DView::draw(Model model, User_Input *input) {
   //   ProjectionMatrix =
   //       Matrix::persp_projection(-right, right, -top, top, near, -near);
   // }
-  m4x4 ProjectionMatrix;
-  {
-    r32 right = 1.0f;
-    r32 top = (height / width) * right;
-    r32 near = -1.0f;
-    r32 far = -10.0f;
-    ProjectionMatrix =
-        Matrix::persp_projection(-right, right, -top, top, near, far);
-  }
+  // m4x4 ProjectionMatrix;
+  // {
+  //   local_persist r32 right = 1.0f;
+  //   r32 top = (height / width) * right;
+  //   r32 near = -1.0f;
+  //   r32 far = -10.0f;
+  //   if (input->up) {
+  //     // y += 0.1f;
+  //   } else if (input->down) {
+  //     // y -= 0.1f;
+  //   } else if (input->left) {
+  //     right -= 0.1f;
+  //   } else if (input->right) {
+  //     right += 0.1f;
+  //   }
+  //   ProjectionMatrix =
+  //       Matrix::persp_projection(-right, right, -top, top, near, far);
+  // }
 
   m4x4 ViewportTransform =
       Matrix::T(width / 2, height / 2, 0) * Matrix::S(width / 2, height / 2, 1);
