@@ -240,10 +240,12 @@ bool User_Input::mb_is_down(Mouse_Button mb) {
 }
 
 bool User_Input::mb_went_down(Mouse_Button mb) {
+  if (this->old == NULL) return false;
   return this->mb_is_down(mb) && !this->old->mb_is_down(mb);
 }
 
 bool User_Input::mb_went_up(Mouse_Button mb) {
+  if (this->old == NULL) return false;
   return !this->mb_is_down(mb) && this->old->mb_is_down(mb);
 }
 
@@ -721,32 +723,41 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     buffer->was_resized = false;
   }
 
-  // ----- Update ----------------------------------------------------
+  // ----- UI actions (i.e. splitting, moving areas, deleting) ---------------
 
-  if (input->mouse_left) {
-    if (ui->area_being_split == NULL && ui->can_split_area &&
-        ui->splitter_being_moved == NULL) {
-      // See if we're splitting any area
-      for (int i = 0; i < ui->num_areas; ++i) {
-        Area *area = ui->areas[i];
-        if (area->is_visible() && area->mouse_over_split_handle(input->mouse)) {
-          ui->area_being_split = area;
-          ui->pointer_start = input->mouse;
-          break;
-        }
+  for (int i = 0; i < this->num_areas; ++i) {
+    Area *area = this->areas[i];
+    if (!area->is_visible()) continue;  // ignore wrapper areas
+
+    // Mousedown
+    if (input->mb_went_down(MB_Left)) {
+      if (area->mouse_over_split_handle(input->mouse)) {
+        ui->area_being_split = area;
+      } else if (area->get_delete_button().contains(input->mouse)) {
+        ui->area_being_deleted = area;
       }
-      // Prevent splitting areas by swipe
-      ui->can_split_area = false;
     }
 
+    // Deleting?
+    if (input->mb_went_up(MB_Left)) {
+      if (ui->area_being_deleted == area &&
+          area->get_delete_button().contains(input->mouse) && i > 0) {
+        // Note we're not deleting area 0
+        ui->remove_area(area);
+      }
+    }
+  }
+
+  // Split areas or move splitters
+  if (input->mouse_left) {
     if (ui->area_being_split != NULL) {
       // See if mouse has moved enough to finish the split
       if (ui->area_being_split->get_rect().contains(input->mouse)) {
-        const int kMargin = 25;
-        v2i distance = ui->pointer_start - input->mouse;
+        const int kDistance = 25;
+        v2i distance = input->mouse_positions[MB_Left] - input->mouse;
         distance.x = abs(distance.x);
         distance.y = abs(distance.y);
-        if (distance.x > kMargin || distance.y > kMargin) {
+        if (distance.x > kDistance || distance.y > kDistance) {
           Area_Splitter *splitter;
           if (distance.x > distance.y) {
             splitter = ui->vertical_split(ui->area_being_split, input->mouse.x);
@@ -757,78 +768,40 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
           ui->splitter_being_moved = splitter;
           ui->set_movement_boundaries(splitter);
           ui->area_being_split = NULL;
-          ui->can_pick_splitter = false;
-          ui->can_split_area = false;
         }
       } else {
         // Stop splitting if mouse cursor is outside of the area
         ui->area_being_split = NULL;
-        ui->can_pick_splitter = false;
       }
     } else {
       // Only look at splitters if areas are not being split
-      if (ui->can_pick_splitter && ui->splitter_being_moved == NULL) {
+      if (ui->splitter_being_moved != NULL) {
+        // Move splitter if we can
+        ui->splitter_being_moved->move(input->mouse);
+      } else {
+        // See if we're about to move a splitter
         for (int i = 0; i < ui->num_splitters; ++i) {
           Area_Splitter *splitter = ui->splitters[i];
-          if (input->mouse_left && ui->can_pick_splitter &&
-              splitter->is_mouse_over(input->mouse)) {
+          if (splitter->is_mouse_over(input->mouse) &&
+              input->mb_went_down(MB_Left)) {
             ui->splitter_being_moved = splitter;
             ui->set_movement_boundaries(splitter);
-            ui->can_pick_splitter = false;
           }
-        }
-        // Prevent dragging splitters by swipe
-        ui->can_pick_splitter = false;
-      }
-      // Move splitter if we can
-      if (ui->splitter_being_moved != NULL) {
-        ui->splitter_being_moved->move(input->mouse);
-      }
-    }
-
-    // Maybe we're deleting an area?
-    if (ui->can_delete_area == 0) {
-      for (int i = 1; i < ui->num_areas; ++i) {
-        // Note we're not considering area 0
-        Area *area = ui->areas[i];
-        if (!area->is_visible()) continue;
-        if (area->get_delete_button().contains(input->mouse)) {
-          ui->can_delete_area = i;
-          break;
         }
       }
     }
   } else {
     // Mouse button released or not pressed
-    // TODO: be able to tell which is which maybe?
     ui->area_being_split = NULL;
+    ui->area_being_deleted = NULL;
     ui->splitter_being_moved = NULL;
-    ui->can_pick_splitter = true;
-    ui->can_split_area = true;
-
-    // NOTE: if we need to check something for all areas
-    // every frame, consider putting it here
-
-    // If we've released LMB we may be deleting an area
-    for (int i = 1; i < ui->num_areas; ++i) {
-      // Note we're not considering area 0
-      Area *area = ui->areas[i];
-      if (!area->is_visible()) continue;
-      if (area->get_delete_button().contains(input->mouse)) {
-        if (ui->can_delete_area == i) {
-          ui->remove_area(area);
-        }
-        break;
-      }
-    }
-    ui->can_delete_area = 0;
   }
 
   // ------- Draw area contents -------------------------------------------
 
   // Potentially will be in separate threads
 
-  // Draw areas
+  // Update and draw areas
   for (int i = 0; i < this->num_areas; ++i) {
     Area *area = this->areas[i];
     if (!area->is_visible()) continue;  // ignore wrapper areas
@@ -860,69 +833,73 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     UI_Select *select = &area->type_select;
     draw_rect(area->buffer, select->get_rect(),
               colors[select->option_selected]);
+
+    // Any actions within area
     Rect area_rect = area->get_rect();
     if (area_rect.contains(input->mouse)) {
       // Check if we are interacting with select
-      Rect select_rect = select->get_rect();
-      Rect all_options_rect;
-      int kMargin = 1;
-      all_options_rect.left = select_rect.left - kMargin;
-      all_options_rect.right = select_rect.right + 30 + kMargin;
-      all_options_rect.bottom = select_rect.bottom + kMargin;
-      all_options_rect.top =
-          select_rect.top - select->option_count * (select->option_height + 1) -
-          kMargin + 1;
+      {
+        Rect select_rect = select->get_rect();
+        Rect all_options_rect;
+        int kMargin = 1;
+        all_options_rect.left = select_rect.left - kMargin;
+        all_options_rect.right = select_rect.right + 30 + kMargin;
+        all_options_rect.bottom = select_rect.bottom + kMargin;
+        all_options_rect.top =
+            select_rect.top -
+            select->option_count * (select->option_height + 1) - kMargin + 1;
 
-      // Update
-      bool mouse_over_select =
-          select_rect.contains(area_rect.projected(input->mouse));
-      bool mouse_over_options =
-          all_options_rect.contains(area_rect.projected(input->mouse));
+        // Update
+        bool mouse_over_select =
+            select_rect.contains(area_rect.projected(input->mouse));
+        bool mouse_over_options =
+            all_options_rect.contains(area_rect.projected(input->mouse));
 
-      if (mouse_over_select && input->mb_went_down(MB_Left)) {
-        select->open = true;
-      }
+        if (mouse_over_select && input->mb_went_down(MB_Left)) {
+          select->open = true;
+        }
 
-      if (select->open && !mouse_over_options) {
-        select->open = false;
-      }
+        if (select->open && !mouse_over_options) {
+          select->open = false;
+        }
 
-      if (mouse_over_select || select->open) {
-        // Draw highlighted
-        draw_rect(select->parent_area->buffer, select_rect, 0x00222222);
-      }
+        if (mouse_over_select || select->open) {
+          // Draw highlighted
+          draw_rect(select->parent_area->buffer, select_rect, 0x00222222);
+        }
 
-      if (select->open) {
-        Rect options_border = all_options_rect;
-        options_border.bottom = select_rect.top + kMargin;
+        if (select->open) {
+          Rect options_border = all_options_rect;
+          options_border.bottom = select_rect.top + kMargin;
 
-        // Draw all options rect first
-        draw_rect(select->parent_area->buffer, options_border, 0x00686868);
+          // Draw all options rect first
+          draw_rect(select->parent_area->buffer, options_border, 0x00686868);
 
-        int bottom = select_rect.top;
-        for (int opt = 0; opt < select->option_count; opt++) {
-          Rect option;
-          option.bottom = bottom;
-          option.left = select_rect.left;
-          option.right = select_rect.right + 30;
-          option.top = option.bottom - select->option_height;
-          bool mouse_over_option =
-              mouse_over_options &&
-              option.contains(area_rect.projected(input->mouse));
-          u32 color = colors[opt];
-          if (mouse_over_option) {
-            color += 0x00121212;  // highlight
-          }
-          draw_rect(select->parent_area->buffer, option, color);
-          bottom -= select->option_height + 1;
+          int bottom = select_rect.top;
+          for (int opt = 0; opt < select->option_count; opt++) {
+            Rect option;
+            option.bottom = bottom;
+            option.left = select_rect.left;
+            option.right = select_rect.right + 30;
+            option.top = option.bottom - select->option_height;
+            bool mouse_over_option =
+                mouse_over_options &&
+                option.contains(area_rect.projected(input->mouse));
+            u32 color = colors[opt];
+            if (mouse_over_option) {
+              color += 0x00121212;  // highlight
+            }
+            draw_rect(select->parent_area->buffer, option, color);
+            bottom -= select->option_height + 1;
 
-          // Select the option on click
-          if (mouse_over_option && input->mb_went_down(MB_Left)) {
-            select->option_selected = opt;
-            select->open = false;
+            // Select the option on click
+            if (mouse_over_option && input->mb_went_down(MB_Left)) {
+              select->option_selected = opt;
+              select->open = false;
 
-            // TODO: if we ever generalize this, this bit will have to change
-            select->parent_area->editor_type = (Area_Editor_Type)opt;
+              // TODO: if we ever generalize this, this bit will have to change
+              select->parent_area->editor_type = (Area_Editor_Type)opt;
+            }
           }
         }
       }

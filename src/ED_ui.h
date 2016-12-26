@@ -218,8 +218,6 @@ struct Update_Result {
 struct User_Interface {
   Program_Memory *memory;
 
-  v2i pointer_start;
-
   // Areas and splitters
   int num_splitters;
   int num_areas;
@@ -227,12 +225,9 @@ struct User_Interface {
   Area **areas;
   Area_Splitter **splitters;
 
-  bool can_pick_splitter;
-  bool can_split_area;
   Area *area_being_split;
+  Area *area_being_deleted;
   Area_Splitter *splitter_being_moved;
-
-  int can_delete_area;
 
   Area *create_area(Area *, Rect);
   void remove_area(Area *);
