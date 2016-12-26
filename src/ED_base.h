@@ -45,4 +45,11 @@ struct Program_Memory {
   void *allocate(size_t);
 };
 
+template <typename T>
+void swap(T &p1, T &p2) {
+  T buf = p1;
+  p1 = p2;
+  p2 = buf;
+}
+
 #endif  // ED_BASE_H

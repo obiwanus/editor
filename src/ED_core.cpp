@@ -30,7 +30,6 @@ void Program_State::init(Program_Memory *memory) {
   state->UI.memory = memory;
   Area *area = state->UI.create_area(
       NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});
-  state->UI.new_type_selector(area);
 
   // Load test model
   state->model.read_from_obj_file("../models/african_head/african_head.wobj");

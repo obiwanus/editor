@@ -78,13 +78,6 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color,
   }
 }
 
-template <typename T>
-void swap(T &p1, T &p2) {
-  T buf = p1;
-  p1 = p2;
-  p2 = buf;
-}
-
 void debug_triangle(Pixel_Buffer *buffer, v3i verts[], u32 color) {
   v2i vert0 = V2i(verts[0]);
   v2i vert1 = V2i(verts[1]);
@@ -270,7 +263,7 @@ inline Rect Area::get_client_rect() {
   Rect result;
 
   result = this->get_rect();
-  result.bottom = result.bottom - AREA_PANEL_HEIGHT;
+  result.bottom = result.bottom - Area::kPanelHeight;
 
   return result;
 }
@@ -337,9 +330,9 @@ bool Area::mouse_over_split_handle(v2i mouse) {
 bool Area::is_visible() { return this->splitter == NULL; }
 
 void Area::deallocate() {
-  if (this->draw_buffer != NULL) {
-    free(this->draw_buffer->memory);
-    free(this->draw_buffer);
+  if (this->buffer != NULL) {
+    free(this->buffer->memory);
+    free(this->buffer);
   }
   free(this);
 }
@@ -410,6 +403,8 @@ Rect Pixel_Buffer::get_rect() {
 }
 
 Rect UI_Select::get_rect() {
+  // Strange that I was aiming at generalisation but made
+  // this function extremely specific to type selects
   assert(this->parent_area != NULL);
   Rect rect;
   Rect bounds = {0, 0, this->parent_area->get_width(),
@@ -457,11 +452,22 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
     area->editor_type = parent_area->editor_type;
   }
 
+  // Init type selector
+  UI_Select *select = &area->type_select;
+  *select = {};
+  select->align_bottom = true;
+  select->x = 20;
+  select->y = 3;
+  select->option_count = Area_Editor_Type__COUNT;
+  select->option_height = 20;
+  select->parent_area = area;
+  select->option_selected = area->editor_type;
+
   // Create draw buffer
-  area->draw_buffer = (Pixel_Buffer *)malloc(sizeof(Pixel_Buffer));
-  area->draw_buffer->allocate();
-  area->draw_buffer->width = area->get_width();
-  area->draw_buffer->height = area->get_height();
+  area->buffer = (Pixel_Buffer *)malloc(sizeof(Pixel_Buffer));
+  area->buffer->allocate();
+  area->buffer->width = area->get_width();
+  area->buffer->height = area->get_height();
 
   return area;
 }
@@ -494,46 +500,13 @@ void User_Interface::remove_area(Area *area) {
     parent_area->splitter = NULL;
   }
 
-  // Find type selects
-  UI_Select *area_select = NULL;
-  UI_Select *sister_select = NULL;
-  for (int i = 0; i < this->num_selects; ++i) {
-    UI_Select *select = this->selects[i];
-    if (select->parent_area == area) {
-      area_select = select;
-    } else if (select->parent_area == sister_area) {
-      sister_select = select;
-    }
-  }
-  assert(area_select != NULL);
-
   parent_area->editor_type = sister_area->editor_type;
-  if (sister_select != NULL) {
-    sister_select->parent_area = parent_area;
-  }
   if (sister_area->splitter != NULL) {
     parent_area->splitter = sister_area->splitter;
     parent_area->splitter->parent_area = parent_area;
     for (int j = 0; j < 2; j++) {
       parent_area->splitter->areas[j]->parent_area = parent_area;
     }
-  }
-
-  // Delete area select
-  {
-    int select_id = -1;
-    for (int i = 0; i < this->num_selects; ++i) {
-      UI_Select *select = this->selects[i];
-      if (area_select == select) {
-        select_id = i;
-        break;
-      }
-    }
-    assert(0 <= select_id && select_id < this->num_selects);
-    this->num_selects--;
-    free(this->selects[select_id]);
-    this->selects[select_id] = this->selects[this->num_selects];
-    this->selects[this->num_selects] = {};
   }
 
   // Remove areas
@@ -594,54 +567,21 @@ Area_Splitter *User_Interface::_new_splitter(Area *area) {
   return splitter;
 }
 
-UI_Select *User_Interface::new_type_selector(Area *area) {
-  UI_Select *select = (UI_Select *)malloc(sizeof(*select));
-  if (sb_count(this->selects) > this->num_selects) {
-    this->selects[this->num_selects] = select;
-  } else {
-    sb_push(UI_Select **, this->selects, select);
-  }
-  this->num_selects++;
-  *select = {};
-  select->align_bottom = true;
-  select->x = 20;
-  select->y = 3;
-  select->option_count = Area_Editor_Type__COUNT;
-  select->option_height = 20;
-  select->parent_area = area;
-  select->option_selected = area->editor_type;
-
-  return select;
-}
-
 void User_Interface::_split_type_selectors(Area *area, Area_Splitter *splitter,
                                            bool is_vertical) {
-  // Find old select for this area
-  UI_Select *old_select = NULL;
-  for (int i = 0; i < this->num_selects; ++i) {
-    UI_Select *select = this->selects[i];
-    if (select->parent_area == area) {
-      old_select = select;
-      break;
-    }
-  }
-  assert(old_select != NULL);
+  // Ensures the area that is supposed to stay preserves its type selector
 
   int position = splitter->position;
   Rect rect = area->get_rect();
-  int bigger_area = 0;
-  int smaller_area = 1;
+  Area *bigger_area = splitter->areas[0];
+  Area *smaller_area = splitter->areas[1];
   if ((is_vertical && (position - rect.left < rect.right - position)) ||
       (!is_vertical && (position - rect.top < rect.bottom - position))) {
-    bigger_area = 1;
-    smaller_area = 0;
+    swap(bigger_area, smaller_area);
   }
-
   // Old select goes to the bigger area
-  old_select->parent_area = splitter->areas[bigger_area];
-
-  // The other gets a new select
-  this->new_type_selector(splitter->areas[smaller_area]);
+  bigger_area->type_select = area->type_select;
+  bigger_area->type_select.parent_area = bigger_area;
 }
 
 Area_Splitter *User_Interface::vertical_split(Area *area, int position) {
@@ -711,7 +651,7 @@ void User_Interface::set_movement_boundaries(Area_Splitter *splitter) {
 
   int kMargin = 15;
   if (!splitter->is_vertical) {
-    kMargin = AREA_PANEL_HEIGHT;
+    kMargin = Area::kPanelHeight;
   }
   splitter->position_max = position_max - kMargin;
   splitter->position_min = position_min + kMargin;
@@ -872,132 +812,155 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   // ------- Draw area contents -------------------------------------------
 
   // Potentially will be in separate threads
-  ui->draw_areas(NULL, model, input);
 
-  // Draw panels
-  for (int i = 0; i < ui->num_areas; ++i) {
-    Area *area = ui->areas[i];
-    if (!area->is_visible()) continue;
+  // Draw areas
+  for (int i = 0; i < this->num_areas; ++i) {
+    Area *area = this->areas[i];
+    if (!area->is_visible()) continue;  // ignore wrapper areas
+    area->buffer->width = area->get_width();
+    area->buffer->height = area->get_height();
+
+    // Draw editor contents
+    switch (area->editor_type) {
+      case Area_Editor_Type_3DView: {
+        if (!area->editor_3dview.is_drawn) {
+          area->editor_3dview.draw(model, input);
+        }
+      } break;
+
+      case Area_Editor_Type_Raytrace: {
+        area->editor_raytrace.draw(NULL, model);
+      } break;
+
+      default: { assert(!"Unknown editor type"); } break;
+    }
 
     // Draw panels
-    Rect panel_rect = area->draw_buffer->get_rect();
-    panel_rect.top = panel_rect.bottom - AREA_PANEL_HEIGHT;
-    draw_rect(area->draw_buffer, panel_rect, 0x00686868);
-  }
+    Rect panel_rect = area->buffer->get_rect();
+    panel_rect.top = panel_rect.bottom - Area::kPanelHeight;
+    draw_rect(area->buffer, panel_rect, 0x00686868);
 
-  bool mouse_over_any_select = false;
-
-  // Draw ui selects
-  for (int i = 0; i < ui->num_selects; ++i) {
-    UI_Select *select = ui->selects[i];
-    if (select->parent_area && !select->parent_area->is_visible()) continue;
-
-    Rect select_rect = select->get_rect();
-    Rect parent_area_rect = select->parent_area->get_rect();
-    Rect all_options_rect;
-    int kMargin = 1;
-    all_options_rect.left = select_rect.left - kMargin;
-    all_options_rect.right = select_rect.right + 30 + kMargin;
-    all_options_rect.bottom = select_rect.bottom + kMargin;
-    all_options_rect.top = select_rect.top -
-                           select->option_count * (select->option_height + 1) -
-                           kMargin + 1;
-
-    // Update
-    bool mouse_in_area = parent_area_rect.contains(input->mouse);
-    bool mouse_over_select =
-        mouse_in_area &&
-        select_rect.contains(parent_area_rect.projected(input->mouse));
-    bool mouse_over_options =
-        mouse_in_area &&
-        all_options_rect.contains(parent_area_rect.projected(input->mouse));
-
-    if (mouse_over_select) {
-      mouse_over_any_select = true;
-    }
-
-    if (mouse_over_select && input->mouse_left && ui->can_pick_select) {
-      select->open = true;
-      ui->can_pick_select = false;
-    }
-
-    if (select->open && (!mouse_in_area || !mouse_over_options)) {
-      select->open = false;
-      ui->can_pick_select = false;
-    }
-
-    if (mouse_over_select && !input->mouse_left) {
-      ui->can_pick_select = true;
-    }
-
-    if (mouse_over_select) {
-      select->highlighted = true;
-    } else if (!select->open) {
-      select->highlighted = false;
-    }
-
+    // Draw type select
     const u32 colors[10] = {0x00000000, 0x00123123};
-
-    // Draw
-    if (select->highlighted) {
-      draw_rect(select->parent_area->draw_buffer, select_rect, 0x00222222);
-    } else {
-      draw_rect(select->parent_area->draw_buffer, select_rect,
-                colors[select->option_selected]);
-    }
-
-    if (select->open) {
-      Rect options_border = all_options_rect;
-      options_border.bottom = select_rect.top + kMargin;
-
-      // Draw all options rect first
-      draw_rect(select->parent_area->draw_buffer, options_border, 0x00686868);
-
-      int bottom = select_rect.top;
-      for (int opt = 0; opt < select->option_count; opt++) {
-        Rect option;
-        option.bottom = bottom;
-        option.left = select_rect.left;
-        option.right = select_rect.right + 30;
-        option.top = option.bottom - select->option_height;
-        bool mouse_over_option =
-            mouse_over_options &&
-            option.contains(parent_area_rect.projected(input->mouse));
-        u32 color = colors[opt];
-        if (mouse_over_option) {
-          color += 0x00121212;  // highlight
-        }
-        draw_rect(select->parent_area->draw_buffer, option, color);
-        bottom -= select->option_height + 1;
-
-        // Select the option on click
-        if (mouse_over_option && input->mouse_left && ui->can_pick_select) {
-          select->option_selected = opt;
-          select->open = false;
-
-          // TODO: if we ever generalize this, this bit will have to change
-          select->parent_area->editor_type = (Area_Editor_Type)opt;
-        }
-
-        if (mouse_over_option && !input->mouse_left) {
-          ui->can_pick_select = true;
-          mouse_over_any_select = true;
-        }
-      }
-    }
+    UI_Select *select = &area->type_select;
+    draw_rect(area->buffer, select->get_rect(),
+              colors[select->option_selected]);
   }
 
-  // If mouse has left a select, we can't pick them anymore
-  if (!mouse_over_any_select) {
-    ui->can_pick_select = false;
-  }
+  // bool mouse_over_any_select = false;
+
+  // // Draw ui selects
+  // for (int i = 0; i < ui->num_selects; ++i) {
+  //   UI_Select *select = ui->selects[i];
+  //   if (select->parent_area && !select->parent_area->is_visible()) continue;
+
+  //   Rect select_rect = select->get_rect();
+  //   Rect parent_area_rect = select->parent_area->get_rect();
+  //   Rect all_options_rect;
+  //   int kMargin = 1;
+  //   all_options_rect.left = select_rect.left - kMargin;
+  //   all_options_rect.right = select_rect.right + 30 + kMargin;
+  //   all_options_rect.bottom = select_rect.bottom + kMargin;
+  //   all_options_rect.top = select_rect.top -
+  //                          select->option_count * (select->option_height + 1)
+  //                          -
+  //                          kMargin + 1;
+
+  //   // Update
+  //   bool mouse_in_area = parent_area_rect.contains(input->mouse);
+  //   bool mouse_over_select =
+  //       mouse_in_area &&
+  //       select_rect.contains(parent_area_rect.projected(input->mouse));
+  //   bool mouse_over_options =
+  //       mouse_in_area &&
+  //       all_options_rect.contains(parent_area_rect.projected(input->mouse));
+
+  //   if (mouse_over_select) {
+  //     mouse_over_any_select = true;
+  //   }
+
+  //   if (mouse_over_select && input->mouse_left && ui->can_pick_select) {
+  //     select->open = true;
+  //     ui->can_pick_select = false;
+  //   }
+
+  //   if (select->open && (!mouse_in_area || !mouse_over_options)) {
+  //     select->open = false;
+  //     ui->can_pick_select = false;
+  //   }
+
+  //   if (mouse_over_select && !input->mouse_left) {
+  //     ui->can_pick_select = true;
+  //   }
+
+  //   if (mouse_over_select) {
+  //     select->highlighted = true;
+  //   } else if (!select->open) {
+  //     select->highlighted = false;
+  //   }
+
+  //   const u32 colors[10] = {0x00000000, 0x00123123};
+
+  //   // Draw
+  //   if (select->highlighted) {
+  //     draw_rect(select->parent_area->buffer, select_rect, 0x00222222);
+  //   } else {
+  //     draw_rect(select->parent_area->buffer, select_rect,
+  //               colors[select->option_selected]);
+  //   }
+
+  //   if (select->open) {
+  //     Rect options_border = all_options_rect;
+  //     options_border.bottom = select_rect.top + kMargin;
+
+  //     // Draw all options rect first
+  //     draw_rect(select->parent_area->buffer, options_border, 0x00686868);
+
+  //     int bottom = select_rect.top;
+  //     for (int opt = 0; opt < select->option_count; opt++) {
+  //       Rect option;
+  //       option.bottom = bottom;
+  //       option.left = select_rect.left;
+  //       option.right = select_rect.right + 30;
+  //       option.top = option.bottom - select->option_height;
+  //       bool mouse_over_option =
+  //           mouse_over_options &&
+  //           option.contains(parent_area_rect.projected(input->mouse));
+  //       u32 color = colors[opt];
+  //       if (mouse_over_option) {
+  //         color += 0x00121212;  // highlight
+  //       }
+  //       draw_rect(select->parent_area->buffer, option, color);
+  //       bottom -= select->option_height + 1;
+
+  //       // Select the option on click
+  //       if (mouse_over_option && input->mouse_left && ui->can_pick_select) {
+  //         select->option_selected = opt;
+  //         select->open = false;
+
+  //         // TODO: if we ever generalize this, this bit will have to change
+  //         select->parent_area->editor_type = (Area_Editor_Type)opt;
+  //       }
+
+  //       if (mouse_over_option && !input->mouse_left) {
+  //         ui->can_pick_select = true;
+  //         mouse_over_any_select = true;
+  //       }
+  //     }
+  //   }
+  // }
+
+  // // If mouse has left a select, we can't pick them anymore
+  // if (!mouse_over_any_select) {
+  //   ui->can_pick_select = false;
+  // }
 
   // Copy area buffers into the main buffer
   for (int i = 0; i < ui->num_areas; ++i) {
     Area *area = ui->areas[i];
     if (!area->is_visible()) continue;
     Rect client_rect = area->get_client_rect();
-    Pixel_Buffer *src_buffer = area->draw_buffer;
+    Pixel_Buffer *src_buffer = area->buffer;
     for (int y = 0; y < src_buffer->height; y++) {
       for (int x = 0; x < src_buffer->width; x++) {
         u32 *pixel_src = (u32 *)src_buffer->memory + x + y * src_buffer->width;
@@ -1083,35 +1046,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   return result;
 }
 
-void User_Interface::draw_areas(Ray_Tracer *rt, Model model,
-                                User_Input *input) {
-  // Draw areas
-  for (int i = 0; i < this->num_areas; ++i) {
-    Area *area = this->areas[i];
-    if (!area->is_visible()) continue;  // ignore wrapper areas
-    area->draw_buffer->width = area->get_width();
-    area->draw_buffer->height = area->get_height();
-
-    // Draw editor contents
-    switch (area->editor_type) {
-      case Area_Editor_Type_3DView: {
-        if (!area->editor_3dview.is_drawn) {
-          area->editor_3dview.draw(model, input);
-          // area->editor_3dview.is_drawn = true;
-        }
-      } break;
-
-      case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.draw(rt, model);
-      } break;
-
-      default: { assert(!"Unknown editor type"); } break;
-    }
-  }
-}
-
 void Editor_3DView::draw(Model model, User_Input *input) {
-  Pixel_Buffer *buffer = this->area->draw_buffer;
+  Pixel_Buffer *buffer = this->area->buffer;
   memset(buffer->memory, 0, buffer->width * buffer->height * sizeof(u32));
 
   local_persist r32 dir_x = 0;
@@ -1211,6 +1147,11 @@ void Editor_3DView::draw(Model model, User_Input *input) {
   }
 
   free(z_buffer);
+
+  // test dragging
+  if (input->mouse_left) {
+    draw_line(buffer, input->mouse, input->mouse_left_last, 0x00FFFFFF);
+  }
 }
 
 void Editor_Raytrace::draw(Ray_Tracer *rt, Model model) {
@@ -1219,7 +1160,7 @@ void Editor_Raytrace::draw(Ray_Tracer *rt, Model model) {
 
   // Debug draw texture image
   // u32 *pitch = model.texture.width
-  Pixel_Buffer *buffer = this->area->draw_buffer;
+  Pixel_Buffer *buffer = this->area->buffer;
 
   // TMP - buggy with bytes per pixel = 3
   u32 *src = model.texture.data;
@@ -1235,7 +1176,7 @@ void Editor_Raytrace::draw(Ray_Tracer *rt, Model model) {
   }
 
   if (rt == NULL) {
-    // draw_rect(this->area->draw_buffer, this->area->draw_buffer->get_rect(),
+    // draw_rect(this->area->buffer, this->area->buffer->get_rect(),
     //           0x00123123);
     return;
   }
@@ -1278,7 +1219,7 @@ void Editor_Raytrace::draw(Ray_Tracer *rt, Model model) {
         }
       }
 
-      draw_pixel(this->area->draw_buffer, V2i(x, y), get_rgb_u32(color));
+      draw_pixel(this->area->buffer, V2i(x, y), get_rgb_u32(color));
     }
   }
 }

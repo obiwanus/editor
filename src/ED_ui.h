@@ -146,13 +146,15 @@ struct Area {
 
   Area *parent_area;
   Area_Splitter *splitter = NULL;
-  Pixel_Buffer *draw_buffer = NULL;
+  Pixel_Buffer *buffer = NULL;
 
   Area_Editor_Type editor_type;
   Editor_3DView editor_3dview;
   Editor_Raytrace editor_raytrace;
 
-#define AREA_PANEL_HEIGHT 26
+  UI_Select type_select;
+
+  static const int kPanelHeight = 26;
 
   inline int get_width();
   inline int get_height();
@@ -215,12 +217,10 @@ struct User_Interface {
 
   // Areas and splitters
   int num_splitters;
-  int num_selects;
   int num_areas;
 
   Area **areas;
   Area_Splitter **splitters;
-  UI_Select **selects;
 
   bool can_pick_splitter;
   bool can_split_area;
@@ -235,7 +235,6 @@ struct User_Interface {
   Area_Splitter *_new_splitter(Area *);
   Area_Splitter *vertical_split(Area *, int);
   Area_Splitter *horizontal_split(Area *, int);
-  UI_Select *new_type_selector(Area *);
   void _split_type_selectors(Area *, Area_Splitter *, bool);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
