@@ -845,6 +845,87 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     UI_Select *select = &area->type_select;
     draw_rect(area->buffer, select->get_rect(),
               colors[select->option_selected]);
+    Rect area_rect = area->get_rect();
+    if (area_rect.contains(input->mouse)) {
+      // Check if we are interacting with select
+      Rect select_rect = select->get_rect();
+      Rect all_options_rect;
+      int kMargin = 1;
+      all_options_rect.left = select_rect.left - kMargin;
+      all_options_rect.right = select_rect.right + 30 + kMargin;
+      all_options_rect.bottom = select_rect.bottom + kMargin;
+      all_options_rect.top =
+          select_rect.top - select->option_count * (select->option_height + 1) -
+          kMargin + 1;
+
+      // Update
+      bool mouse_over_select =
+          select_rect.contains(area_rect.projected(input->mouse));
+      bool mouse_over_options =
+          all_options_rect.contains(area_rect.projected(input->mouse));
+
+      if (mouse_over_select && input->mouse_left && ui->can_pick_select) {
+        select->open = true;
+        ui->can_pick_select = false;
+      }
+
+      if (select->open && !mouse_over_options) {
+        select->open = false;
+        ui->can_pick_select = false;
+      }
+
+      if (mouse_over_select && !input->mouse_left) {
+        ui->can_pick_select = true;
+      } else if (!select->open) {
+        ui->can_pick_select = false;
+      }
+
+      if (mouse_over_select || select->open) {
+        // Draw highlighted
+        draw_rect(select->parent_area->buffer, select_rect, 0x00222222);
+      }
+
+      if (select->open) {
+        Rect options_border = all_options_rect;
+        options_border.bottom = select_rect.top + kMargin;
+
+        // Draw all options rect first
+        draw_rect(select->parent_area->buffer, options_border, 0x00686868);
+
+        int bottom = select_rect.top;
+        for (int opt = 0; opt < select->option_count; opt++) {
+          Rect option;
+          option.bottom = bottom;
+          option.left = select_rect.left;
+          option.right = select_rect.right + 30;
+          option.top = option.bottom - select->option_height;
+          bool mouse_over_option =
+              mouse_over_options &&
+              option.contains(area_rect.projected(input->mouse));
+          u32 color = colors[opt];
+          if (mouse_over_option) {
+            color += 0x00121212;  // highlight
+          }
+          draw_rect(select->parent_area->buffer, option, color);
+          bottom -= select->option_height + 1;
+
+          // Select the option on click
+          if (mouse_over_option && input->mouse_left && ui->can_pick_select) {
+            select->option_selected = opt;
+            select->open = false;
+
+            // TODO: if we ever generalize this, this bit will have to change
+            select->parent_area->editor_type = (Area_Editor_Type)opt;
+          }
+
+          // We're using this flag to prevent options to be selected
+          // by dragging the mouse too
+          if (mouse_over_option && !input->mouse_left) {
+            ui->can_pick_select = true;
+          }
+        }
+      }
+    }
   }
 
   // bool mouse_over_any_select = false;
