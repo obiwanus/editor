@@ -380,6 +380,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     // Zero input
     *new_input = {};
+    new_input->old = old_input;  // Save so we can refer to it later
 
     // Retain the button state
     for (int i = 0; i < COUNT_OF(new_input->buttons); i++) {

@@ -192,10 +192,14 @@ int main(int argc, char const *argv[]) {
 
     // Zero input
     *new_input = {};
+    new_input->old = old_input;  // Save so we can refer to it later
 
     // Retain the button state
     for (size_t i = 0; i < COUNT_OF(new_input->buttons); i++) {
       new_input->buttons[i] = old_input->buttons[i];
+    }
+    for (size_t i = 0; i < COUNT_OF(new_input->mouse_positions); i++) {
+      new_input->mouse_positions[i] = old_input->mouse_positions[i];
     }
 
     // TODO: think about something more reliable

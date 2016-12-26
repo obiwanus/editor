@@ -53,6 +53,18 @@ struct User_Input {
   };
 
   v2i mouse;
+
+  // Store the last position mouse was in when a button went down
+  union {
+    v2i mouse_positions[3];
+    struct {
+      v2i mouse_left_last;
+      v2i mouse_right_last;
+      v2i mouse_middle_last;
+    };
+  };
+
+  User_Input *old;
 };
 
 struct Rect {
