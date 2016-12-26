@@ -118,6 +118,7 @@ struct UI_Select {
   Area *parent_area;
 
   Rect get_rect();
+  void update_and_draw(User_Input *);
 };
 
 enum Area_Editor_Type {

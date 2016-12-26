@@ -448,6 +448,88 @@ Rect UI_Select::get_rect() {
   return rect;
 }
 
+void UI_Select::update_and_draw(User_Input *input) {
+  UI_Select *select = this;
+  assert(select->parent_area != NULL);
+
+  Rect area_rect = select->parent_area->get_rect();
+  Rect select_rect = select->get_rect();
+
+  // Draw unhighlighted no matter what
+  const u32 colors[10] = {0x00000000, 0x00123123};
+  draw_rect(select->parent_area->buffer, select_rect,
+            colors[select->option_selected]);
+
+  // If mouse cursor is not in the area, don't interact with select
+  if (!area_rect.contains(input->mouse)) {
+    select->open = false;
+    return;
+  }
+
+  Rect all_options_rect;
+  int kMargin = 1;
+  all_options_rect.left = select_rect.left - kMargin;
+  all_options_rect.right = select_rect.right + 30 + kMargin;
+  all_options_rect.bottom = select_rect.bottom + kMargin;
+  all_options_rect.top =
+      select_rect.top -
+      select->option_count * (select->option_height + 1) - kMargin + 1;
+
+  // Update
+  bool mouse_over_select =
+      select_rect.contains(area_rect.projected(input->mouse));
+  bool mouse_over_options =
+      all_options_rect.contains(area_rect.projected(input->mouse));
+
+  if (mouse_over_select && input->mb_went_down(MB_Left)) {
+    select->open = true;
+  }
+
+  if (select->open && !mouse_over_options) {
+    select->open = false;
+  }
+
+  if (mouse_over_select || select->open) {
+    // Draw highlighted
+    draw_rect(select->parent_area->buffer, select_rect, 0x00222222);
+  }
+
+  if (select->open) {
+    Rect options_border = all_options_rect;
+    options_border.bottom = select_rect.top + kMargin;
+
+    // Draw all options rect first
+    draw_rect(select->parent_area->buffer, options_border, 0x00686868);
+
+    int bottom = select_rect.top;
+    for (int opt = 0; opt < select->option_count; opt++) {
+      Rect option;
+      option.bottom = bottom;
+      option.left = select_rect.left;
+      option.right = select_rect.right + 30;
+      option.top = option.bottom - select->option_height;
+      bool mouse_over_option =
+          mouse_over_options &&
+          option.contains(area_rect.projected(input->mouse));
+      u32 color = colors[opt];
+      if (mouse_over_option) {
+        color += 0x00121212;  // highlight
+      }
+      draw_rect(select->parent_area->buffer, option, color);
+      bottom -= select->option_height + 1;
+
+      // Select the option on click
+      if (mouse_over_option && input->mb_went_down(MB_Left)) {
+        select->option_selected = opt;
+        select->open = false;
+
+        // TODO: if we ever generalize this, this bit will have to change
+        select->parent_area->editor_type = (Area_Editor_Type)opt;
+      }
+    }
+  }
+}
+
 Area *User_Interface::create_area(Area *parent_area, Rect rect) {
   // TODO: I don't want to allocate things randomly on the heap,
   // so later it'd be good to have a pool allocator for this
@@ -829,80 +911,12 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     draw_rect(area->buffer, panel_rect, 0x00686868);
 
     // Draw type select
-    const u32 colors[10] = {0x00000000, 0x00123123};
-    UI_Select *select = &area->type_select;
-    draw_rect(area->buffer, select->get_rect(),
-              colors[select->option_selected]);
+    area->type_select.update_and_draw(input);
 
     // Any actions within area
     Rect area_rect = area->get_rect();
     if (area_rect.contains(input->mouse)) {
-      // Check if we are interacting with select
-      {
-        Rect select_rect = select->get_rect();
-        Rect all_options_rect;
-        int kMargin = 1;
-        all_options_rect.left = select_rect.left - kMargin;
-        all_options_rect.right = select_rect.right + 30 + kMargin;
-        all_options_rect.bottom = select_rect.bottom + kMargin;
-        all_options_rect.top =
-            select_rect.top -
-            select->option_count * (select->option_height + 1) - kMargin + 1;
 
-        // Update
-        bool mouse_over_select =
-            select_rect.contains(area_rect.projected(input->mouse));
-        bool mouse_over_options =
-            all_options_rect.contains(area_rect.projected(input->mouse));
-
-        if (mouse_over_select && input->mb_went_down(MB_Left)) {
-          select->open = true;
-        }
-
-        if (select->open && !mouse_over_options) {
-          select->open = false;
-        }
-
-        if (mouse_over_select || select->open) {
-          // Draw highlighted
-          draw_rect(select->parent_area->buffer, select_rect, 0x00222222);
-        }
-
-        if (select->open) {
-          Rect options_border = all_options_rect;
-          options_border.bottom = select_rect.top + kMargin;
-
-          // Draw all options rect first
-          draw_rect(select->parent_area->buffer, options_border, 0x00686868);
-
-          int bottom = select_rect.top;
-          for (int opt = 0; opt < select->option_count; opt++) {
-            Rect option;
-            option.bottom = bottom;
-            option.left = select_rect.left;
-            option.right = select_rect.right + 30;
-            option.top = option.bottom - select->option_height;
-            bool mouse_over_option =
-                mouse_over_options &&
-                option.contains(area_rect.projected(input->mouse));
-            u32 color = colors[opt];
-            if (mouse_over_option) {
-              color += 0x00121212;  // highlight
-            }
-            draw_rect(select->parent_area->buffer, option, color);
-            bottom -= select->option_height + 1;
-
-            // Select the option on click
-            if (mouse_over_option && input->mb_went_down(MB_Left)) {
-              select->option_selected = opt;
-              select->open = false;
-
-              // TODO: if we ever generalize this, this bit will have to change
-              select->parent_area->editor_type = (Area_Editor_Type)opt;
-            }
-          }
-        }
-      }
     }
   }
 
@@ -966,7 +980,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     }
   }
 
-  // -- Cursors ---------------
+  // ------- Cursors ---------------------------------------------
 
   // Splitter resize cursor
   for (int i = 0; i < ui->num_splitters; ++i) {
