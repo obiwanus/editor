@@ -471,9 +471,9 @@ void UI_Select::update_and_draw(User_Input *input) {
   all_options_rect.left = select_rect.left - kMargin;
   all_options_rect.right = select_rect.right + 30 + kMargin;
   all_options_rect.bottom = select_rect.bottom + kMargin;
-  all_options_rect.top =
-      select_rect.top -
-      select->option_count * (select->option_height + 1) - kMargin + 1;
+  all_options_rect.top = select_rect.top -
+                         select->option_count * (select->option_height + 1) -
+                         kMargin + 1;
 
   // Update
   bool mouse_over_select =
@@ -560,7 +560,12 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
   select->option_count = Area_Editor_Type__COUNT;
   select->option_height = 20;
   select->parent_area = area;
-  select->option_selected = area->editor_type;
+  if (parent_area != NULL) {
+    select->option_selected = area->editor_type;
+  } else {
+    // Default editor type
+    select->option_selected = Area_Editor_Type_3DView;
+  }
 
   // Create draw buffer
   area->buffer = (Pixel_Buffer *)malloc(sizeof(Pixel_Buffer));
@@ -650,75 +655,39 @@ void User_Interface::remove_area(Area *area) {
   parent_area->set_bottom(parent_rect.bottom);
 }
 
-Area_Splitter *User_Interface::_new_splitter(Area *area) {
-  Area_Splitter *splitter = (Area_Splitter *)malloc(sizeof(*splitter));
-  if (sb_count(this->splitters) > this->num_splitters) {
-    this->splitters[this->num_splitters] = splitter;
-  } else {
-    sb_push(Area_Splitter **, this->splitters, splitter);
-  }
-  area->splitter = splitter;
-  this->num_splitters++;
-
-  *splitter = {};
-  splitter->parent_area = area;
-
-  return splitter;
-}
-
-void User_Interface::_split_type_selectors(Area *area, Area_Splitter *splitter,
-                                           bool is_vertical) {
-  // Ensures the area that is supposed to stay preserves its type selector
-
-  int position = splitter->position;
-  Rect rect = area->get_rect();
-  Area *bigger_area = splitter->areas[0];
-  Area *smaller_area = splitter->areas[1];
-  if ((is_vertical && (position - rect.left < rect.right - position)) ||
-      (!is_vertical && (position - rect.top < rect.bottom - position))) {
-    swap(bigger_area, smaller_area);
-  }
-  // Old select goes to the bigger area
-  bigger_area->type_select = area->type_select;
-  bigger_area->type_select.parent_area = bigger_area;
-}
-
-Area_Splitter *User_Interface::vertical_split(Area *area, int position) {
+Area_Splitter *User_Interface::split_area(Area *area, v2i mouse, bool is_vertical) {
   // Create splitter
-  Area_Splitter *splitter = this->_new_splitter(area);
-  splitter->is_vertical = true;
-  splitter->position = position;
+  Area_Splitter *splitter;
+  {
+    splitter = (Area_Splitter *)malloc(sizeof(*splitter));
+    if (sb_count(this->splitters) > this->num_splitters) {
+      this->splitters[this->num_splitters] = splitter;
+    } else {
+      sb_push(Area_Splitter **, this->splitters, splitter);
+    }
+    area->splitter = splitter;
+    this->num_splitters++;
+
+    *splitter = {};
+    splitter->parent_area = area;
+    splitter->is_vertical = is_vertical;
+    splitter->position = is_vertical? mouse.x : mouse.y;
+  }
 
   // Create 2 areas
-  Rect rect = area->get_rect();
-  rect.right = position;
-  splitter->areas[0] = this->create_area(area, rect);
-
-  rect = area->get_rect();
-  rect.left = position;
-  splitter->areas[1] = this->create_area(area, rect);
-
-  this->_split_type_selectors(area, splitter, true);
-
-  return splitter;
-}
-
-Area_Splitter *User_Interface::horizontal_split(Area *area, int position) {
-  // Create splitter
-  Area_Splitter *splitter = this->_new_splitter(area);
-  splitter->is_vertical = false;
-  splitter->position = position;
-
-  // Create 2 areas
-  Rect rect = area->get_rect();
-  rect.bottom = position;
-  splitter->areas[0] = this->create_area(area, rect);
-
-  rect = area->get_rect();
-  rect.top = position;
-  splitter->areas[1] = this->create_area(area, rect);
-
-  this->_split_type_selectors(area, splitter, false);
+  {
+    Rect rect1, rect2;
+    rect1 = rect2 = area->get_rect();
+    if (is_vertical) {
+      rect1.right = mouse.x;
+      rect2.left = mouse.x;
+    } else {
+      rect1.bottom = mouse.y;
+      rect2.top = mouse.y;
+    }
+    splitter->areas[0] = this->create_area(area, rect1);
+    splitter->areas[1] = this->create_area(area, rect2);
+  }
 
   return splitter;
 }
@@ -841,12 +810,9 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
         distance.y = abs(distance.y);
         if (distance.x > kDistance || distance.y > kDistance) {
           Area_Splitter *splitter;
-          if (distance.x > distance.y) {
-            splitter = ui->vertical_split(ui->area_being_split, input->mouse.x);
-          } else {
-            splitter =
-                ui->horizontal_split(ui->area_being_split, input->mouse.y);
-          }
+          bool is_vertical = distance.x > distance.y;
+          splitter =
+              ui->split_area(ui->area_being_split, input->mouse, is_vertical);
           ui->splitter_being_moved = splitter;
           ui->set_movement_boundaries(splitter);
           ui->area_being_split = NULL;
@@ -916,7 +882,6 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     // Any actions within area
     Rect area_rect = area->get_rect();
     if (area_rect.contains(input->mouse)) {
-
     }
   }
 
@@ -1031,7 +996,7 @@ void Editor_3DView::draw(Model model, User_Input *input) {
     dir_x += 0.1f;
   }
 
-  Camera camera;
+  // Camera camera;
   camera.position = V3(0.0f, 1.0f, 3.0f);
   camera.up = V3(0.0f, 1.0f, 0.0f);
   camera.direction = V3(dir_x, dir_y, -1.0f);
