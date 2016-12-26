@@ -81,7 +81,8 @@ struct Rect {
   inline int get_width();
   inline int get_height();
   bool contains(v2i point);
-  v2i projected(v2i point);
+  v2i projected(v2i point, bool ui);
+  v2i projected_to_area(v2i point);
   int get_area();
 };
 

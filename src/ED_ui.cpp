@@ -211,13 +211,22 @@ bool Rect::contains(v2i point) {
   return result;
 }
 
-v2i Rect::projected(v2i point) {
+v2i Rect::projected(v2i point, bool ui = true) {
   v2i result = point;
 
   result.x -= this->left;
   result.y -= this->top;
 
+  if (!ui) {
+    result.y = this->get_height() - result.y;
+  }
+
   return result;
+}
+
+v2i Rect::projected_to_area(v2i point) {
+  // Project using the editor origin (bottom left)
+  return this->projected(point, false);
 }
 
 inline int Rect::get_width() {
@@ -1115,9 +1124,16 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   free(z_buffer);
 
   // test dragging
-  if (input->mouse_left) {
-    draw_line(buffer, input->mouse, input->mouse_positions[MB_Left],
-              0x00FFFFFF);
+  if (ui->active_area == this->area) {
+    Rect area_rect = this->area->get_rect();
+    const u32 colors[] = {0x0000FF00, 0x00FF0000, 0x000000FF};
+    v2i to = area_rect.projected_to_area(input->mouse);
+    for (int i = 0; i < MB__COUNT; ++i) {
+      if (input->mb_is_down((Mouse_Button)i)) {
+        v2i from = area_rect.projected_to_area(input->mouse_positions[i]);
+        draw_line(buffer, from, to, colors[i]);
+      }
+    }
   }
 }
 
