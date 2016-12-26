@@ -82,6 +82,7 @@ struct Rect {
   inline int get_height();
   bool contains(v2i point);
   v2i projected(v2i point);
+  int get_area();
 };
 
 struct Pixel_Buffer {
@@ -100,6 +101,7 @@ struct Pixel_Buffer {
 
 struct Area_Splitter;  // damned C++
 struct Area;           // bloody C++
+struct User_Interface;
 
 struct UI_Select {
   // Simpler than flags
@@ -138,11 +140,11 @@ struct Area_Editor {
 struct Editor_3DView : Area_Editor {
   Camera camera;
 
-  void draw(Model, User_Input *);
+  void draw(User_Interface *, Model, User_Input *);
 };
 
 struct Editor_Raytrace : Area_Editor {
-  void draw(Ray_Tracer *, Model);
+  void draw(User_Interface *, Ray_Tracer *, Model);
 };
 
 struct Area {
@@ -228,6 +230,7 @@ struct User_Interface {
   Area **areas;
   Area_Splitter **splitters;
 
+  Area *active_area;  // where user did something last
   Area *area_being_split;
   Area *area_being_deleted;
   Area_Splitter *splitter_being_moved;

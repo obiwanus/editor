@@ -232,6 +232,11 @@ inline int Rect::get_height() {
   return result;
 }
 
+int Rect::get_area() {
+  // Physical area
+  return this->get_width() * this->get_height();
+}
+
 bool User_Input::mb_is_down(Mouse_Button mb) {
   if (mb == MB_Left && this->mouse_left) return true;
   if (mb == MB_Middle && this->mouse_middle) return true;
@@ -534,44 +539,60 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
   // TODO: I don't want to allocate things randomly on the heap,
   // so later it'd be good to have a pool allocator for this
   // possibly with the ability to remove elements
-  Area *area = (Area *)malloc(sizeof(*area));
-  if (sb_count(this->areas) > this->num_areas) {
-    this->areas[this->num_areas] = area;
-  } else {
-    sb_push(Area **, this->areas, area);
-  }
-  this->num_areas++;
 
-  *area = {};
-  area->set_rect(rect);
-  area->parent_area = parent_area;
-  area->editor_3dview.area = area;
-  area->editor_raytrace.area = area;
-  if (parent_area != NULL) {
-    area->editor_type = parent_area->editor_type;
+  // Create area
+  Area *area = (Area *)malloc(sizeof(*area));
+  {
+    if (sb_count(this->areas) > this->num_areas) {
+      this->areas[this->num_areas] = area;
+    } else {
+      sb_push(Area **, this->areas, area);
+    }
+    this->num_areas++;
+
+    *area = {};
+    area->set_rect(rect);
+    area->parent_area = parent_area;
+    area->editor_3dview.area = area;
+    area->editor_raytrace.area = area;
+    if (parent_area != NULL) {
+      area->editor_type = parent_area->editor_type;
+    }
   }
 
   // Init type selector
-  UI_Select *select = &area->type_select;
-  *select = {};
-  select->align_bottom = true;
-  select->x = 20;
-  select->y = 3;
-  select->option_count = Area_Editor_Type__COUNT;
-  select->option_height = 20;
-  select->parent_area = area;
-  if (parent_area != NULL) {
-    select->option_selected = area->editor_type;
-  } else {
-    // Default editor type
-    select->option_selected = Area_Editor_Type_3DView;
+  {
+    UI_Select *select = &area->type_select;
+    *select = {};
+    select->align_bottom = true;
+    select->x = 20;
+    select->y = 3;
+    select->option_count = Area_Editor_Type__COUNT;
+    select->option_height = 20;
+    select->parent_area = area;
+    if (parent_area != NULL) {
+      select->option_selected = area->editor_type;
+    } else {
+      // Default editor type
+      select->option_selected = Area_Editor_Type_3DView;
+    }
   }
 
   // Create draw buffer
-  area->buffer = (Pixel_Buffer *)malloc(sizeof(Pixel_Buffer));
-  area->buffer->allocate();
-  area->buffer->width = area->get_width();
-  area->buffer->height = area->get_height();
+  {
+    area->buffer = (Pixel_Buffer *)malloc(sizeof(Pixel_Buffer));
+    area->buffer->allocate();
+    area->buffer->width = area->get_width();
+    area->buffer->height = area->get_height();
+  }
+
+  // Init camera for 3d view
+  {
+    Camera *camera = &area->editor_3dview.camera;
+    camera->position = V3(0, 1, 3);
+    camera->up = V3(0, 1, 0);
+    camera->direction = V3(0, 0, -1);
+  }
 
   return area;
 }
@@ -655,7 +676,8 @@ void User_Interface::remove_area(Area *area) {
   parent_area->set_bottom(parent_rect.bottom);
 }
 
-Area_Splitter *User_Interface::split_area(Area *area, v2i mouse, bool is_vertical) {
+Area_Splitter *User_Interface::split_area(Area *area, v2i mouse,
+                                          bool is_vertical) {
   // Create splitter
   Area_Splitter *splitter;
   {
@@ -671,7 +693,7 @@ Area_Splitter *User_Interface::split_area(Area *area, v2i mouse, bool is_vertica
     *splitter = {};
     splitter->parent_area = area;
     splitter->is_vertical = is_vertical;
-    splitter->position = is_vertical? mouse.x : mouse.y;
+    splitter->position = is_vertical ? mouse.x : mouse.y;
   }
 
   // Create 2 areas
@@ -687,6 +709,11 @@ Area_Splitter *User_Interface::split_area(Area *area, v2i mouse, bool is_vertica
     }
     splitter->areas[0] = this->create_area(area, rect1);
     splitter->areas[1] = this->create_area(area, rect2);
+
+    // Make the new (smaller) area active
+    this->active_area = rect1.get_area() < rect2.get_area()
+                            ? splitter->areas[0]
+                            : splitter->areas[1];
   }
 
   return splitter;
@@ -780,7 +807,6 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     Area *area = this->areas[i];
     if (!area->is_visible()) continue;  // ignore wrapper areas
 
-    // Mousedown
     if (input->mb_went_down(MB_Left)) {
       if (area->mouse_over_split_handle(input->mouse)) {
         ui->area_being_split = area;
@@ -795,9 +821,35 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
           area->get_delete_button().contains(input->mouse) && i > 0) {
         // Note we're not deleting area 0
         ui->remove_area(area);
+        if (ui->active_area == area) {
+          ui->active_area = NULL;
+        }
+      }
+    }
+
+    // Make the area active on mousedown, always
+    if (area->get_rect().contains(input->mouse) &&
+        (input->mb_went_down(MB_Left) || input->mb_went_down(MB_Middle) ||
+         input->mb_went_down(MB_Right))) {
+      ui->active_area = area;
+    }
+  }
+
+  // Select the biggest area if none is active
+  if (ui->active_area == NULL) {
+    int area_max = 0;
+    for (int i = 0; i < this->num_areas; ++i) {
+      Area *area = this->areas[i];
+      if (!area->is_visible()) continue;  // ignore wrapper areas
+
+      int rect_area = area->get_rect().get_area();
+      if (rect_area > area_max) {
+        area_max = rect_area;
+        ui->active_area = area;
       }
     }
   }
+  assert(ui->active_area != NULL);
 
   // Split areas or move splitters
   if (input->mouse_left) {
@@ -860,12 +912,12 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     switch (area->editor_type) {
       case Area_Editor_Type_3DView: {
         if (!area->editor_3dview.is_drawn) {
-          area->editor_3dview.draw(model, input);
+          area->editor_3dview.draw(ui, model, input);
         }
       } break;
 
       case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.draw(NULL, model);
+        area->editor_raytrace.draw(ui, NULL, model);
       } break;
 
       default: { assert(!"Unknown editor type"); } break;
@@ -976,31 +1028,15 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   return result;
 }
 
-void Editor_3DView::draw(Model model, User_Input *input) {
+void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   Pixel_Buffer *buffer = this->area->buffer;
-  memset(buffer->memory, 0, buffer->width * buffer->height * sizeof(u32));
+  u8 color = 0x11;
+  if (ui->active_area == this->area) {
+    color = 0x1A;
+  }
+  memset(buffer->memory, color, buffer->width * buffer->height * sizeof(u32));
 
-  local_persist r32 dir_x = 0;
-  local_persist r32 dir_y = 0;
-
-  if (input->up) {
-    dir_y += 0.1f;
-  }
-  if (input->down) {
-    dir_y -= 0.1f;
-  }
-  if (input->left) {
-    dir_x -= 0.1f;
-  }
-  if (input->right) {
-    dir_x += 0.1f;
-  }
-
-  // Camera camera;
-  camera.position = V3(0.0f, 1.0f, 3.0f);
-  camera.up = V3(0.0f, 1.0f, 0.0f);
-  camera.direction = V3(dir_x, dir_y, -1.0f);
-  camera.adjust_frustum(buffer->width, buffer->height);
+  this->camera.adjust_frustum(buffer->width, buffer->height);
 
   m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
   m4x4 ModelTransform =
@@ -1085,7 +1121,7 @@ void Editor_3DView::draw(Model model, User_Input *input) {
   }
 }
 
-void Editor_Raytrace::draw(Ray_Tracer *rt, Model model) {
+void Editor_Raytrace::draw(User_Interface *ui, Ray_Tracer *rt, Model model) {
   // TODO: ray tracer should probably be member and not
   // a function parameter
 
