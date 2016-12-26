@@ -1131,8 +1131,8 @@ void Editor_3DView::draw(Model model, User_Input *input) {
   }
 
   Camera camera;
-  camera.position = V3(0.0f, 0.0f, 3.0f);
-  camera.up = V3(0.0f, 1.0f, -1.0f);
+  camera.position = V3(0.0f, 1.0f, 3.0f);
+  camera.up = V3(0.0f, 1.0f, 0.0f);
   camera.direction = V3(dir_x, dir_y, -1.0f);
   camera.adjust_frustum(buffer->width, buffer->height);
 

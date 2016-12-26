@@ -285,6 +285,10 @@ m4x4 Matrix::T(r32 tx, r32 ty, r32 tz) {
   return result;
 }
 
+m4x4 Matrix::T(v3 t) {
+  return Matrix::T(t.x, t.y, t.z);
+}
+
 m4x4 Matrix::frame_to_canonical(basis3 frame, v3 origin) {
   // clang-format off
   m4x4 result = {
@@ -298,14 +302,16 @@ m4x4 Matrix::frame_to_canonical(basis3 frame, v3 origin) {
 }
 
 m4x4 Matrix::canonical_to_frame(basis3 frame, v3 origin) {
+  m4x4 result;
   // clang-format off
-  m4x4 result = {
-    frame.u.x, frame.u.y, frame.u.z, -origin.x,
-    frame.v.x, frame.v.y, frame.v.z, -origin.y,
-    frame.w.x, frame.w.y, frame.w.z, -origin.z,
-            0,         0,         0,         1,
+  m4x4 rotate_inverse = {
+    frame.u.x, frame.u.y, frame.u.z,  0,
+    frame.v.x, frame.v.y, frame.v.z,  0,
+    frame.w.x, frame.w.y, frame.w.z,  0,
+            0,         0,         0,  1,
   };
   // clang-format on
+  result = rotate_inverse * Matrix::T(-origin);
   return result;
 }
 
