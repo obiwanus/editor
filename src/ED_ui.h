@@ -36,6 +36,14 @@ struct Mesh {
 
 typedef b32 button_state;
 
+enum Mouse_Button {
+  MB_Left = 0,
+  MB_Middle,
+  MB_Right,
+
+  MB__COUNT,
+};
+
 struct User_Input {
   union {
     button_state buttons[8];
@@ -55,16 +63,13 @@ struct User_Input {
   v2i mouse;
 
   // Store the last position mouse was in when a button went down
-  union {
-    v2i mouse_positions[3];
-    struct {
-      v2i mouse_left_last;
-      v2i mouse_right_last;
-      v2i mouse_middle_last;
-    };
-  };
+  v2i mouse_positions[MB__COUNT];
 
   User_Input *old;
+
+  bool mb_is_down(Mouse_Button);
+  bool mb_went_down(Mouse_Button);
+  bool mb_went_up(Mouse_Button);
 };
 
 struct Rect {
@@ -224,7 +229,6 @@ struct User_Interface {
 
   bool can_pick_splitter;
   bool can_split_area;
-  bool can_pick_select;
   Area *area_being_split;
   Area_Splitter *splitter_being_moved;
 

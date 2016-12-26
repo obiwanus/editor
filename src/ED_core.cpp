@@ -114,14 +114,10 @@ Update_Result update_and_render(Program_Memory *program_memory,
   Update_Result result = {};
 
   // Remember where dragging starts
-  if (input->mouse_left && !input->old->mouse_left) {
-    input->mouse_left_last = input->mouse;
-  }
-  if (input->mouse_right && !input->old->mouse_right) {
-    input->mouse_right_last = input->mouse;
-  }
-  if (input->mouse_middle && !input->old->mouse_middle) {
-    input->mouse_middle_last = input->mouse;
+  for (int i = 0; i < MB__COUNT; ++i) {
+    if (input->mb_went_down((Mouse_Button)i)) {
+      input->mouse_positions[i] = input->mouse;
+    }
   }
 
   result = state->UI.update_and_draw(pixel_buffer, input, state->model);

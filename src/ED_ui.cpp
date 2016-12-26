@@ -232,6 +232,21 @@ inline int Rect::get_height() {
   return result;
 }
 
+bool User_Input::mb_is_down(Mouse_Button mb) {
+  if (mb == MB_Left && this->mouse_left) return true;
+  if (mb == MB_Middle && this->mouse_middle) return true;
+  if (mb == MB_Right && this->mouse_right) return true;
+  return false;
+}
+
+bool User_Input::mb_went_down(Mouse_Button mb) {
+  return this->mb_is_down(mb) && !this->old->mb_is_down(mb);
+}
+
+bool User_Input::mb_went_up(Mouse_Button mb) {
+  return !this->mb_is_down(mb) && this->old->mb_is_down(mb);
+}
+
 Rect Area::get_split_handle(int num) {
   Rect rect = this->get_rect();
   assert(num == 0 || num == 1);
@@ -864,20 +879,12 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
       bool mouse_over_options =
           all_options_rect.contains(area_rect.projected(input->mouse));
 
-      if (mouse_over_select && input->mouse_left && ui->can_pick_select) {
+      if (mouse_over_select && input->mb_went_down(MB_Left)) {
         select->open = true;
-        ui->can_pick_select = false;
       }
 
       if (select->open && !mouse_over_options) {
         select->open = false;
-        ui->can_pick_select = false;
-      }
-
-      if (mouse_over_select && !input->mouse_left) {
-        ui->can_pick_select = true;
-      } else if (!select->open) {
-        ui->can_pick_select = false;
       }
 
       if (mouse_over_select || select->open) {
@@ -910,131 +917,17 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
           bottom -= select->option_height + 1;
 
           // Select the option on click
-          if (mouse_over_option && input->mouse_left && ui->can_pick_select) {
+          if (mouse_over_option && input->mb_went_down(MB_Left)) {
             select->option_selected = opt;
             select->open = false;
 
             // TODO: if we ever generalize this, this bit will have to change
             select->parent_area->editor_type = (Area_Editor_Type)opt;
           }
-
-          // We're using this flag to prevent options to be selected
-          // by dragging the mouse too
-          if (mouse_over_option && !input->mouse_left) {
-            ui->can_pick_select = true;
-          }
         }
       }
     }
   }
-
-  // bool mouse_over_any_select = false;
-
-  // // Draw ui selects
-  // for (int i = 0; i < ui->num_selects; ++i) {
-  //   UI_Select *select = ui->selects[i];
-  //   if (select->parent_area && !select->parent_area->is_visible()) continue;
-
-  //   Rect select_rect = select->get_rect();
-  //   Rect parent_area_rect = select->parent_area->get_rect();
-  //   Rect all_options_rect;
-  //   int kMargin = 1;
-  //   all_options_rect.left = select_rect.left - kMargin;
-  //   all_options_rect.right = select_rect.right + 30 + kMargin;
-  //   all_options_rect.bottom = select_rect.bottom + kMargin;
-  //   all_options_rect.top = select_rect.top -
-  //                          select->option_count * (select->option_height + 1)
-  //                          -
-  //                          kMargin + 1;
-
-  //   // Update
-  //   bool mouse_in_area = parent_area_rect.contains(input->mouse);
-  //   bool mouse_over_select =
-  //       mouse_in_area &&
-  //       select_rect.contains(parent_area_rect.projected(input->mouse));
-  //   bool mouse_over_options =
-  //       mouse_in_area &&
-  //       all_options_rect.contains(parent_area_rect.projected(input->mouse));
-
-  //   if (mouse_over_select) {
-  //     mouse_over_any_select = true;
-  //   }
-
-  //   if (mouse_over_select && input->mouse_left && ui->can_pick_select) {
-  //     select->open = true;
-  //     ui->can_pick_select = false;
-  //   }
-
-  //   if (select->open && (!mouse_in_area || !mouse_over_options)) {
-  //     select->open = false;
-  //     ui->can_pick_select = false;
-  //   }
-
-  //   if (mouse_over_select && !input->mouse_left) {
-  //     ui->can_pick_select = true;
-  //   }
-
-  //   if (mouse_over_select) {
-  //     select->highlighted = true;
-  //   } else if (!select->open) {
-  //     select->highlighted = false;
-  //   }
-
-  //   const u32 colors[10] = {0x00000000, 0x00123123};
-
-  //   // Draw
-  //   if (select->highlighted) {
-  //     draw_rect(select->parent_area->buffer, select_rect, 0x00222222);
-  //   } else {
-  //     draw_rect(select->parent_area->buffer, select_rect,
-  //               colors[select->option_selected]);
-  //   }
-
-  //   if (select->open) {
-  //     Rect options_border = all_options_rect;
-  //     options_border.bottom = select_rect.top + kMargin;
-
-  //     // Draw all options rect first
-  //     draw_rect(select->parent_area->buffer, options_border, 0x00686868);
-
-  //     int bottom = select_rect.top;
-  //     for (int opt = 0; opt < select->option_count; opt++) {
-  //       Rect option;
-  //       option.bottom = bottom;
-  //       option.left = select_rect.left;
-  //       option.right = select_rect.right + 30;
-  //       option.top = option.bottom - select->option_height;
-  //       bool mouse_over_option =
-  //           mouse_over_options &&
-  //           option.contains(parent_area_rect.projected(input->mouse));
-  //       u32 color = colors[opt];
-  //       if (mouse_over_option) {
-  //         color += 0x00121212;  // highlight
-  //       }
-  //       draw_rect(select->parent_area->buffer, option, color);
-  //       bottom -= select->option_height + 1;
-
-  //       // Select the option on click
-  //       if (mouse_over_option && input->mouse_left && ui->can_pick_select) {
-  //         select->option_selected = opt;
-  //         select->open = false;
-
-  //         // TODO: if we ever generalize this, this bit will have to change
-  //         select->parent_area->editor_type = (Area_Editor_Type)opt;
-  //       }
-
-  //       if (mouse_over_option && !input->mouse_left) {
-  //         ui->can_pick_select = true;
-  //         mouse_over_any_select = true;
-  //       }
-  //     }
-  //   }
-  // }
-
-  // // If mouse has left a select, we can't pick them anymore
-  // if (!mouse_over_any_select) {
-  //   ui->can_pick_select = false;
-  // }
 
   // Copy area buffers into the main buffer
   for (int i = 0; i < ui->num_areas; ++i) {
@@ -1231,7 +1124,8 @@ void Editor_3DView::draw(Model model, User_Input *input) {
 
   // test dragging
   if (input->mouse_left) {
-    draw_line(buffer, input->mouse, input->mouse_left_last, 0x00FFFFFF);
+    draw_line(buffer, input->mouse, input->mouse_positions[MB_Left],
+              0x00FFFFFF);
   }
 }
 
