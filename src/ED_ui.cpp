@@ -120,11 +120,6 @@ void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
     swap(n1, n2);
   }
 
-  // v3 n = (world_verts[1] - world_verts[0])
-  //            .cross(world_verts[1] - world_verts[2]);
-  // n = n.normalized();
-  // r32 intensity = n * light_direction;
-
   int total_height = t2.y - t0.y;
   for (int y = t0.y; y <= t2.y; y++) {
     if (y < 0 || y >= buffer->height) break;
@@ -1054,11 +1049,18 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   }
   memset(buffer->memory, color, buffer->width * buffer->height * sizeof(u32));
 
-  if (active && input->mb_went_down(MB_Middle)) {
-    // Rotate camera around origin
-    r32 angle = M_PI / 6;
-    this->camera.position = Matrix::Ry(angle) * this->camera.position;
-    this->camera.look_at(V3(0, 0, 0));
+  if (active) {
+    if (input->mb_is_down(MB_Middle)) {
+      if (input->mb_went_down(MB_Middle)) {
+        this->camera.old_position = this->camera.position;
+      }
+      // Rotate camera around origin
+      const int kSensitivity = 500;
+      r32 x = input->mouse_positions[MB_Middle].x - input->mouse.x;
+      r32 angle = (M_PI / kSensitivity) * x;
+      this->camera.position = Matrix::Ry(angle) * this->camera.old_position;
+      this->camera.look_at(V3(0, 0, 0));
+    }
   }
   this->camera.adjust_frustum(buffer->width, buffer->height);
 
