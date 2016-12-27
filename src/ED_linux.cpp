@@ -172,8 +172,8 @@ int main(int argc, char const *argv[]) {
                     &root_y, &new_input->mouse.x, &new_input->mouse.y,
                     &mouse_mask);
       new_input->mouse_left = mouse_mask & Button1Mask;
-      new_input->mouse_right = mouse_mask & Button2Mask;
-      new_input->mouse_middle = mouse_mask & Button3Mask;
+      new_input->mouse_middle = mouse_mask & Button2Mask;
+      new_input->mouse_right = mouse_mask & Button3Mask;
     }
 
     Update_Result result =

@@ -595,12 +595,14 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
     area->buffer->height = area->get_height();
   }
 
-  // Init camera for 3d view
-  {
+  // Init camera for 3d view (or copy from parent)
+  if (parent_area != NULL) {
+    area->editor_3dview.camera = parent_area->editor_3dview.camera;
+  } else {
     Camera *camera = &area->editor_3dview.camera;
     camera->position = V3(0, 1, 3);
     camera->up = V3(0, 1, 0);
-    camera->direction = V3(0, 0, -1);
+    camera->look_at(V3(0, 0, 0));
   }
 
   return area;
@@ -615,6 +617,11 @@ void User_Interface::remove_area(Area *area) {
     }
   }
   assert(sister_area != NULL);
+
+  // Copy data from sister area
+  {
+    parent_area->editor_3dview.camera = sister_area->editor_3dview.camera;
+  }
 
   // Remove splitter
   {
@@ -1039,12 +1046,20 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
 
 void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   Pixel_Buffer *buffer = this->area->buffer;
+  bool active = ui->active_area == this->area;
+
   u8 color = 0x11;
-  if (ui->active_area == this->area) {
+  if (active) {
     color = 0x1A;
   }
   memset(buffer->memory, color, buffer->width * buffer->height * sizeof(u32));
 
+  if (active && input->mb_went_down(MB_Middle)) {
+    // Rotate camera around origin
+    r32 angle = M_PI / 6;
+    this->camera.position = Matrix::Ry(angle) * this->camera.position;
+    this->camera.look_at(V3(0, 0, 0));
+  }
   this->camera.adjust_frustum(buffer->width, buffer->height);
 
   m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
@@ -1055,7 +1070,6 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
 
   m4x4 ViewportTransform =
       Matrix::viewport(0, 0, buffer->width, buffer->height);
-  // Matrix::T(width / 2, height / 2, 0) * Matrix::S(width / 2, height / 2, 1);
 
   m4x4 WorldTransform =
       ViewportTransform * ProjectionMatrix * CameraSpaceTransform;

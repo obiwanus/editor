@@ -49,6 +49,7 @@ struct Camera : Entity {
   r32 right;
 
   void adjust_frustum(int, int);
+  void look_at(v3);
   m4x4 persp_projection();
 };
 

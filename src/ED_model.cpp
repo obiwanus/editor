@@ -121,6 +121,10 @@ void Camera::adjust_frustum(int width, int height) {
   this->right = this->top * aspect_ratio;
 }
 
+void Camera::look_at(v3 point) {
+  this->direction = (point - this->position).normalized();
+}
+
 m4x4 Camera::persp_projection() {
   m4x4 result = Matrix::persp_projection(-right, right, -top, top, near, far);
   return result;
