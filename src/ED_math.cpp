@@ -331,6 +331,7 @@ m4x4 Matrix::viewport(int x, int y, int width, int height, int z_depth) {
   r32 w = (r32)width;
   r32 h = (r32)height;
   r32 z = (r32)z_depth;
+
   // clang-format off
   m4x4 result = {
     w/2, 0,   0,   x + w/2,

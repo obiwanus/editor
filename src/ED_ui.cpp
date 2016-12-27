@@ -41,7 +41,7 @@ inline void draw_pixel(Pixel_Buffer *buffer, v2 point, u32 color,
   draw_pixel(buffer, point_i, color, top_left);
 }
 
-void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color,
+void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
                bool top_left = false) {
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
@@ -64,11 +64,13 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color,
   int sign = dy >= 0 ? 1 : -1;
   int error = sign * dy - dx;
   int y = A.y;
-  for (int x = A.x; x <= B.x; x++) {
-    if (!swapped) {
-      draw_pixel(buffer, V2i(x, y), color, top_left);
-    } else {
-      draw_pixel(buffer, V2i(y, x), color, top_left);
+  for (int x = A.x; x <= B.x; ++x) {
+    for (int i = 0; i < width; ++i) {
+      if (!swapped) {
+        draw_pixel(buffer, V2i(x, y + i), color, top_left);
+      } else {
+        draw_pixel(buffer, V2i(y + i, x), color, top_left);
+      }
     }
     error += sign * dy;
     if (error > 0) {
@@ -223,7 +225,7 @@ void triangle_shaded(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
 
 void draw_ui_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color) {
   // Draw line with the top left corner as the origin
-  draw_line(buffer, A, B, color, true);
+  draw_line(buffer, A, B, color, 1, true);
 }
 
 // void draw_ui_line(Pixel_Buffer *buffer, v2 A, v2 B, u32 color) {
@@ -1134,7 +1136,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   m4x4 WorldTransform =
       ViewportTransform * ProjectionMatrix * CameraSpaceTransform;
 
-  m4x4 ResultTransform = WorldTransform * ModelTransform;
+  m4x4 ResultTransform = WorldTransform;
 
   // TODO: move it
   r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));
@@ -1166,9 +1168,9 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
 
     {
       // Draw single color grey facets
-      v3 vert1 = ModelTransform * world_verts[0];
-      v3 vert2 = ModelTransform * world_verts[1];
-      v3 vert3 = ModelTransform * world_verts[2];
+      v3 vert1 = world_verts[0];
+      v3 vert2 = world_verts[1];
+      v3 vert3 = world_verts[2];
       v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
       r32 intensity = abs(n * this->camera.direction);
       u32 color = get_rgb_u32(V3(0.7f, 0.7f, 0.7f) * intensity);
@@ -1193,7 +1195,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     }
     for (int i = 0; i < kLineCount; ++i) {
       u32 color = kGridColor;
-      // Along the z axis
+      // Along the x axis
       {
         r32 z = -1.0f + i * 2.0f / (kLineCount - 1);
         v3 vert1 = V3(-1.0f, 0.0f, z);
@@ -1201,11 +1203,11 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
         vert1 = WorldTransform * vert1;
         vert2 = WorldTransform * vert2;
         if (i == kLineCount / 2) {
-          color = kZColor;
+          color = kXColor;
         }
         draw_line(buffer, V2i(vert1), V2i(vert2), color);
       }
-      // Along the x axis
+      // Along the z axis
       {
         r32 x = -1.0f + i * 2.0f / (kLineCount - 1);
         v3 vert1 = V3(x, 0.0f, -1.0);
@@ -1213,7 +1215,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
         vert1 = WorldTransform * vert1;
         vert2 = WorldTransform * vert2;
         if (i == kLineCount / 2) {
-          color = kXColor;
+          color = kZColor;
         }
         draw_line(buffer, V2i(vert1), V2i(vert2), color);
       }
@@ -1230,9 +1232,9 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     v2i y = V2i(AxisIconTransform * V3(0, 1, 0));
     v2i z = V2i(AxisIconTransform * V3(0, 0, 1));
 
-    draw_line(buffer, origin, x, kXColor);
-    draw_line(buffer, origin, y, kYColor);
-    draw_line(buffer, origin, z, kZColor);
+    draw_line(buffer, origin, x, kXColor, 2);
+    draw_line(buffer, origin, z, kZColor, 2);
+    draw_line(buffer, origin, y, kYColor, 2);
   }
 
   free(z_buffer);
@@ -1245,7 +1247,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     for (int i = 0; i < 3; ++i) {
       if (input->button_is_down((Input_Button)i)) {
         v2i from = area_rect.projected_to_area(input->mouse_positions[i]);
-        draw_line(buffer, from, to, colors[i]);
+        draw_line(buffer, from, to, colors[i], 4);
       }
     }
   }
