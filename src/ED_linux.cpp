@@ -159,10 +159,10 @@ int main(int argc, char const *argv[]) {
       if (event.type == ButtonPress) {
         switch (event.xbutton.button) {
           case Button4: {
-            new_input->scroll_up++;
+            new_input->scroll++;
           } break;
           case Button5: {
-            new_input->scroll_down++;
+            new_input->scroll--;
           } break;
         }
       }

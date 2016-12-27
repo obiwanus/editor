@@ -345,6 +345,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
           }
         } break;
 
+        case WM_MOUSEWHEEL: {
+          int delta = (int)message.wParam / (65536 * WHEEL_DELTA);
+          new_input->scroll += delta;
+        } break;
+
         default: {
           TranslateMessage(&message);
           DispatchMessageA(&message);

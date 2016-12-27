@@ -839,8 +839,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     // Make the area active on mousedown, always
     if (area->get_rect().contains(input->mouse) &&
         (input->mb_went_down(MB_Left) || input->mb_went_down(MB_Middle) ||
-         input->mb_went_down(MB_Right) || input->scroll_up ||
-         input->scroll_down)) {
+         input->mb_went_down(MB_Right) || input->scroll != 0)) {
       ui->active_area = area;
     }
   }
@@ -1061,11 +1060,10 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       this->camera.look_at(V3(0, 0, 0));
     }
     // Move camera on scroll
-    int pos_delta = input->scroll_up - input->scroll_down;
-    if (pos_delta) {
+    if (input->scroll) {
       r32 distance_to_origin = (V3(0, 0, 0) - this->camera.position).len();
       this->camera.position +=
-          this->camera.direction * distance_to_origin * (pos_delta / 10.0f);
+          this->camera.direction * distance_to_origin * (input->scroll / 10.0f);
     }
   }
   this->camera.adjust_frustum(buffer->width, buffer->height);
