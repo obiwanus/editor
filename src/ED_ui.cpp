@@ -1041,9 +1041,9 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   Pixel_Buffer *buffer = this->area->buffer;
   bool active = ui->active_area == this->area;
 
-  u8 color = 0x11;
+  u8 color = 0x22;
   if (active) {
-    color = 0x1A;
+    color = 0x2A;
   }
   memset(buffer->memory, color, buffer->width * buffer->height * sizeof(u32));
 
@@ -1111,34 +1111,51 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   }
 
   // Draw grid
-  const int kLineCount = 16;
-  v3 grid_frame[] = {V3(-1, 0, -1), V3(-1, 0, 1), V3(1, 0, 1), V3(1, 0, -1)};
-  for (size_t i = 0; i < COUNT_OF(grid_frame); i++) {
-    v3 vert1 = grid_frame[i];
-    v3 vert2 = grid_frame[(i + 1) % COUNT_OF(grid_frame)];
-    vert1 = WorldTransform * vert1;
-    vert2 = WorldTransform * vert2;
-    draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
+  {
+    const int kLineCount = 16;
+    v3 grid_frame[] = {V3(-1, 0, -1), V3(-1, 0, 1), V3(1, 0, 1), V3(1, 0, -1)};
+    for (size_t i = 0; i < COUNT_OF(grid_frame); i++) {
+      v3 vert1 = grid_frame[i];
+      v3 vert2 = grid_frame[(i + 1) % COUNT_OF(grid_frame)];
+      vert1 = WorldTransform * vert1;
+      vert2 = WorldTransform * vert2;
+      draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
+    }
+    for (int i = 0; i < kLineCount; ++i) {
+      // Along the z axis
+      {
+        r32 z = -1.0f + i * 2.0f / (kLineCount - 1);
+        v3 vert1 = V3(-1.0f, 0.0f, z);
+        v3 vert2 = V3(1.0f, 0.0f, z);
+        vert1 = WorldTransform * vert1;
+        vert2 = WorldTransform * vert2;
+        draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
+      }
+      // Along the x axis
+      {
+        r32 x = -1.0f + i * 2.0f / (kLineCount - 1);
+        v3 vert1 = V3(x, 0.0f, -1.0);
+        v3 vert2 = V3(x, 0.0f, 1.0);
+        vert1 = WorldTransform * vert1;
+        vert2 = WorldTransform * vert2;
+        draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
+      }
+    }
   }
-  for (int i = 0; i < kLineCount; ++i) {
-    // Along the z axis
-    {
-      r32 z = -1.0f + i * 2.0f / (kLineCount - 1);
-      v3 vert1 = V3(-1.0f, 0.0f, z);
-      v3 vert2 = V3(1.0f, 0.0f, z);
-      vert1 = WorldTransform * vert1;
-      vert2 = WorldTransform * vert2;
-      draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
-    }
-    // Along the x axis
-    {
-      r32 x = -1.0f + i * 2.0f / (kLineCount - 1);
-      v3 vert1 = V3(x, 0.0f, -1.0);
-      v3 vert2 = V3(x, 0.0f, 1.0);
-      vert1 = WorldTransform * vert1;
-      vert2 = WorldTransform * vert2;
-      draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
-    }
+
+  // Draw the axis in the corner
+  {
+    m4x4 AxisIconTransform =
+        Matrix::viewport(5, 30, 70, 70) * CameraSpaceTransform;
+
+    v2i origin = V2i(AxisIconTransform * V3(0, 0, 0));
+    v2i x = V2i(AxisIconTransform * V3(1, 0, 0));
+    v2i y = V2i(AxisIconTransform * V3(0, 1, 0));
+    v2i z = V2i(AxisIconTransform * V3(0, 0, 1));
+
+    draw_line(buffer, origin, x, 0x00FF0000);
+    draw_line(buffer, origin, y, 0x0000FF00);
+    draw_line(buffer, origin, z, 0x000000FF);
   }
 
   free(z_buffer);

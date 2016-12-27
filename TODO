@@ -1,24 +1,26 @@
+NOW:
+- add axis in the corner
+- add colored axis on the grid
+- use gouraud shading on models (or phong-)
+- vertical rotation on models
+- one key switch between ortho and persp
+- make the grid use z buffer
+- add the model dragger axis
+- drag the model
+- render letters into an asset file
 
 
-- ROTATION
 
-- Rename files
+SOMEDAY:
+- shortcut numpad keys to change orientation
+- a panel with buttons to add primitives
+
 - Allocate max size and no more glitches on resize please
-- Think about the features
-- Use the buttons to rotate the cube
-- Use the middle mouse button to rotate
+- Logging
+
 
 LINUX:
 - window resize
-- cursors
 
 
-- Logging
 
-Features (subject to change):
-- Create models
-- Edit models
-- Ray tracer for rendering
-- Render fonts
-- 2d editor?
--
