@@ -116,8 +116,8 @@ Update_Result update_and_render(Program_Memory *program_memory,
   Update_Result result = {};
 
   // Remember where dragging starts
-  for (int i = 0; i < MB__COUNT; ++i) {
-    if (input->mb_went_down((Mouse_Button)i)) {
+  for (int i = 0; i < 3; ++i) {
+    if (input->button_went_down((Input_Button)i)) {
       input->mouse_positions[i] = input->mouse;
     }
   }

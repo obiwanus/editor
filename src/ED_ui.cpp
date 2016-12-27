@@ -245,21 +245,19 @@ int Rect::get_area() {
   return this->get_width() * this->get_height();
 }
 
-bool User_Input::mb_is_down(Mouse_Button mb) {
-  if (mb == MB_Left && this->mouse_left) return true;
-  if (mb == MB_Middle && this->mouse_middle) return true;
-  if (mb == MB_Right && this->mouse_right) return true;
-  return false;
+bool User_Input::button_is_down(Input_Button button) {
+  assert(button < IB__COUNT);
+  return this->buttons[button];
 }
 
-bool User_Input::mb_went_down(Mouse_Button mb) {
+bool User_Input::button_went_down(Input_Button button) {
   if (this->old == NULL) return false;
-  return this->mb_is_down(mb) && !this->old->mb_is_down(mb);
+  return this->button_is_down(button) && !this->old->button_is_down(button);
 }
 
-bool User_Input::mb_went_up(Mouse_Button mb) {
+bool User_Input::button_went_up(Input_Button button) {
   if (this->old == NULL) return false;
-  return !this->mb_is_down(mb) && this->old->mb_is_down(mb);
+  return !this->button_is_down(button) && this->old->button_is_down(button);
 }
 
 Rect Area::get_split_handle(int num) {
@@ -494,7 +492,7 @@ void UI_Select::update_and_draw(User_Input *input) {
   bool mouse_over_options =
       all_options_rect.contains(area_rect.projected(input->mouse));
 
-  if (mouse_over_select && input->mb_went_down(MB_Left)) {
+  if (mouse_over_select && input->button_went_down(IB_mouse_left)) {
     select->open = true;
   }
 
@@ -532,7 +530,7 @@ void UI_Select::update_and_draw(User_Input *input) {
       bottom -= select->option_height + 1;
 
       // Select the option on click
-      if (mouse_over_option && input->mb_went_down(MB_Left)) {
+      if (mouse_over_option && input->button_went_down(IB_mouse_left)) {
         select->option_selected = opt;
         select->open = false;
 
@@ -820,7 +818,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     Area *area = this->areas[i];
     if (!area->is_visible()) continue;  // ignore wrapper areas
 
-    if (input->mb_went_down(MB_Left)) {
+    if (input->button_went_down(IB_mouse_left)) {
       if (area->mouse_over_split_handle(input->mouse)) {
         ui->area_being_split = area;
       } else if (area->get_delete_button().contains(input->mouse)) {
@@ -829,7 +827,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     }
 
     // Deleting?
-    if (input->mb_went_up(MB_Left)) {
+    if (input->button_went_up(IB_mouse_left)) {
       if (ui->area_being_deleted == area &&
           area->get_delete_button().contains(input->mouse) && i > 0) {
         // Note we're not deleting area 0
@@ -842,8 +840,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
 
     // Make the area active on mousedown, always
     if (area->get_rect().contains(input->mouse) &&
-        (input->mb_went_down(MB_Left) || input->mb_went_down(MB_Middle) ||
-         input->mb_went_down(MB_Right) || input->scroll != 0)) {
+        (input->button_went_down(IB_mouse_left) || input->button_went_down(IB_mouse_middle) ||
+         input->button_went_down(IB_mouse_right) || input->scroll != 0)) {
       ui->active_area = area;
     }
   }
@@ -865,12 +863,12 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   assert(ui->active_area != NULL);
 
   // Split areas or move splitters
-  if (input->mouse_left) {
+  if (input->button_is_down(IB_mouse_left)) {
     if (ui->area_being_split != NULL) {
       // See if mouse has moved enough to finish the split
       if (ui->area_being_split->get_rect().contains(input->mouse)) {
         const int kDistance = 25;
-        v2i distance = input->mouse_positions[MB_Left] - input->mouse;
+        v2i distance = input->mouse_positions[IB_mouse_left] - input->mouse;
         distance.x = abs(distance.x);
         distance.y = abs(distance.y);
         if (distance.x > kDistance || distance.y > kDistance) {
@@ -896,7 +894,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
         for (int i = 0; i < ui->num_splitters; ++i) {
           Area_Splitter *splitter = ui->splitters[i];
           if (splitter->is_mouse_over(input->mouse) &&
-              input->mb_went_down(MB_Left)) {
+              input->button_went_down(IB_mouse_left)) {
             ui->splitter_being_moved = splitter;
             ui->set_movement_boundaries(splitter);
           }
@@ -1055,16 +1053,16 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   }
 
   if (active) {
-    if (input->toggle_projection) {
+    if (input->button_went_down(IB_toggle_projection)) {
 
     }
-    if (input->mb_is_down(MB_Middle)) {
-      if (input->mb_went_down(MB_Middle)) {
+    if (input->button_is_down(IB_mouse_middle)) {
+      if (input->button_went_down(IB_mouse_middle)) {
         this->camera.old_position = this->camera.position;
       }
       // Rotate camera around origin
       const int kSensitivity = 500;
-      v2i delta = input->mouse_positions[MB_Middle] - input->mouse;
+      v2i delta = input->mouse_positions[IB_mouse_middle] - input->mouse;
       r32 angle = (M_PI / kSensitivity) * delta.x;
       this->camera.position = Matrix::Ry(angle) * this->camera.old_position;
       this->camera.look_at(V3(0, 0, 0));
@@ -1186,8 +1184,8 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     Rect area_rect = this->area->get_rect();
     const u32 colors[] = {0x0000FF00, 0x00FF0000, 0x000000FF};
     v2i to = area_rect.projected_to_area(input->mouse);
-    for (int i = 0; i < MB__COUNT; ++i) {
-      if (input->mb_is_down((Mouse_Button)i)) {
+    for (int i = 0; i < 3; ++i) {
+      if (input->button_is_down((Input_Button)i)) {
         v2i from = area_rect.projected_to_area(input->mouse_positions[i]);
         draw_line(buffer, from, to, colors[i]);
       }

@@ -94,9 +94,6 @@ int main(int argc, char const *argv[]) {
   User_Input *new_input = &inputs[1];
   *new_input = {};
 
-  assert(&new_input->terminator - &new_input->buttons[0] <
-         COUNT_OF(new_input->buttons));
-
   gRunning = true;
 
   while (gRunning) {
@@ -145,15 +142,15 @@ int main(int argc, char const *argv[]) {
           if (key == XK_Escape) {
             gRunning = false;
           } else if (key == XK_Up) {
-            new_input->up = pressed;
+            new_input->buttons[IB_up] = pressed;
           } else if (key == XK_Down) {
-            new_input->down = pressed;
+            new_input->buttons[IB_down] = pressed;
           } else if (key == XK_Left) {
-            new_input->left = pressed;
+            new_input->buttons[IB_left] = pressed;
           } else if (key == XK_Right) {
-            new_input->right = pressed;
+            new_input->buttons[IB_right] = pressed;
           } else if (symbol == '5') {
-            new_input->toggle_projection = pressed;
+            new_input->buttons[IB_toggle_projection] = pressed;
           }
         }
       }
@@ -185,9 +182,9 @@ int main(int argc, char const *argv[]) {
       XQueryPointer(display, window, &root_return, &child_return, &root_x,
                     &root_y, &new_input->mouse.x, &new_input->mouse.y,
                     &mouse_mask);
-      new_input->mouse_left = mouse_mask & Button1Mask;
-      new_input->mouse_middle = mouse_mask & Button2Mask;
-      new_input->mouse_right = mouse_mask & Button3Mask;
+      new_input->buttons[IB_mouse_left] = mouse_mask & Button1Mask;
+      new_input->buttons[IB_mouse_middle] = mouse_mask & Button2Mask;
+      new_input->buttons[IB_mouse_right] = mouse_mask & Button3Mask;
     }
 
     Update_Result result =

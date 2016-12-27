@@ -36,42 +36,35 @@ struct Mesh {
 
 typedef b32 button_state;
 
-enum Mouse_Button {
-  MB_Left = 0,
-  MB_Middle,
-  MB_Right,
+enum Input_Button {
+  IB_mouse_left = 0,
+  IB_mouse_middle,
+  IB_mouse_right,
 
-  MB__COUNT,
+  IB_up,
+  IB_down,
+  IB_left,
+  IB_right,
+
+  IB_toggle_projection,
+
+  IB__COUNT,
 };
 
 struct User_Input {
-  union {
-    button_state buttons[9];
-    struct {
-      button_state up;
-      button_state down;
-      button_state left;
-      button_state right;
-      button_state mouse_left;
-      button_state mouse_middle;
-      button_state mouse_right;
-      button_state toggle_projection;
-
-      button_state terminator;
-    };
-  };
-
-  int scroll = 0;
-  v2i mouse;
+  button_state buttons[IB__COUNT];
 
   // Store the last position mouse was in when a button went down
-  v2i mouse_positions[MB__COUNT];
+  v2i mouse_positions[3];
+  v2i mouse;
+
+  int scroll = 0;
 
   User_Input *old;
 
-  bool mb_is_down(Mouse_Button);
-  bool mb_went_down(Mouse_Button);
-  bool mb_went_up(Mouse_Button);
+  bool button_is_down(Input_Button);
+  bool button_went_down(Input_Button);
+  bool button_went_up(Input_Button);
 };
 
 struct Rect {
