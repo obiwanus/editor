@@ -1,9 +1,11 @@
 NOW:
 
+- fix normal vectors
 - use gouraud shading on models (or phong-)
 - vertical rotation on models
 - one key switch between ortho and persp
 - make the grid use z buffer
+- move camera base point with shift
 - add the model dragger axis
 - drag the model
 - render letters into an asset file
@@ -11,6 +13,7 @@ NOW:
 
 
 SOMEDAY:
+- scale and rotate manipulators
 - shortcut numpad keys to change orientation
 - a panel with buttons to add primitives
 

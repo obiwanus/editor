@@ -109,13 +109,13 @@ int main(int argc, char const *argv[]) {
       if (event.type == KeyPress || event.type == KeyRelease) {
         KeySym key;
         char buf[256];
-        // char symbol = 0;
+        char symbol = 0;
         b32 pressed = false;
         b32 released = false;
         b32 retriggered = false;
 
         if (XLookupString(&event.xkey, buf, 255, &key, 0) == 1) {
-          // symbol = buf[0];
+          symbol = buf[0];
         }
 
         // Process user input
@@ -152,6 +152,8 @@ int main(int argc, char const *argv[]) {
             new_input->left = pressed;
           } else if (key == XK_Right) {
             new_input->right = pressed;
+          } else if (symbol == '5') {
+            new_input->toggle_projection = pressed;
           }
         }
       }

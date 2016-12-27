@@ -48,11 +48,15 @@ struct Camera : Entity {
   r32 top;
   r32 right;
 
+  bool ortho_projection = false;
+
+  v3 pivot = {};
   v3 old_position = {};
 
   void adjust_frustum(int, int);
   void look_at(v3);
-  m4x4 persp_projection();
+  m4x4 projection_matrix();
+  r32 distance_to_pivot();
 };
 
 #endif  // ED_MODEL_H

@@ -46,7 +46,7 @@ enum Mouse_Button {
 
 struct User_Input {
   union {
-    button_state buttons[8];
+    button_state buttons[9];
     struct {
       button_state up;
       button_state down;
@@ -55,6 +55,7 @@ struct User_Input {
       button_state mouse_left;
       button_state mouse_middle;
       button_state mouse_right;
+      button_state toggle_projection;
 
       button_state terminator;
     };

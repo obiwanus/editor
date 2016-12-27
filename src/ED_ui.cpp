@@ -158,12 +158,16 @@ void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
         v3 n = ((1.0f - t) * An + t * Bn).normalized();
         r32 intensity = n * V3(0, 0, 1);
         if (intensity > 0) {
-          // Get color from texture
-          v2 texel = (1.0f - t) * Atex + t * Btex;
-          v2i tex_coords =
-              V2i(texture.width * texel.u, texture.height * texel.v);
-          u32 color = texture.color(tex_coords.x,
-                                    (texture.height - tex_coords.y), intensity);
+          // // Get color from texture
+          // v2 texel = (1.0f - t) * Atex + t * Btex;
+          // v2i tex_coords =
+          //     V2i(texture.width * texel.u, texture.height * texel.v);
+          // u32 color = texture.color(tex_coords.x,
+          //                           (texture.height - tex_coords.y),
+          //                           intensity);
+          u32 grey = (u32)(0xFF * intensity);
+          u32 color = grey << 16 | grey << 8 | grey << 0;
+          // u32 color = 0x00aaaaaa;
           draw_pixel(buffer, V2i(x, y), color);
         }
       }
@@ -1042,15 +1046,18 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   bool active = ui->active_area == this->area;
 
   {
-    u8 bgcolor = 0x22;
+    u8 bgcolor = 0x32;
     if (active) {
-      bgcolor = 0x2A;
+      bgcolor = 0x3A;
     }
     memset(buffer->memory, bgcolor,
            buffer->width * buffer->height * sizeof(u32));
   }
 
   if (active) {
+    if (input->toggle_projection) {
+
+    }
     if (input->mb_is_down(MB_Middle)) {
       if (input->mb_went_down(MB_Middle)) {
         this->camera.old_position = this->camera.position;
@@ -1064,9 +1071,9 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     }
     // Move camera on scroll
     if (input->scroll) {
-      r32 distance_to_origin = (V3(0, 0, 0) - this->camera.position).len();
-      this->camera.position +=
-          this->camera.direction * distance_to_origin * (input->scroll / 10.0f);
+      this->camera.position += this->camera.direction *
+                               this->camera.distance_to_pivot() *
+                               (input->scroll / 10.0f);
     }
   }
   this->camera.adjust_frustum(buffer->width, buffer->height);
@@ -1075,7 +1082,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   m4x4 ModelTransform =
       Matrix::S(1.0f) * Matrix::T(0.0f, 0.0f, 0.0f) * Matrix::Ry(0);
 
-  m4x4 ProjectionMatrix = camera.persp_projection();
+  m4x4 ProjectionMatrix = camera.projection_matrix();
 
   m4x4 ViewportTransform =
       Matrix::viewport(0, 0, buffer->width, buffer->height);
@@ -1095,12 +1102,12 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     Face face = model.faces[i];
     v3 world_verts[3];
     v3i screen_verts[3];
-    // v2 texture_verts[3];
+    v2 texture_verts[3];
     v3 vns[3];
 
     for (int j = 0; j < 3; ++j) {
       world_verts[j] = model.vertices[face.v_ids[j]];
-      // texture_verts[j] = model.vts[face.vt_ids[j]];
+      texture_verts[j] = model.vts[face.vt_ids[j]];
       screen_verts[j] = V3i(ResultTransform * world_verts[j]);
       // vns[j] = Rotate(RotationMatrix * TiltMatrix, model.vns[face.vn_ids[j]],
       //                 V3(0, 0, 0));
@@ -1108,8 +1115,8 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     }
 
     // TODO: fix the textures
-    // draw_triangle(buffer, screen_verts, texture_verts, vns, model.texture,
-    //               z_buffer);
+    draw_triangle(buffer, screen_verts, texture_verts, vns, model.texture,
+                  z_buffer);
     debug_triangle(buffer, screen_verts, 0x00999999);
   }
 

@@ -122,10 +122,25 @@ void Camera::adjust_frustum(int width, int height) {
 }
 
 void Camera::look_at(v3 point) {
+  this->pivot = point;
   this->direction = (point - this->position).normalized();
 }
 
-m4x4 Camera::persp_projection() {
-  m4x4 result = Matrix::persp_projection(-right, right, -top, top, near, far);
+m4x4 Camera::projection_matrix() {
+  m4x4 result;
+  assert(this->near != 0);
+  if (this->ortho_projection) {
+    r32 ratio = this->distance_to_pivot() / abs(this->near);
+    r32 t = this->top * ratio;
+    r32 r = this->right * ratio;
+    result = Matrix::ortho_projection(-r, r, -t, t, near, far);
+  } else {
+    result = Matrix::persp_projection(-right, right, -top, top, near, far);
+  }
+  return result;
+}
+
+r32 Camera::distance_to_pivot() {
+  r32 result = (this->pivot - this->position).len();
   return result;
 }
