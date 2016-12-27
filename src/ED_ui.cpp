@@ -1094,7 +1094,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     Face face = model.faces[i];
     v3 world_verts[3];
     v3i screen_verts[3];
-    v2 texture_verts[3];
+    // v2 texture_verts[3];
     v3 vns[3];
 
     for (int j = 0; j < 3; ++j) {

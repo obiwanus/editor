@@ -383,8 +383,11 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     new_input->old = old_input;  // Save so we can refer to it later
 
     // Retain the button state
-    for (int i = 0; i < COUNT_OF(new_input->buttons); i++) {
+    for (size_t i = 0; i < COUNT_OF(new_input->buttons); i++) {
       new_input->buttons[i] = old_input->buttons[i];
+    }
+    for (size_t i = 0; i < COUNT_OF(new_input->mouse_positions); i++) {
+      new_input->mouse_positions[i] = old_input->mouse_positions[i];
     }
 
 #if 0

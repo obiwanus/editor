@@ -90,9 +90,9 @@ u32 Image::color(int x, int y, r32 intensity = 1.0f) {
 
   // TODO: fix the images
   u32 raw_pixel = *(this->data + this->width * y + x);
-  u32 R = intensity * ((0x000000FF & raw_pixel) >> 0);
-  u32 G = intensity * ((0x0000FF00 & raw_pixel) >> 8);
-  u32 B = intensity * ((0x00FF0000 & raw_pixel) >> 16);
+  u32 R = (u32)(intensity * ((0x000000FF & raw_pixel) >> 0));
+  u32 G = (u32)(intensity * ((0x0000FF00 & raw_pixel) >> 8));
+  u32 B = (u32)(intensity * ((0x00FF0000 & raw_pixel) >> 16));
   u32 A = (0xFF000000 & raw_pixel) >> 24;
   result = (A << 24 | R << 16 | G << 8 | B << 0);
   return result;
@@ -117,7 +117,7 @@ void Camera::adjust_frustum(int width, int height) {
   assert (width > 0 && height > 0);
   r32 aspect_ratio = (r32)width / (r32)height;
   // Vertical field of view is fixed at 60 degrees
-  this->top = abs(this->near) * tan(this->vertical_FOV / 2);
+  this->top = abs(this->near) * (r32)tan(this->vertical_FOV / 2);
   this->right = this->top * aspect_ratio;
 }
 
