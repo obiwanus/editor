@@ -1054,7 +1054,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
 
   if (active) {
     if (input->button_went_down(IB_toggle_projection)) {
-
+      this->camera.ortho_projection = !this->camera.ortho_projection;
     }
     if (input->button_is_down(IB_mouse_middle)) {
       if (input->button_went_down(IB_mouse_middle)) {
