@@ -78,7 +78,7 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color,
   }
 }
 
-void debug_triangle(Pixel_Buffer *buffer, v3i verts[], u32 color) {
+void triangle_wireframe(Pixel_Buffer *buffer, v3i verts[], u32 color) {
   v2i vert0 = V2i(verts[0]);
   v2i vert1 = V2i(verts[1]);
   v2i vert2 = V2i(verts[2]);
@@ -87,8 +87,58 @@ void debug_triangle(Pixel_Buffer *buffer, v3i verts[], u32 color) {
   draw_line(buffer, vert1, vert2, color);
 }
 
-void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
-                   Image texture, r32 *z_buffer) {
+void triangle_filled(Pixel_Buffer *buffer, v3i verts[], u32 color,
+                     r32 *z_buffer) {
+  v3i t0 = verts[0];
+  v3i t1 = verts[1];
+  v3i t2 = verts[2];
+
+  if (t0.y == t1.y && t1.y == t2.y) return;
+  if (t0.x == t1.x && t1.x == t2.x) return;
+
+  if (t0.y > t1.y) {
+    swap(t0, t1);
+  }
+  if (t0.y > t2.y) {
+    swap(t0, t2);
+  }
+  if (t1.y > t2.y) {
+    swap(t1, t2);
+  }
+
+  int total_height = t2.y - t0.y;
+  for (int y = t0.y; y <= t2.y; y++) {
+    if (y < 0 || y >= buffer->height) break;
+    bool second_half = y > t1.y || t1.y == t0.y;
+    int segment_height = second_half ? (t2.y - t1.y + 1) : (t1.y - t0.y + 1);
+    r32 dy_total = (r32)(y - t0.y) / total_height;
+    r32 dy_segment =
+        (r32)(second_half ? (y - t1.y) : (y - t0.y)) / segment_height;
+    v3i A = t0 + V3i(dy_total * V3(t2 - t0));
+    v3i B;
+    if (!second_half) {
+      B = t0 + V3i(dy_segment * V3(t1 - t0));
+    } else {
+      B = t1 + V3i(dy_segment * V3(t2 - t1));
+    }
+    if (A.x > B.x) {
+      swap(A, B);
+    };
+    for (int x = A.x; x <= B.x; x++) {
+      if (x < 0 || x >= buffer->width) continue;
+      r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
+      r32 z = (1.0f - t) * A.z + t * B.z;
+      int index = buffer->width * y + x;
+      if (z_buffer[index] < z) {
+        z_buffer[index] = z;
+        draw_pixel(buffer, V2i(x, y), color);
+      }
+    }
+  }
+}
+
+void triangle_shaded(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
+                     Image texture, r32 *z_buffer) {
   v3i t0 = verts[0];
   v3i t1 = verts[1];
   v3i t2 = verts[2];
@@ -159,15 +209,11 @@ void draw_triangle(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
         r32 intensity = n * V3(0, 0, 1);
         if (intensity > 0) {
           // // Get color from texture
-          // v2 texel = (1.0f - t) * Atex + t * Btex;
-          // v2i tex_coords =
-          //     V2i(texture.width * texel.u, texture.height * texel.v);
-          // u32 color = texture.color(tex_coords.x,
-          //                           (texture.height - tex_coords.y),
-          //                           intensity);
-          u32 grey = (u32)(0xFF * intensity);
-          u32 color = grey << 16 | grey << 8 | grey << 0;
-          // u32 color = 0x00aaaaaa;
+          v2 texel = (1.0f - t) * Atex + t * Btex;
+          v2i tex_coords =
+              V2i(texture.width * texel.u, texture.height * texel.v);
+          u32 color = texture.color(tex_coords.x,
+                                    (texture.height - tex_coords.y), intensity);
           draw_pixel(buffer, V2i(x, y), color);
         }
       }
@@ -840,7 +886,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
 
     // Make the area active on mousedown, always
     if (area->get_rect().contains(input->mouse) &&
-        (input->button_went_down(IB_mouse_left) || input->button_went_down(IB_mouse_middle) ||
+        (input->button_went_down(IB_mouse_left) ||
+         input->button_went_down(IB_mouse_middle) ||
          input->button_went_down(IB_mouse_right) || input->scroll != 0)) {
       ui->active_area = area;
     }
@@ -1077,8 +1124,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   this->camera.adjust_frustum(buffer->width, buffer->height);
 
   m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
-  m4x4 ModelTransform =
-      Matrix::S(1.0f) * Matrix::T(0.0f, 0.0f, 0.0f) * Matrix::Ry(0);
+  m4x4 ModelTransform = Matrix::identity();
 
   m4x4 ProjectionMatrix = camera.projection_matrix();
 
@@ -1109,13 +1155,25 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       screen_verts[j] = V3i(ResultTransform * world_verts[j]);
       // vns[j] = Rotate(RotationMatrix * TiltMatrix, model.vns[face.vn_ids[j]],
       //                 V3(0, 0, 0));
+      // TODO: transform them properly
       vns[j] = WorldTransform * model.vns[face.vn_ids[j]];
     }
 
     // TODO: fix the textures
-    draw_triangle(buffer, screen_verts, texture_verts, vns, model.texture,
-                  z_buffer);
-    debug_triangle(buffer, screen_verts, 0x00999999);
+    // triangle_shaded(buffer, screen_verts, texture_verts, vns, model.texture,
+    //                 z_buffer);
+    // triangle_wireframe(buffer, screen_verts, 0x00999999);
+
+    {
+      // Draw single color grey facets
+      v3 vert1 = ModelTransform * world_verts[0];
+      v3 vert2 = ModelTransform * world_verts[1];
+      v3 vert3 = ModelTransform * world_verts[2];
+      v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
+      r32 intensity = abs(n * this->camera.direction);
+      u32 color = get_rgb_u32(V3(0.7f, 0.7f, 0.7f) * intensity);
+      triangle_filled(buffer, screen_verts, color, z_buffer);
+    }
   }
 
   // Draw grid
@@ -1123,7 +1181,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   const u32 kYColor = 0x00009900;
   const u32 kZColor = 0x00000099;
   {
-    const int kLineCount = 16;
+    const int kLineCount = 21;
     const u32 kGridColor = 0x00555555;
     v3 grid_frame[] = {V3(-1, 0, -1), V3(-1, 0, 1), V3(1, 0, 1), V3(1, 0, -1)};
     for (size_t i = 0; i < COUNT_OF(grid_frame); i++) {

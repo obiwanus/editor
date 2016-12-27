@@ -176,6 +176,18 @@ basis3 basis3::build_from(v3 r) {
   return result;
 }
 
+m4x4 Matrix::identity() {
+  // clang-format off
+  m4x4 result = {
+    1, 0, 0, 0,
+    0, 1, 0, 0,
+    0, 0, 1, 0,
+    0, 0, 0, 1,
+  };
+  // clang-format on
+  return result;
+}
+
 m4x4 Matrix::ortho_projection(r32 l, r32 r, r32 b, r32 t, r32 n, r32 f) {
   assert(n > f && l < r && b < t);
 
@@ -315,14 +327,15 @@ m4x4 Matrix::canonical_to_frame(basis3 frame, v3 origin) {
   return result;
 }
 
-m4x4 Matrix::viewport(int x, int y, int width, int height) {
+m4x4 Matrix::viewport(int x, int y, int width, int height, int z_depth) {
   r32 w = (r32)width;
   r32 h = (r32)height;
+  r32 z = (r32)z_depth;
   // clang-format off
   m4x4 result = {
     w/2, 0,   0,   x + w/2,
     0,   h/2, 0,   y + h/2,
-    0,   0,   1,   0,
+    0,   0,   z/2, z/2,
     0,   0,   0,   1,
   };
   // clang-format on

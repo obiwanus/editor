@@ -1,6 +1,6 @@
 NOW:
 
-- fix normal vectors
+- fix triangle drawing
 - use gouraud shading on models (or phong-)
 - vertical rotation on models
 - make the grid use z buffer
@@ -8,7 +8,7 @@ NOW:
 - add the model dragger axis
 - drag the model
 - render letters into an asset file
-
+- don't expect obj files to include normals
 
 
 SOMEDAY:
@@ -22,6 +22,10 @@ SOMEDAY:
 
 LINUX:
 - window resize
+
+
+DONE:
+
 
 
 

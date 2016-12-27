@@ -168,6 +168,7 @@ union m4x4 {
 };
 
 namespace Matrix {
+  m4x4 identity();
   // Rotation
   m4x4 Rx(r32 angle);
   m4x4 Ry(r32 angle);
@@ -179,7 +180,7 @@ namespace Matrix {
   // Translation
   m4x4 T(r32, r32, r32);
   m4x4 T(v3);
-  m4x4 viewport(int, int, int, int);
+  m4x4 viewport(int, int, int, int, int z_depth = 255);
   // Projection
   m4x4 ortho_projection(r32, r32, r32, r32, r32, r32);
   m4x4 persp_projection(r32, r32, r32, r32, r32, r32);
