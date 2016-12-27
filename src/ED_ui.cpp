@@ -1041,11 +1041,14 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   Pixel_Buffer *buffer = this->area->buffer;
   bool active = ui->active_area == this->area;
 
-  u8 color = 0x22;
-  if (active) {
-    color = 0x2A;
+  {
+    u8 bgcolor = 0x22;
+    if (active) {
+      bgcolor = 0x2A;
+    }
+    memset(buffer->memory, bgcolor,
+           buffer->width * buffer->height * sizeof(u32));
   }
-  memset(buffer->memory, color, buffer->width * buffer->height * sizeof(u32));
 
   if (active) {
     if (input->mb_is_down(MB_Middle)) {
@@ -1111,17 +1114,22 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   }
 
   // Draw grid
+  const u32 kXColor = 0x00990000;
+  const u32 kYColor = 0x00009900;
+  const u32 kZColor = 0x00000099;
   {
     const int kLineCount = 16;
+    const u32 kGridColor = 0x00555555;
     v3 grid_frame[] = {V3(-1, 0, -1), V3(-1, 0, 1), V3(1, 0, 1), V3(1, 0, -1)};
     for (size_t i = 0; i < COUNT_OF(grid_frame); i++) {
       v3 vert1 = grid_frame[i];
       v3 vert2 = grid_frame[(i + 1) % COUNT_OF(grid_frame)];
       vert1 = WorldTransform * vert1;
       vert2 = WorldTransform * vert2;
-      draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
+      draw_line(buffer, V2i(vert1), V2i(vert2), kGridColor);
     }
     for (int i = 0; i < kLineCount; ++i) {
+      u32 color = kGridColor;
       // Along the z axis
       {
         r32 z = -1.0f + i * 2.0f / (kLineCount - 1);
@@ -1129,7 +1137,10 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
         v3 vert2 = V3(1.0f, 0.0f, z);
         vert1 = WorldTransform * vert1;
         vert2 = WorldTransform * vert2;
-        draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
+        if (i == kLineCount / 2) {
+          color = kZColor;
+        }
+        draw_line(buffer, V2i(vert1), V2i(vert2), color);
       }
       // Along the x axis
       {
@@ -1138,7 +1149,10 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
         v3 vert2 = V3(x, 0.0f, 1.0);
         vert1 = WorldTransform * vert1;
         vert2 = WorldTransform * vert2;
-        draw_line(buffer, V2i(vert1), V2i(vert2), 0x00555555);
+        if (i == kLineCount / 2) {
+          color = kXColor;
+        }
+        draw_line(buffer, V2i(vert1), V2i(vert2), color);
       }
     }
   }
@@ -1146,16 +1160,16 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   // Draw the axis in the corner
   {
     m4x4 AxisIconTransform =
-        Matrix::viewport(5, 30, 70, 70) * CameraSpaceTransform;
+        Matrix::viewport(5, 30, 60, 60) * CameraSpaceTransform;
 
     v2i origin = V2i(AxisIconTransform * V3(0, 0, 0));
     v2i x = V2i(AxisIconTransform * V3(1, 0, 0));
     v2i y = V2i(AxisIconTransform * V3(0, 1, 0));
     v2i z = V2i(AxisIconTransform * V3(0, 0, 1));
 
-    draw_line(buffer, origin, x, 0x00FF0000);
-    draw_line(buffer, origin, y, 0x0000FF00);
-    draw_line(buffer, origin, z, 0x000000FF);
+    draw_line(buffer, origin, x, kXColor);
+    draw_line(buffer, origin, y, kYColor);
+    draw_line(buffer, origin, z, kZColor);
   }
 
   free(z_buffer);

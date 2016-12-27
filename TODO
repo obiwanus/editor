@@ -1,6 +1,5 @@
 NOW:
-- add axis in the corner
-- add colored axis on the grid
+
 - use gouraud shading on models (or phong-)
 - vertical rotation on models
 - one key switch between ortho and persp
