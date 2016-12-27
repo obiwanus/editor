@@ -60,6 +60,8 @@ struct User_Input {
     };
   };
 
+  int scroll_up = 0;
+  int scroll_down = 0;
   v2i mouse;
 
   // Store the last position mouse was in when a button went down

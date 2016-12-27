@@ -100,6 +100,7 @@ int main(int argc, char const *argv[]) {
   gRunning = true;
 
   while (gRunning) {
+
     // Process events
     while (XPending(display)) {
       XEvent event;
@@ -152,6 +153,17 @@ int main(int argc, char const *argv[]) {
           } else if (key == XK_Right) {
             new_input->right = pressed;
           }
+        }
+      }
+
+      if (event.type == ButtonPress) {
+        switch (event.xbutton.button) {
+          case Button4: {
+            new_input->scroll_up++;
+          } break;
+          case Button5: {
+            new_input->scroll_down++;
+          } break;
         }
       }
 
