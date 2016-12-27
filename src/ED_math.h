@@ -243,6 +243,12 @@ inline v3i V3i(v3 A) {
   return result;
 }
 
+inline v2 V2(v3 A) {
+  v2 result = {A.x, A.y};
+
+  return result;
+}
+
 inline v2 V2(i32 X, i32 Y) {
   v2 result = {(r32)X, (r32)Y};
 

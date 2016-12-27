@@ -1055,8 +1055,8 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       }
       // Rotate camera around origin
       const int kSensitivity = 500;
-      r32 x = input->mouse_positions[MB_Middle].x - input->mouse.x;
-      r32 angle = (M_PI / kSensitivity) * x;
+      v2i delta = input->mouse_positions[MB_Middle] - input->mouse;
+      r32 angle = (M_PI / kSensitivity) * delta.x;
       this->camera.position = Matrix::Ry(angle) * this->camera.old_position;
       this->camera.look_at(V3(0, 0, 0));
     }
@@ -1099,7 +1099,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
 
     for (int j = 0; j < 3; ++j) {
       world_verts[j] = model.vertices[face.v_ids[j]];
-      texture_verts[j] = model.vts[face.vt_ids[j]];
+      // texture_verts[j] = model.vts[face.vt_ids[j]];
       screen_verts[j] = V3i(ResultTransform * world_verts[j]);
       // vns[j] = Rotate(RotationMatrix * TiltMatrix, model.vns[face.vn_ids[j]],
       //                 V3(0, 0, 0));
