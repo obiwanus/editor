@@ -1,6 +1,5 @@
 NOW:
 
-- add minimum luminance != 0
 - fix the shitty drawing of the cube (gaps etc)
 - use gouraud shading on models (or phong-)
 - vertical rotation on models
@@ -27,6 +26,7 @@ LINUX:
 
 DONE:
 [29/12/2016]
+- add minimum luminance != 0
 - fix ortho projection too
 - lerp as a function
 - make the grid use z buffer

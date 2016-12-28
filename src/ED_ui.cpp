@@ -161,8 +161,8 @@ void triangle_filled(Pixel_Buffer *buffer, v3i verts[], u32 color,
   }
 }
 
-void triangle_shaded(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
-                     Image texture, r32 *z_buffer) {
+void triangle_textured(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
+                       Image texture, r32 *z_buffer) {
   v3i t0 = verts[0];
   v3i t1 = verts[1];
   v3i t2 = verts[2];
@@ -1193,8 +1193,9 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       v3 vert2 = world_verts[1];
       v3 vert3 = world_verts[2];
       v3 n = ((vert2 - vert1).cross(vert3 - vert1)).normalized();
-      r32 intensity = abs(n * this->camera.direction);
-      u32 color = get_rgb_u32(V3(0.7f, 0.7f, 0.7f) * intensity);
+      r32 intensity = lerp(0.2f, 1.0f, abs(n * this->camera.direction));
+      const r32 grey = 0.7f;
+      u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
       triangle_filled(buffer, screen_verts, color, z_buffer);
     }
   }
