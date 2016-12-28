@@ -41,22 +41,20 @@ inline void draw_pixel(Pixel_Buffer *buffer, v2 point, u32 color,
   draw_pixel(buffer, point_i, color, top_left);
 }
 
+// void draw_line(Pixel_Buffer *buffer, v3 A, v3 B, u32 color, r32 *z_buffer) {
+//   draw_line(buffer, A)
+// }
+
 void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
                bool top_left = false) {
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
-    int tmp = A.x;
-    A.x = A.y;
-    A.y = tmp;
-    tmp = B.x;
-    B.x = B.y;
-    B.y = tmp;
+    swap(A.x, A.y);
+    swap(B.x, B.y);
     swapped = true;
   }
-  if (B.x - A.x < 0) {
-    v2i tmp = B;
-    B = A;
-    A = tmp;
+  if (B.x < A.x) {
+    swap(A, B);
   }
 
   int dy = B.y - A.y;
