@@ -1,9 +1,8 @@
 NOW:
 
-- fix ortho projection too
 - add minimum luminance != 0
-- use gouraud shading on models (or phong-)
 - fix the shitty drawing of the cube (gaps etc)
+- use gouraud shading on models (or phong-)
 - vertical rotation on models
 - move camera base point with shift
 - add the model dragger axis
@@ -28,6 +27,7 @@ LINUX:
 
 DONE:
 [29/12/2016]
+- fix ortho projection too
 - lerp as a function
 - make the grid use z buffer
 

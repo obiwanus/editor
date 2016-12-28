@@ -191,11 +191,15 @@ m4x4 Matrix::identity() {
 m4x4 Matrix::ortho_projection(r32 l, r32 r, r32 b, r32 t, r32 n, r32 f) {
   assert(n > f && l < r && b < t);
 
+  // This matrix assumes negative n and f. If they were positive,
+  // the values in the third row should have opposite sign
+  assert(n < 0);
+
   // clang-format off
   m4x4 result = {
     2.0f/(r-l), 0,          0,          -(r+l)/(r-l),
     0,          2.0f/(t-b), 0,          -(t+b)/(t-b),
-    0,          0,          2.0f/(f-n), -(f+n)/(f-n),
+    0,          0,         -2.0f/(f-n),  (f+n)/(f-n),
     0,          0,          0,           1,
   };
   // clang-format on
