@@ -48,11 +48,12 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
   int error_step = sign * dy;
   int y = A.y;
   for (int x = A.x; x <= B.x; ++x) {
+    int X = x, Y = y;
+    if (swapped) swap(X, Y);  // unswap for drawing
     for (int i = 0; i < width; ++i) {
-      if (!swapped) {
-        draw_pixel(buffer, V2i(x, y + i), color, top_left);
-      } else {
-        draw_pixel(buffer, V2i(y + i, x), color, top_left);
+      if (X >= 0 && X < buffer->width && (Y + i) >= 0 &&
+          (Y + i) < buffer->height) {
+        draw_pixel(buffer, V2i(X, Y + i), color, top_left);
       }
     }
     error += error_step;
@@ -117,18 +118,19 @@ void triangle_wireframe(Pixel_Buffer *buffer, v3i verts[], u32 color) {
   draw_line(buffer, vert1, vert2, color);
 }
 
-void triangle_filled(Pixel_Buffer *buffer, v3i verts[], u32 color,
+void triangle_filled(Pixel_Buffer *buffer, v3 verts[], u32 color,
                      r32 *z_buffer) {
-  v3i t0 = verts[0];
-  v3i t1 = verts[1];
-  v3i t2 = verts[2];
+  // clang-format off
+  v2i t0 = V2i(verts[0]); r32 z0 = verts[0].z;
+  v2i t1 = V2i(verts[1]); r32 z1 = verts[1].z;
+  v2i t2 = V2i(verts[2]); r32 z2 = verts[2].z;
 
   if (t0.y == t1.y && t1.y == t2.y) return;
   if (t0.x == t1.x && t1.x == t2.x) return;
 
-  if (t0.y > t1.y) swap(t0, t1);
-  if (t0.y > t2.y) swap(t0, t2);
-  if (t1.y > t2.y) swap(t1, t2);
+  if (t0.y > t1.y) { swap(t0, t1); swap(z0, z1); }
+  if (t0.y > t2.y) { swap(t0, t2); swap(z0, z2); }
+  if (t1.y > t2.y) { swap(t1, t2); swap(z1, z2); }
 
   int total_height = t2.y - t0.y;
   for (int y = t0.y; y <= t2.y; y++) {
@@ -138,20 +140,22 @@ void triangle_filled(Pixel_Buffer *buffer, v3i verts[], u32 color,
     r32 dy_total = (r32)(y - t0.y) / total_height;
     r32 dy_segment =
         (r32)(second_half ? (y - t1.y) : (y - t0.y)) / segment_height;
-    v3i A = lerp(t0, t2, dy_total);
-    v3i B;
+    v2i A = lerp(t0, t2, dy_total);
+    r32 A_z = lerp(z0, z2, dy_total);
+    v2i B;
+    r32 B_z;
     if (!second_half) {
       B = lerp(t0, t1, dy_segment);
+      B_z = lerp(z0, z1, dy_segment);
     } else {
       B = lerp(t1, t2, dy_segment);
+      B_z = lerp(z1, z2, dy_segment);
     }
-    if (A.x > B.x) {
-      swap(A, B);
-    };
+    if (A.x > B.x) { swap(A, B); swap(A_z, B_z); };
     for (int x = A.x; x <= B.x; x++) {
       if (x < 0 || x >= buffer->width) continue;
       r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
-      r32 z = lerp(A.z, B.z, t);
+      r32 z = lerp(A_z, B_z, t);
       int index = buffer->width * y + x;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
@@ -159,6 +163,7 @@ void triangle_filled(Pixel_Buffer *buffer, v3i verts[], u32 color,
       }
     }
   }
+  // clang-format on
 }
 
 void triangle_textured(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
@@ -1164,7 +1169,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   for (int i = 0; i < sb_count(model.faces); ++i) {
     Face face = model.faces[i];
     v3 world_verts[3];
-    v3i screen_verts[3];
+    v3 screen_verts[3];
     v2 texture_verts[3];
     v3 vns[3];
 
@@ -1173,7 +1178,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     for (int j = 0; j < 3; ++j) {
       world_verts[j] = model.vertices[face.v_ids[j]];
       texture_verts[j] = model.vts[face.vt_ids[j]];
-      screen_verts[j] = V3i(ResultTransform * world_verts[j]);
+      screen_verts[j] = ResultTransform * world_verts[j];
       // vns[j] = Rotate(RotationMatrix * TiltMatrix, model.vns[face.vn_ids[j]],
       //                 V3(0, 0, 0));
       // TODO: transform them properly

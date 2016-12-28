@@ -351,6 +351,12 @@ inline v2i operator*(v2i A, r32 scalar) {
   return result;
 }
 
+inline v2i operator*(r32 scalar, v2i A) {
+  v2i result = A * scalar;
+
+  return result;
+}
+
 inline v2 operator*(r32 A, v2 B) {
   v2 result;
 
