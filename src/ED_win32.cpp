@@ -273,9 +273,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   User_Input *new_input = &inputs[1];
   *new_input = {};
 
-  assert(&new_input->terminator - &new_input->buttons[0] <
-         COUNT_OF(new_input->buttons));
-
   LARGE_INTEGER last_timestamp = Win32GetWallClock();
 
   // Create worker threads
@@ -318,10 +315,10 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
         case WM_KEYDOWN:
         case WM_KEYUP: {
           u32 vk_code = (u32)message.wParam;
-          b32 was_down = ((message.lParam & (1 << 30)) != 0);
-          b32 is_down = ((message.lParam & (1 << 31)) == 0);
+          bool was_down = ((message.lParam & (1 << 30)) != 0);
+          bool is_down = ((message.lParam & (1 << 31)) == 0);
 
-          b32 alt_key_was_down = (message.lParam & (1 << 29));
+          bool alt_key_was_down = (message.lParam & (1 << 29)) != 0;
           if ((vk_code == VK_F4) && alt_key_was_down) {
             g_running = false;
           }
@@ -332,16 +329,16 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             g_running = false;
           }
           if (vk_code == VK_UP || vk_code == 'W') {
-            new_input->up = is_down;
+            new_input->buttons[IB_up] = is_down;
           }
           if (vk_code == VK_DOWN || vk_code == 'S') {
-            new_input->down = is_down;
+            new_input->buttons[IB_down] = is_down;
           }
           if (vk_code == VK_LEFT || vk_code == 'A') {
-            new_input->left = is_down;
+            new_input->buttons[IB_left] = is_down;
           }
           if (vk_code == VK_RIGHT || vk_code == 'D') {
-            new_input->right = is_down;
+            new_input->buttons[IB_right] = is_down;
           }
         } break;
 
@@ -365,9 +362,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
       new_input->mouse = {mouse_pointer.x, mouse_pointer.y};
 
-      new_input->mouse_left = GetKeyState(VK_LBUTTON) & (1 << 15);
-      new_input->mouse_right = GetKeyState(VK_RBUTTON) & (1 << 15);
-      new_input->mouse_middle = GetKeyState(VK_MBUTTON) & (1 << 15);
+      new_input->buttons[IB_mouse_left] =
+          (GetKeyState(VK_LBUTTON) & (1 << 15)) != 0;
+      new_input->buttons[IB_mouse_right] =
+          (GetKeyState(VK_RBUTTON) & (1 << 15)) != 0;
+      new_input->buttons[IB_mouse_middle] =
+          (GetKeyState(VK_MBUTTON) & (1 << 15)) != 0;
     }
 
     Update_Result result =

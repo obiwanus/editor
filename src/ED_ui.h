@@ -34,8 +34,6 @@ struct Mesh {
 
 // -------- /TODO: move out somewhere ----------------
 
-typedef b32 button_state;
-
 enum Input_Button {
   IB_mouse_left = 0,
   IB_mouse_middle,
@@ -52,7 +50,7 @@ enum Input_Button {
 };
 
 struct User_Input {
-  button_state buttons[IB__COUNT];
+  bool buttons[IB__COUNT];
 
   // Store the last position mouse was in when a button went down
   v2i mouse_positions[3];
