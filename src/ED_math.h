@@ -12,7 +12,7 @@
 
 inline r32 abs(r32 value) {
   assert(value > 0 || value <= 0);  // catch NaNs
-  return value > 0 ? value : -value;
+  return value >= 0 ? value : -value;
 }
 
 inline i32 round_i32(r32 value) {

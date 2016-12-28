@@ -134,6 +134,8 @@ void triangle_filled(Pixel_Buffer *buffer, v3i verts[], u32 color,
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
         draw_pixel(buffer, V2i(x, y), color);
+      } else {
+        int a = 0;
       }
     }
   }
@@ -1151,6 +1153,8 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     v2 texture_verts[3];
     v3 vns[3];
 
+    v3 test_screen_verts[3];
+
     for (int j = 0; j < 3; ++j) {
       world_verts[j] = model.vertices[face.v_ids[j]];
       texture_verts[j] = model.vts[face.vt_ids[j]];
@@ -1159,6 +1163,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       //                 V3(0, 0, 0));
       // TODO: transform them properly
       vns[j] = WorldTransform * model.vns[face.vn_ids[j]];
+      test_screen_verts[j] = ProjectionMatrix * CameraSpaceTransform * world_verts[j];
     }
 
     // TODO: fix the textures
@@ -1171,7 +1176,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       v3 vert1 = world_verts[0];
       v3 vert2 = world_verts[1];
       v3 vert3 = world_verts[2];
-      v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
+      v3 n = ((vert2 - vert1).cross(vert3 - vert1)).normalized();
       r32 intensity = abs(n * this->camera.direction);
       u32 color = get_rgb_u32(V3(0.7f, 0.7f, 0.7f) * intensity);
       triangle_filled(buffer, screen_verts, color, z_buffer);

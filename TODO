@@ -1,7 +1,7 @@
 NOW:
 
-- fix triangle drawing
 - use gouraud shading on models (or phong-)
+- fix the shitty drawing of the cube (gaps etc)
 - vertical rotation on models
 - make the grid use z buffer
 - move camera base point with shift
