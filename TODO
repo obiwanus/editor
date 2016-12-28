@@ -1,14 +1,17 @@
 NOW:
 
+- lerp as a function
+- fix ortho projection too
+- add minimum luminance != 0
 - use gouraud shading on models (or phong-)
 - fix the shitty drawing of the cube (gaps etc)
 - vertical rotation on models
-- make the grid use z buffer
 - move camera base point with shift
 - add the model dragger axis
 - drag the model
 - render letters into an asset file
 - don't expect obj files to include normals
+- maybe don't add special meaning to keys at the platform layer?
 
 
 SOMEDAY:
@@ -26,7 +29,7 @@ LINUX:
 
 DONE:
 [29/12/2016]
-
+- make the grid use z buffer
 
 [28/12/2016]
 - fix triangle drawing

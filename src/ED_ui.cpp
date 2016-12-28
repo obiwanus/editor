@@ -23,27 +23,12 @@ inline void draw_pixel(Pixel_Buffer *buffer, v2i point, u32 color,
   int x = point.x;
   int y = point.y;
 
-  if (x < 0 || x > buffer->width || y < 0 || y > buffer->height) {
-    return;
-  }
-
   if (!top_left) {
     y = buffer->height - y;  // Origin in bottom-left
   }
   u32 *pixel = (u32 *)buffer->memory + x + y * buffer->width;
   *pixel = color;
 }
-
-inline void draw_pixel(Pixel_Buffer *buffer, v2 point, u32 color,
-                       bool top_left = false) {
-  // A v2 version
-  v2i point_i = {(int)point.x, (int)point.y};
-  draw_pixel(buffer, point_i, color, top_left);
-}
-
-// void draw_line(Pixel_Buffer *buffer, v3 A, v3 B, u32 color, r32 *z_buffer) {
-//   draw_line(buffer, A)
-// }
 
 void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
                bool top_left = false) {
@@ -56,11 +41,11 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
   if (B.x < A.x) {
     swap(A, B);
   }
-
   int dy = B.y - A.y;
   int dx = B.x - A.x;
-  int sign = dy >= 0 ? 1 : -1;
+  int sign = (dy >= 0) ? 1 : -1;
   int error = sign * dy - dx;
+  int error_step = sign * dy;
   int y = A.y;
   for (int x = A.x; x <= B.x; ++x) {
     for (int i = 0; i < width; ++i) {
@@ -70,7 +55,52 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
         draw_pixel(buffer, V2i(y + i, x), color, top_left);
       }
     }
-    error += sign * dy;
+    error += error_step;
+    if (error > 0) {
+      error -= dx;
+      y += sign;
+    }
+  }
+}
+
+void draw_ui_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color) {
+  // Draw line with the top left corner as the origin
+  draw_line(buffer, A, B, color, 1, true);
+}
+
+void draw_line(Pixel_Buffer *buffer, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
+  // Super unoptimized, as everything related to drawing so far
+  bool swapped = false;
+  if (abs(Bf.x - Af.x) < abs(Bf.y - Af.y)) {
+    swap(Af.x, Af.y);
+    swap(Bf.x, Bf.y);
+    swapped = true;
+  }
+  if (Bf.x < Af.x) {
+    swap(Af, Bf);
+  }
+  v3i A = V3i(Af);
+  v3i B = V3i(Bf);
+  int dy = B.y - A.y;
+  int dx = B.x - A.x;
+  int sign = (dy >= 0) ? 1 : -1;
+  int error = sign * dy - dx;
+  int error_step = sign * dy;
+  int y = A.y;
+
+  for (int x = A.x; x <= B.x; ++x) {
+    int X = x, Y = y;
+    if (swapped) swap(X, Y);  // unswap for drawing
+    if (X >= 0 && X < buffer->width && Y >= 0 && Y < buffer->height) {
+      r32 t = (r32)(x - A.x) / dx;
+      r32 z = (1.0f - t) * Af.z + t * Bf.z;
+      int index = buffer->width * Y + X;
+      if (z_buffer[index] < z) {
+        z_buffer[index] = z;
+        draw_pixel(buffer, V2i(X, Y), color, false);
+      }
+    }
+    error += error_step;
     if (error > 0) {
       error -= dx;
       y += sign;
@@ -96,19 +126,13 @@ void triangle_filled(Pixel_Buffer *buffer, v3i verts[], u32 color,
   if (t0.y == t1.y && t1.y == t2.y) return;
   if (t0.x == t1.x && t1.x == t2.x) return;
 
-  if (t0.y > t1.y) {
-    swap(t0, t1);
-  }
-  if (t0.y > t2.y) {
-    swap(t0, t2);
-  }
-  if (t1.y > t2.y) {
-    swap(t1, t2);
-  }
+  if (t0.y > t1.y) swap(t0, t1);
+  if (t0.y > t2.y) swap(t0, t2);
+  if (t1.y > t2.y) swap(t1, t2);
 
   int total_height = t2.y - t0.y;
   for (int y = t0.y; y <= t2.y; y++) {
-    if (y < 0 || y >= buffer->height) break;
+    if (y < 0 || y >= buffer->height) continue;
     bool second_half = y > t1.y || t1.y == t0.y;
     int segment_height = second_half ? (t2.y - t1.y + 1) : (t1.y - t0.y + 1);
     r32 dy_total = (r32)(y - t0.y) / total_height;
@@ -131,9 +155,7 @@ void triangle_filled(Pixel_Buffer *buffer, v3i verts[], u32 color,
       int index = buffer->width * y + x;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
-        draw_pixel(buffer, V2i(x, y), color);
-      } else {
-        int a = 0;
+        draw_pixel(buffer, V2i(x, y), color, false);
       }
     }
   }
@@ -174,7 +196,7 @@ void triangle_shaded(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
 
   int total_height = t2.y - t0.y;
   for (int y = t0.y; y <= t2.y; y++) {
-    if (y < 0 || y >= buffer->height) break;
+    if (y < 0 || y >= buffer->height) continue;
     bool second_half = y > t1.y || t1.y == t0.y;
     int segment_height = second_half ? (t2.y - t1.y + 1) : (t1.y - t0.y + 1);
     r32 dy_total = (r32)(y - t0.y) / total_height;
@@ -221,11 +243,6 @@ void triangle_shaded(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
       }
     }
   }
-}
-
-void draw_ui_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color) {
-  // Draw line with the top left corner as the origin
-  draw_line(buffer, A, B, color, 1, true);
 }
 
 // void draw_ui_line(Pixel_Buffer *buffer, v2 A, v2 B, u32 color) {
@@ -1161,7 +1178,8 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       //                 V3(0, 0, 0));
       // TODO: transform them properly
       vns[j] = WorldTransform * model.vns[face.vn_ids[j]];
-      test_screen_verts[j] = ProjectionMatrix * CameraSpaceTransform * world_verts[j];
+      test_screen_verts[j] =
+          ProjectionMatrix * CameraSpaceTransform * world_verts[j];
     }
 
     // TODO: fix the textures
@@ -1188,39 +1206,27 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   {
     const int kLineCount = 21;
     const u32 kGridColor = 0x00555555;
-    v3 grid_frame[] = {V3(-1, 0, -1), V3(-1, 0, 1), V3(1, 0, 1), V3(1, 0, -1)};
-    for (size_t i = 0; i < COUNT_OF(grid_frame); i++) {
-      v3 vert1 = grid_frame[i];
-      v3 vert2 = grid_frame[(i + 1) % COUNT_OF(grid_frame)];
-      vert1 = WorldTransform * vert1;
-      vert2 = WorldTransform * vert2;
-      draw_line(buffer, V2i(vert1), V2i(vert2), kGridColor);
-    }
     for (int i = 0; i < kLineCount; ++i) {
       u32 color = kGridColor;
+      v3 vert1, vert2;
+      r32 step = -1.0f + i * 2.0f / (kLineCount - 1);
       // Along the x axis
       {
-        r32 z = -1.0f + i * 2.0f / (kLineCount - 1);
-        v3 vert1 = V3(-1.0f, 0.0f, z);
-        v3 vert2 = V3(1.0f, 0.0f, z);
-        vert1 = WorldTransform * vert1;
-        vert2 = WorldTransform * vert2;
+        vert1 = WorldTransform * V3(-1.0f, 0.0f, step);
+        vert2 = WorldTransform * V3(1.0f, 0.0f, step);
         if (i == kLineCount / 2) {
           color = kXColor;
         }
-        draw_line(buffer, V2i(vert1), V2i(vert2), color);
+        draw_line(buffer, vert1, vert2, color, z_buffer);
       }
       // Along the z axis
       {
-        r32 x = -1.0f + i * 2.0f / (kLineCount - 1);
-        v3 vert1 = V3(x, 0.0f, -1.0);
-        v3 vert2 = V3(x, 0.0f, 1.0);
-        vert1 = WorldTransform * vert1;
-        vert2 = WorldTransform * vert2;
+        vert1 = WorldTransform * V3(step, 0.0f, -1.0);
+        vert2 = WorldTransform * V3(step, 0.0f, 1.0);
         if (i == kLineCount / 2) {
           color = kZColor;
         }
-        draw_line(buffer, V2i(vert1), V2i(vert2), color);
+        draw_line(buffer, vert1, vert2, color, z_buffer);
       }
     }
   }

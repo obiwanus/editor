@@ -616,4 +616,14 @@ v3 Rotate(m3x3 Matrix, v3 Vector, v3 Base);
 v3 Rotate(m4x4 Matrix, v3 Vector, v3 Base);
 v3 Hadamard(v3 A, v3 B);
 
+template <typename T>
+T min(T val1, T val2) {
+  return (val1 < val2) ? val1 : val2;
+}
+
+template <typename T>
+T max(T val1, T val2) {
+  return (val1 > val2) ? val1 : val2;
+}
+
 #endif  // EDITOR_MATH_H
