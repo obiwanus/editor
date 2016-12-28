@@ -138,12 +138,12 @@ void triangle_filled(Pixel_Buffer *buffer, v3i verts[], u32 color,
     r32 dy_total = (r32)(y - t0.y) / total_height;
     r32 dy_segment =
         (r32)(second_half ? (y - t1.y) : (y - t0.y)) / segment_height;
-    v3i A = t0 + V3i(dy_total * V3(t2 - t0));
+    v3i A = lerp(t0, t2, dy_total);
     v3i B;
     if (!second_half) {
-      B = t0 + V3i(dy_segment * V3(t1 - t0));
+      B = lerp(t0, t1, dy_segment);
     } else {
-      B = t1 + V3i(dy_segment * V3(t2 - t1));
+      B = lerp(t1, t2, dy_segment);
     }
     if (A.x > B.x) {
       swap(A, B);
@@ -151,7 +151,7 @@ void triangle_filled(Pixel_Buffer *buffer, v3i verts[], u32 color,
     for (int x = A.x; x <= B.x; x++) {
       if (x < 0 || x >= buffer->width) continue;
       r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
-      r32 z = (1.0f - t) * A.z + t * B.z;
+      r32 z = lerp(A.z, B.z, t);
       int index = buffer->width * y + x;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
@@ -202,7 +202,7 @@ void triangle_shaded(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
     r32 dy_total = (r32)(y - t0.y) / total_height;
     r32 dy_segment =
         (r32)(second_half ? (y - t1.y) : (y - t0.y)) / segment_height;
-    v3i A = t0 + V3i(dy_total * V3(t2 - t0));
+    v3i A = t0 + V3i(dy_total * V3(t2 - t0));  // TODO: try lerp
     v3i B;
     v2 Atex = tex0 + dy_total * (tex2 - tex0);
     v2 Btex;
@@ -225,15 +225,15 @@ void triangle_shaded(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
     for (int x = A.x; x <= B.x; x++) {
       if (x < 0 || x >= buffer->width) continue;
       r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
-      r32 z = (1.0f - t) * A.z + t * B.z;
+      r32 z = lerp(A.z, B.z, t);
       int index = buffer->width * y + x;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
-        v3 n = ((1.0f - t) * An + t * Bn).normalized();
+        v3 n = lerp(An, Bn, t).normalized();
         r32 intensity = n * V3(0, 0, 1);
         if (intensity > 0) {
           // // Get color from texture
-          v2 texel = (1.0f - t) * Atex + t * Btex;
+          v2 texel = lerp(Atex, Btex, t);
           v2i tex_coords =
               V2i(texture.width * texel.u, texture.height * texel.v);
           u32 color = texture.color(tex_coords.x,

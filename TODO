@@ -1,6 +1,5 @@
 NOW:
 
-- lerp as a function
 - fix ortho projection too
 - add minimum luminance != 0
 - use gouraud shading on models (or phong-)
@@ -29,6 +28,7 @@ LINUX:
 
 DONE:
 [29/12/2016]
+- lerp as a function
 - make the grid use z buffer
 
 [28/12/2016]

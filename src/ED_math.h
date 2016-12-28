@@ -5,8 +5,8 @@
 #include "ED_base.h"
 
 #ifndef M_PI
-#define M_PI (r32)acos(-1.0)
-#endif // M_PI
+#define M_PI ((r32)acos(-1.0))
+#endif  // M_PI
 
 // ================ Misc ======================
 
@@ -168,25 +168,25 @@ union m4x4 {
 };
 
 namespace Matrix {
-  m4x4 identity();
-  // Rotation
-  m4x4 Rx(r32 angle);
-  m4x4 Ry(r32 angle);
-  m4x4 Rz(r32 angle);
-  m4x4 R(v3 axis, v3 angle, v3 point = {0, 0, 0});
-  // Scaling
-  m4x4 S(r32);
-  m4x4 S(r32, r32, r32);
-  // Translation
-  m4x4 T(r32, r32, r32);
-  m4x4 T(v3);
-  m4x4 viewport(int, int, int, int, int z_depth = 255);
-  // Projection
-  m4x4 ortho_projection(r32, r32, r32, r32, r32, r32);
-  m4x4 persp_projection(r32, r32, r32, r32, r32, r32);
-  // Change frame
-  m4x4 frame_to_canonical(basis3, v3);
-  m4x4 canonical_to_frame(basis3, v3);
+m4x4 identity();
+// Rotation
+m4x4 Rx(r32 angle);
+m4x4 Ry(r32 angle);
+m4x4 Rz(r32 angle);
+m4x4 R(v3 axis, v3 angle, v3 point = {0, 0, 0});
+// Scaling
+m4x4 S(r32);
+m4x4 S(r32, r32, r32);
+// Translation
+m4x4 T(r32, r32, r32);
+m4x4 T(v3);
+m4x4 viewport(int, int, int, int, int z_depth = 255);
+// Projection
+m4x4 ortho_projection(r32, r32, r32, r32, r32, r32);
+m4x4 persp_projection(r32, r32, r32, r32, r32, r32);
+// Change frame
+m4x4 frame_to_canonical(basis3, v3);
+m4x4 canonical_to_frame(basis3, v3);
 }
 
 // ==================== Construction ======================
@@ -320,9 +320,7 @@ inline v3 V3(v2 XY, r32 Z) {
 
 // ========================== scalar operations ====================
 
-inline r32 square(r32 A) {
-  return A * A;
-}
+inline r32 square(r32 A) { return A * A; }
 
 // ========================== v2 operations ========================
 
@@ -452,6 +450,11 @@ inline v3 operator*(v3 B, r32 A) {
   return result;
 }
 
+inline v3i operator*(r32 value, v3i A) {
+  v3i result = V3i(value * V3(A));
+
+  return result;
+}
 
 inline v3 operator/(v3 A, r32 B) {
   v3 result;
@@ -553,7 +556,6 @@ inline bool operator!=(v3 A, v3 B) {
   return result;
 }
 
-
 // ================= v4 and m4x4 ====================
 
 inline r32 operator*(v4 A, v4 B) {
@@ -565,10 +567,14 @@ inline r32 operator*(v4 A, v4 B) {
 inline v4 operator*(m4x4 M, v4 V) {
   v4 result = {};
 
-  result.x = M.rows[0].x * V.x + M.rows[0].y * V.y + M.rows[0].z * V.z + M.rows[0].w * V.w;
-  result.y = M.rows[1].x * V.x + M.rows[1].y * V.y + M.rows[1].z * V.z + M.rows[1].w * V.w;
-  result.z = M.rows[2].x * V.x + M.rows[2].y * V.y + M.rows[2].z * V.z + M.rows[2].w * V.w;
-  result.w = M.rows[3].x * V.x + M.rows[3].y * V.y + M.rows[3].z * V.z + M.rows[3].w * V.w;
+  result.x = M.rows[0].x * V.x + M.rows[0].y * V.y + M.rows[0].z * V.z +
+             M.rows[0].w * V.w;
+  result.y = M.rows[1].x * V.x + M.rows[1].y * V.y + M.rows[1].z * V.z +
+             M.rows[1].w * V.w;
+  result.z = M.rows[2].x * V.x + M.rows[2].y * V.y + M.rows[2].z * V.z +
+             M.rows[2].w * V.w;
+  result.w = M.rows[3].x * V.x + M.rows[3].y * V.y + M.rows[3].z * V.z +
+             M.rows[3].w * V.w;
 
   return result;
 }
@@ -624,6 +630,11 @@ T min(T val1, T val2) {
 template <typename T>
 T max(T val1, T val2) {
   return (val1 > val2) ? val1 : val2;
+}
+
+template <typename T>
+inline T lerp(T val1, T val2, r32 t) {
+  return val1 + t * (val2 - val1);
 }
 
 #endif  // EDITOR_MATH_H
