@@ -117,7 +117,8 @@ void Camera::adjust_frustum(int width, int height) {
   assert (width > 0 && height > 0);
   r32 aspect_ratio = (r32)width / (r32)height;
   // Vertical field of view is fixed at 60 degrees
-  this->top = abs(this->near) * (r32)tan(this->vertical_FOV / 2);
+  const r32 kVerticalFOV = M_PI / 3;
+  this->top = abs(this->near) * (r32)tan( kVerticalFOV / 2);
   this->right = this->top * aspect_ratio;
 }
 

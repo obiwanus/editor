@@ -40,8 +40,6 @@ struct Model : Entity {
 };
 
 struct Camera : Entity {
-  static constexpr r32 vertical_FOV = 3.14159265358979323846f / 3;
-
   // View frustum
   r32 near = -1.0f;
   r32 far = -20.0f;

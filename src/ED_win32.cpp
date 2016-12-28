@@ -340,6 +340,9 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
           if (vk_code == VK_RIGHT || vk_code == 'D') {
             new_input->buttons[IB_right] = is_down;
           }
+          if (vk_code == '5') {
+            new_input->buttons[IB_toggle_projection] = is_down;
+          }
         } break;
 
         case WM_MOUSEWHEEL: {
