@@ -168,8 +168,8 @@ void triangle_filled(Pixel_Buffer *buffer, v3 verts[], u32 color,
   // clang-format on
 }
 
-void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[],
-                     r32 *z_buffer, v3 light_dir) {
+void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[], r32 *z_buffer,
+                     v3 light_dir) {
   // clang-format off
   v2i t0 = V2i(verts[0]); r32 z0 = verts[0].z;
   v2i t1 = V2i(verts[1]); r32 z1 = verts[1].z;
@@ -182,7 +182,7 @@ void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[],
   light_dir = light_dir.normalized();
   r32 in[3];
   for (int i = 0; i < 3; ++i) {
-    in[i] = vns[i].normalized() * light_dir;
+    in[i] = -vns[i].normalized() * light_dir;
   }
 
   if (t0.y > t1.y) { swap(t0, t1); swap(z0, z1); swap(in[0], in[1]); }
@@ -1216,7 +1216,8 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   this->camera.adjust_frustum(buffer->width, buffer->height);
 
   m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
-  m4x4 ModelTransform = Matrix::identity();
+  m4x4 ModelTransform =
+      Matrix::S(0.5f) * Matrix::T(-1.0f, 0.3f, -0.5f) * Matrix::Ry(M_PI / 3);
 
   m4x4 ProjectionMatrix = camera.projection_matrix();
 
@@ -1226,7 +1227,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   m4x4 WorldTransform =
       ViewportTransform * ProjectionMatrix * CameraSpaceTransform;
 
-  m4x4 ResultTransform = WorldTransform;
+  m4x4 ResultTransform = WorldTransform * ModelTransform;
 
   // TODO: move it
   r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));
@@ -1246,14 +1247,14 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       texture_verts[j] = model.vts[face.vt_ids[j]];
       screen_verts[j] = ResultTransform * world_verts[j];
       vns[j] = model.vns[face.vn_ids[j]];
+      vns[j] = V3(ModelTransform * V4_v(vns[j])).normalized();
     }
 
     v3 light_dir = this->camera.direction;
-
-// TODO: fix the textures
 #if 1
+    // TODO: fix the textures
     triangle_shaded(buffer, screen_verts, vns, z_buffer, light_dir);
-    // triangle_wireframe(buffer, screen_verts, 0x00999999);
+// triangle_wireframe(buffer, screen_verts, 0x00999999);
 #else
     {
       // Draw single color grey facets
@@ -1270,6 +1271,14 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       }
     }
 #endif
+
+    // // Debug draw normals
+    // for (int j = 0; j < 3; ++j) {
+    //   world_verts[j] = model.vertices[face.v_ids[j]];
+    //   vns[j] = model.vns[face.vn_ids[j]];
+    //   v3 normal_end =  ResultTransform * (world_verts[j] + (vns[j] * 0.1f));
+    //   draw_line(buffer, V2i(screen_verts[j]), V2i(normal_end), 0x00FF0000);
+    // }
   }
 
   // Draw grid

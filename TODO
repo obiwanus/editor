@@ -1,7 +1,6 @@
 NOW:
 
-- use gouraud shading on models (or phong-)
-- vertical rotation on models
+- vertical rotation of camera
 - move camera base point with shift
 - add the model dragger axis
 - drag the model
@@ -27,6 +26,7 @@ LINUX:
 DONE:
 
 [30/12/2016]
+- use gouraud shading on models (or phong-)
 - backface culling for viewing direction (not light)
 
 [29/12/2016]
