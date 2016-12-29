@@ -1,5 +1,6 @@
 NOW:
 
+- backface culling for viewing direction (not light)
 - fix visible back faces on the cube
 - use gouraud shading on models (or phong-)
 - vertical rotation on models

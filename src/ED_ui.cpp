@@ -234,7 +234,7 @@ void triangle_textured(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
     for (int x = A.x; x <= B.x; x++) {
       if (x < 0 || x >= buffer->width) continue;
       r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
-      r32 z = lerp(A.z, B.z, t);
+      r32 z = (r32)lerp(A.z, B.z, t);
       int index = buffer->width * y + x;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;

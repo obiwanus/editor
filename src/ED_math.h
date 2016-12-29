@@ -640,7 +640,7 @@ T max(T val1, T val2) {
 
 template <typename T>
 inline T lerp(T val1, T val2, r32 t) {
-  return val1 + t * (val2 - val1);
+  return (T)(val1 + (t * (val2 - val1)));
 }
 
 #endif  // EDITOR_MATH_H
