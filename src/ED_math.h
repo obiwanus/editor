@@ -60,22 +60,22 @@ union v3 {
   struct {
     r32 r, g, b;
   };
-  struct {
-    v2 xy;
-    r32 _ignored0;
-  };
-  struct {
-    r32 _ignored1;
-    v2 yz;
-  };
-  struct {
-    v2 uv;
-    r32 _ignored2;
-  };
-  struct {
-    r32 _ignored3;
-    v2 vw;
-  };
+  // struct {
+  //   v2 xy;
+  //   r32 _ignored0;
+  // };
+  // struct {
+  //   r32 _ignored1;
+  //   v2 yz;
+  // };
+  // struct {
+  //   v2 uv;
+  //   r32 _ignored2;
+  // };
+  // struct {
+  //   r32 _ignored3;
+  //   v2 vw;
+  // };
   r32 E[3];
 
   r32 len();

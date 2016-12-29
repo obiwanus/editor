@@ -125,18 +125,22 @@ void triangle_filled(Pixel_Buffer *buffer, v3 verts[], u32 color,
   v2i t1 = V2i(verts[1]); r32 z1 = verts[1].z;
   v2i t2 = V2i(verts[2]); r32 z2 = verts[2].z;
 
+  v3 ov0 = verts[0];
+  v3 ov1 = verts[1];
+  v3 ov2 = verts[2];
+
+  if (ov0.y > ov1.y) { swap(t0, t1); swap(z0, z1); swap(ov0, ov1); }
+  if (ov0.y > ov2.y) { swap(t0, t2); swap(z0, z2); swap(ov0, ov2); }
+  if (ov1.y > ov2.y) { swap(t1, t2); swap(z1, z2); swap(ov1, ov2); }
+
   if (t0.y == t1.y && t1.y == t2.y) return;
   if (t0.x == t1.x && t1.x == t2.x) return;
-
-  if (t0.y > t1.y) { swap(t0, t1); swap(z0, z1); }
-  if (t0.y > t2.y) { swap(t0, t2); swap(z0, z2); }
-  if (t1.y > t2.y) { swap(t1, t2); swap(z1, z2); }
 
   int total_height = t2.y - t0.y;
   for (int y = t0.y; y <= t2.y; y++) {
     if (y < 0 || y >= buffer->height) continue;
     bool second_half = y > t1.y || t1.y == t0.y;
-    int segment_height = second_half ? (t2.y - t1.y + 1) : (t1.y - t0.y + 1);
+    int segment_height = second_half ? (t2.y - t1.y) : (t1.y - t0.y);
     r32 dy_total = (r32)(y - t0.y) / total_height;
     r32 dy_segment =
         (r32)(second_half ? (y - t1.y) : (y - t0.y)) / segment_height;
@@ -1119,6 +1123,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     if (active) {
       bgcolor = 0x3A;
     }
+    // bgcolor = 0xff;
     memset(buffer->memory, bgcolor,
            buffer->width * buffer->height * sizeof(u32));
   }

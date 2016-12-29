@@ -1,6 +1,6 @@
 NOW:
 
-- fix occasional gaps between triangles
+- fix visible back faces on the cube
 - use gouraud shading on models (or phong-)
 - vertical rotation on models
 - move camera base point with shift
@@ -26,6 +26,7 @@ LINUX:
 
 DONE:
 [29/12/2016]
+- fix occasional gaps between triangles
 - fix the shitty drawing of the cube (z-buffer)
 - add minimum luminance != 0
 - fix ortho projection too
