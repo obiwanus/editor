@@ -16,7 +16,7 @@ inline r32 abs(r32 value) {
 }
 
 inline i32 round_i32(r32 value) {
-  i32 result = (int)(value + 0.5f);
+  i32 result = (i32)roundf(value);
   return result;
 }
 

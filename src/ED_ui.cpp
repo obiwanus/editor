@@ -48,13 +48,13 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
   int error_step = sign * dy;
   int y = A.y;
   for (int x = A.x; x <= B.x; ++x) {
-    int X = x, Y = y;
-    if (swapped) swap(X, Y);  // unswap for drawing
     for (int i = 0; i < width; ++i) {
-      if (X >= 0 && X < buffer->width && (Y + i) >= 0 &&
-          (Y + i) < buffer->height) {
-        draw_pixel(buffer, V2i(X, Y + i), color, top_left);
+      int X = x, Y = y + i;
+      if (swapped) {
+        X = y + i;
+        Y = x;
       }
+      draw_pixel(buffer, V2i(X, Y), color, top_left);
     }
     error += error_step;
     if (error > 0) {

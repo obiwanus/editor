@@ -19,12 +19,12 @@ OPTIMIZE=false
 RUN=false
 
 if [ "$1" = "run" ]; then
-    OPTIMIZE=true
+    # OPTIMIZE=true
     RUN=true
 fi
 
 if $OPTIMIZE; then
-    CFLAGS="$CFLAGS -O3 -Wdisabled-optimization"
+    CFLAGS="$CFLAGS -O2"
 fi
 
 g++ --std=c++11 -Isrc/ $CFLAGS $FILES_TO_COMPILE $LFLAGS -o build/editor

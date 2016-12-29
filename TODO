@@ -26,6 +26,7 @@ LINUX:
 
 DONE:
 [29/12/2016]
+- fixed a nasty rounding error
 - fix occasional gaps between triangles
 - fix the shitty drawing of the cube (z-buffer)
 - add minimum luminance != 0
