@@ -1198,16 +1198,20 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     if (input->button_is_down(IB_mouse_middle)) {
       if (input->button_went_down(IB_mouse_middle)) {
         this->camera.old_position = this->camera.position;
+        this->camera.old_up = this->camera.up;
+        this->camera.old_basis = this->camera.get_basis();
       }
       // Rotate camera around origin
       const int kSensitivity = 500;
       v2i delta = input->mouse_positions[IB_mouse_middle] - input->mouse;
-      r32 angle = (M_PI / kSensitivity) * delta.x;
-      this->camera.position = Matrix::Ry(angle) * this->camera.old_position;
+      v2 angles = (M_PI / kSensitivity) * V2(delta);
+      m4x4 CameraRotate = this->camera.rotation_matrix(angles);
+      this->camera.position = CameraRotate * this->camera.old_position;
+      this->camera.up = V3(CameraRotate * V4_v(this->camera.old_up));
       this->camera.look_at(V3(0, 0, 0));
     }
     // Move camera on scroll
-    if (input->scroll) {
+    if (input->scroll && !input->button_is_down(IB_mouse_middle)) {
       this->camera.position += this->camera.direction *
                                this->camera.distance_to_pivot() *
                                (input->scroll / 10.0f);
@@ -1216,7 +1220,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   this->camera.adjust_frustum(buffer->width, buffer->height);
 
   m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
-  m4x4 ModelTransform =
+  m4x4 ModelTransform =  // Matrix::identity();
       Matrix::S(0.5f) * Matrix::T(-1.0f, 0.3f, -0.5f) * Matrix::Ry(M_PI / 3);
 
   m4x4 ProjectionMatrix = camera.projection_matrix();

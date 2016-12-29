@@ -15,6 +15,8 @@ SOMEDAY:
 - shortcut numpad keys to change orientation
 - a panel with buttons to add primitives
 
+- Warp cursor pointer when rotating
+- Fix the blue axis in the corner
 - Allocate max size and no more glitches on resize please
 - Logging
 

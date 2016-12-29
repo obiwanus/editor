@@ -276,6 +276,15 @@ inline v2 V2(r32 X, r32 Y) {
   return result;
 }
 
+inline v2 V2(v2i A) {
+  v2 result;
+
+  result.x = (r32)A.x;
+  result.y = (r32)A.y;
+
+  return result;
+}
+
 inline v3 V3(v3i A) {
   v3 result;
 

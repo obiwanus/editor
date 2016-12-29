@@ -50,10 +50,13 @@ struct Camera : Entity {
 
   v3 pivot = {};
   v3 old_position = {};
+  v3 old_up = {};
+  basis3 old_basis = {};
 
   void adjust_frustum(int, int);
   void look_at(v3);
   m4x4 projection_matrix();
+  m4x4 rotation_matrix(v2);
   r32 distance_to_pivot();
 };
 

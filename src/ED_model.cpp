@@ -114,11 +114,11 @@ basis3 Entity::get_basis() {
 }
 
 void Camera::adjust_frustum(int width, int height) {
-  assert (width > 0 && height > 0);
+  assert(width > 0 && height > 0);
   r32 aspect_ratio = (r32)width / (r32)height;
   // Vertical field of view is fixed at 60 degrees
   const r32 kVerticalFOV = M_PI / 3;
-  this->top = abs(this->near) * (r32)tan( kVerticalFOV / 2);
+  this->top = abs(this->near) * (r32)tan(kVerticalFOV / 2);
   this->right = this->top * aspect_ratio;
 }
 
@@ -138,6 +138,18 @@ m4x4 Camera::projection_matrix() {
   } else {
     result = Matrix::persp_projection(-right, right, -top, top, near, far);
   }
+  return result;
+}
+
+m4x4 Camera::rotation_matrix(v2 angles) {
+  m4x4 Horizontal = Matrix::Ry(angles.x);
+  if (this->old_up.y < 0) {
+    Horizontal = Horizontal.transposed();
+  }
+  m4x4 Vertical = Matrix::frame_to_canonical(this->old_basis, this->pivot) *
+                  Matrix::Rx(angles.y) *
+                  Matrix::canonical_to_frame(this->old_basis, this->pivot);
+  m4x4 result = Horizontal * Vertical;
   return result;
 }
 
