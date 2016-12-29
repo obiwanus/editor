@@ -54,7 +54,9 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
         X = y + i;
         Y = x;
       }
-      draw_pixel(buffer, V2i(X, Y), color, top_left);
+      if (X >= 0 && X < buffer->width && Y >= 0 && Y < buffer->height) {
+        draw_pixel(buffer, V2i(X, Y), color, top_left);
+      }
     }
     error += error_step;
     if (error > 0) {
@@ -1202,11 +1204,14 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       v3 vert1 = world_verts[0];
       v3 vert2 = world_verts[1];
       v3 vert3 = world_verts[2];
-      v3 n = ((vert2 - vert1).cross(vert3 - vert1)).normalized();
-      r32 intensity = lerp(0.2f, 1.0f, abs(n * this->camera.direction));
-      const r32 grey = 0.7f;
-      u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
-      triangle_filled(buffer, screen_verts, color, z_buffer);
+      v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
+      r32 intensity = n * this->camera.direction;
+      if (intensity >= 0) {
+        intensity = lerp(0.2f, 1.0f, intensity);
+        const r32 grey = 0.7f;
+        u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
+        triangle_filled(buffer, screen_verts, color, z_buffer);
+      }
     }
   }
 

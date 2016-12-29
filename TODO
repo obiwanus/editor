@@ -1,7 +1,5 @@
 NOW:
 
-- backface culling for viewing direction (not light)
-- fix visible back faces on the cube
 - use gouraud shading on models (or phong-)
 - vertical rotation on models
 - move camera base point with shift
@@ -13,6 +11,7 @@ NOW:
 
 
 SOMEDAY:
+- fix visible back faces on the cube
 - scale and rotate manipulators
 - shortcut numpad keys to change orientation
 - a panel with buttons to add primitives
@@ -26,6 +25,10 @@ LINUX:
 
 
 DONE:
+
+[30/12/2016]
+- backface culling for viewing direction (not light)
+
 [29/12/2016]
 - fixed a nasty rounding error
 - fix occasional gaps between triangles
