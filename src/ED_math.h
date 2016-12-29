@@ -318,6 +318,21 @@ inline v3 V3(v2 XY, r32 Z) {
   return result;
 }
 
+inline v3 V3(v4 A) {
+  v3 result = {A.x, A.y, A.z};
+  return result;
+}
+
+inline v4 V4_v(v3 A) {
+  v4 result = {A.x, A.y, A.z, 0};
+  return result;
+}
+
+inline v4 V4_p(v3 A) {
+  v4 result = {A.x, A.y, A.z, 1};
+  return result;
+}
+
 // ========================== scalar operations ====================
 
 inline r32 square(r32 A) { return A * A; }
@@ -620,13 +635,6 @@ inline m4x4 operator*(m4x4 M1, m4x4 M2) {
 }
 
 // ================= Functions ======================
-
-r32 AngleBetween(v2 A, v2 B);
-v2 Transform(m3x3 Matrix, v2 Vector);
-v2 Rotate(m3x3 Matrix, v2 Vector, v2 Base);
-v3 Rotate(m3x3 Matrix, v3 Vector, v3 Base);
-v3 Rotate(m4x4 Matrix, v3 Vector, v3 Base);
-v3 Hadamard(v3 A, v3 B);
 
 template <typename T>
 T min(T val1, T val2) {

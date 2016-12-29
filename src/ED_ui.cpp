@@ -111,7 +111,7 @@ void draw_line(Pixel_Buffer *buffer, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
   }
 }
 
-void triangle_wireframe(Pixel_Buffer *buffer, v3i verts[], u32 color) {
+void triangle_wireframe(Pixel_Buffer *buffer, v3 verts[], u32 color) {
   v2i vert0 = V2i(verts[0]);
   v2i vert1 = V2i(verts[1]);
   v2i vert2 = V2i(verts[2]);
@@ -127,16 +127,12 @@ void triangle_filled(Pixel_Buffer *buffer, v3 verts[], u32 color,
   v2i t1 = V2i(verts[1]); r32 z1 = verts[1].z;
   v2i t2 = V2i(verts[2]); r32 z2 = verts[2].z;
 
-  v3 ov0 = verts[0];
-  v3 ov1 = verts[1];
-  v3 ov2 = verts[2];
-
-  if (ov0.y > ov1.y) { swap(t0, t1); swap(z0, z1); swap(ov0, ov1); }
-  if (ov0.y > ov2.y) { swap(t0, t2); swap(z0, z2); swap(ov0, ov2); }
-  if (ov1.y > ov2.y) { swap(t1, t2); swap(z1, z2); swap(ov1, ov2); }
-
   if (t0.y == t1.y && t1.y == t2.y) return;
   if (t0.x == t1.x && t1.x == t2.x) return;
+
+  if (t0.y > t1.y) { swap(t0, t1); swap(z0, z1); }
+  if (t0.y > t2.y) { swap(t0, t2); swap(z0, z2); }
+  if (t1.y > t2.y) { swap(t1, t2); swap(z1, z2); }
 
   int total_height = t2.y - t0.y;
   for (int y = t0.y; y <= t2.y; y++) {
@@ -166,6 +162,71 @@ void triangle_filled(Pixel_Buffer *buffer, v3 verts[], u32 color,
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
         draw_pixel(buffer, V2i(x, y), color, false);
+      }
+    }
+  }
+  // clang-format on
+}
+
+void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[],
+                     r32 *z_buffer, v3 light_dir) {
+  // clang-format off
+  v2i t0 = V2i(verts[0]); r32 z0 = verts[0].z;
+  v2i t1 = V2i(verts[1]); r32 z1 = verts[1].z;
+  v2i t2 = V2i(verts[2]); r32 z2 = verts[2].z;
+
+  if (t0.y == t1.y && t1.y == t2.y) return;
+  if (t0.x == t1.x && t1.x == t2.x) return;
+
+  // Calculate intensity at vertices for Gouraud shading
+  light_dir = light_dir.normalized();
+  r32 in[3];
+  for (int i = 0; i < 3; ++i) {
+    in[i] = vns[i].normalized() * light_dir;
+  }
+
+  if (t0.y > t1.y) { swap(t0, t1); swap(z0, z1); swap(in[0], in[1]); }
+  if (t0.y > t2.y) { swap(t0, t2); swap(z0, z2); swap(in[0], in[2]); }
+  if (t1.y > t2.y) { swap(t1, t2); swap(z1, z2); swap(in[1], in[2]); }
+
+  int total_height = t2.y - t0.y;
+  for (int y = t0.y; y <= t2.y; y++) {
+    if (y < 0 || y >= buffer->height) continue;
+    bool second_half = y > t1.y || t1.y == t0.y;
+    int segment_height = second_half ? (t2.y - t1.y) : (t1.y - t0.y);
+    r32 dy_total = (r32)(y - t0.y) / total_height;
+    r32 dy_segment =
+        (r32)(second_half ? (y - t1.y) : (y - t0.y)) / segment_height;
+    v2i A = lerp(t0, t2, dy_total);
+    r32 A_z = lerp(z0, z2, dy_total);
+    r32 A_in = lerp(in[0], in[2], dy_total);
+    v2i B;
+    r32 B_z;
+    r32 B_in;
+    if (!second_half) {
+      B = lerp(t0, t1, dy_segment);
+      B_z = lerp(z0, z1, dy_segment);
+      B_in = lerp(in[0], in[1], dy_segment);
+    } else {
+      B = lerp(t1, t2, dy_segment);
+      B_z = lerp(z1, z2, dy_segment);
+      B_in = lerp(in[1], in[2], dy_segment);
+    }
+    if (A.x > B.x) { swap(A, B); swap(A_z, B_z); swap(A_in, B_in); };
+    for (int x = A.x; x <= B.x; x++) {
+      if (x < 0 || x >= buffer->width) continue;
+      r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
+      r32 z = lerp(A_z, B_z, t);
+      int index = buffer->width * y + x;
+      if (z_buffer[index] < z) {
+        z_buffer[index] = z;
+        r32 intensity = lerp(A_in, B_in, t);
+        if (intensity >= 0) {
+          intensity = lerp(0.2f, 1.0f, intensity);
+          const r32 grey = 0.7f;
+          u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
+          draw_pixel(buffer, V2i(x, y), color, false);
+        }
       }
     }
   }
@@ -1180,32 +1241,27 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     v2 texture_verts[3];
     v3 vns[3];
 
-    v3 test_screen_verts[3];
-
     for (int j = 0; j < 3; ++j) {
       world_verts[j] = model.vertices[face.v_ids[j]];
       texture_verts[j] = model.vts[face.vt_ids[j]];
       screen_verts[j] = ResultTransform * world_verts[j];
-      // vns[j] = Rotate(RotationMatrix * TiltMatrix, model.vns[face.vn_ids[j]],
-      //                 V3(0, 0, 0));
-      // TODO: transform them properly
-      vns[j] = WorldTransform * model.vns[face.vn_ids[j]];
-      test_screen_verts[j] =
-          ProjectionMatrix * CameraSpaceTransform * world_verts[j];
+      vns[j] = model.vns[face.vn_ids[j]];
     }
 
-    // TODO: fix the textures
-    // triangle_shaded(buffer, screen_verts, texture_verts, vns, model.texture,
-    //                 z_buffer);
-    // triangle_wireframe(buffer, screen_verts, 0x00999999);
+    v3 light_dir = this->camera.direction;
 
+// TODO: fix the textures
+#if 1
+    triangle_shaded(buffer, screen_verts, vns, z_buffer, light_dir);
+    // triangle_wireframe(buffer, screen_verts, 0x00999999);
+#else
     {
       // Draw single color grey facets
       v3 vert1 = world_verts[0];
       v3 vert2 = world_verts[1];
       v3 vert3 = world_verts[2];
       v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
-      r32 intensity = n * this->camera.direction;
+      r32 intensity = n * light_dir;
       if (intensity >= 0) {
         intensity = lerp(0.2f, 1.0f, intensity);
         const r32 grey = 0.7f;
@@ -1213,6 +1269,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
         triangle_filled(buffer, screen_verts, color, z_buffer);
       }
     }
+#endif
   }
 
   // Draw grid
