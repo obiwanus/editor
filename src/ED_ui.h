@@ -116,11 +116,11 @@ struct Editor_3DView : Area_Editor {
   Camera camera;
   Editor_3DView_State state;
 
-  void draw(User_Interface *, Model, User_Input *);
+  void draw(User_Interface *, Model *, User_Input *);
 };
 
 struct Editor_Raytrace : Area_Editor {
-  void draw(User_Interface *, Ray_Tracer *, Model);
+  void draw(User_Interface *, Ray_Tracer *);
 };
 
 struct Area {
@@ -216,8 +216,7 @@ struct User_Interface {
   Area_Splitter *split_area(Area *, v2i, bool);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
-  Update_Result update_and_draw(Pixel_Buffer *, User_Input *, Model);
-  void draw_areas(Ray_Tracer *, Model, User_Input *);
+  Update_Result update_and_draw(Pixel_Buffer *, User_Input *, Model *);
 };
 
 #endif  // __ED_UI_H__

@@ -942,7 +942,8 @@ void User_Interface::resize_window(int new_width, int new_height) {
 }
 
 Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
-                                              User_Input *input, Model model) {
+                                              User_Input *input,
+                                              Model *models) {
   Update_Result result = {};
   User_Interface *ui = this;
 
@@ -1063,12 +1064,12 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     switch (area->editor_type) {
       case Area_Editor_Type_3DView: {
         if (!area->editor_3dview.is_drawn) {
-          area->editor_3dview.draw(ui, model, input);
+          area->editor_3dview.draw(ui, models, input);
         }
       } break;
 
       case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.draw(ui, NULL, model);
+        area->editor_raytrace.draw(ui, NULL);
       } break;
 
       default: { assert(!"Unknown editor type"); } break;
@@ -1179,7 +1180,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   return result;
 }
 
-void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
+void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
   Pixel_Buffer *buffer = this->area->buffer;
   bool active = ui->active_area == this->area;
 
@@ -1259,50 +1260,53 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     z_buffer[i] = -INFINITY;
   }
 
-  for (int i = 0; i < sb_count(model.faces); ++i) {
-    Face face = model.faces[i];
-    v3 world_verts[3];
-    v3 screen_verts[3];
-    v2 texture_verts[3];
-    v3 vns[3];
+  for (int m = 0; m < sb_count(models); ++m) {
+    Model *model = models + m;
 
-    for (int j = 0; j < 3; ++j) {
-      world_verts[j] = model.vertices[face.v_ids[j]];
-      texture_verts[j] = model.vts[face.vt_ids[j]];
-      screen_verts[j] = ResultTransform * world_verts[j];
-      vns[j] = model.vns[face.vn_ids[j]];
-      vns[j] = V3(ModelTransform * V4_v(vns[j])).normalized();
-    }
+    for (int f = 0; f < sb_count(model->faces); ++f) {
+      Face face = model->faces[f];
+      v3 world_verts[3];
+      v3 screen_verts[3];
+      v2 texture_verts[3];
+      v3 vns[3];
 
-    v3 light_dir = this->camera.direction;
-#if 1
-    // TODO: fix the textures
-    triangle_shaded(buffer, screen_verts, vns, z_buffer, light_dir);
-// triangle_wireframe(buffer, screen_verts, 0x00999999);
-#else
-    {
-      // Draw single color grey facets
-      v3 vert1 = world_verts[0];
-      v3 vert2 = world_verts[1];
-      v3 vert3 = world_verts[2];
-      v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
-      r32 intensity = n * light_dir;
-      if (intensity >= 0) {
-        intensity = lerp(0.2f, 1.0f, intensity);
-        const r32 grey = 0.7f;
-        u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
-        triangle_filled(buffer, screen_verts, color, z_buffer);
+      for (int i = 0; i < 3; ++i) {
+        world_verts[i] = model->vertices[face.v_ids[i]];
+        texture_verts[i] = model->vts[face.vt_ids[i]];
+        screen_verts[i] = ResultTransform * world_verts[i];
+        vns[i] = model->vns[face.vn_ids[i]];
+        vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
       }
-    }
-#endif
 
-    // // Debug draw normals
-    // for (int j = 0; j < 3; ++j) {
-    //   world_verts[j] = model.vertices[face.v_ids[j]];
-    //   vns[j] = model.vns[face.vn_ids[j]];
-    //   v3 normal_end =  ResultTransform * (world_verts[j] + (vns[j] * 0.1f));
-    //   draw_line(buffer, V2i(screen_verts[j]), V2i(normal_end), 0x00FF0000);
-    // }
+      v3 light_dir = this->camera.direction;
+      // TODO: fix the textures
+      triangle_shaded(buffer, screen_verts, vns, z_buffer, light_dir);
+
+      // triangle_wireframe(buffer, screen_verts, 0x00999999);
+      // {
+      //   // Draw single color grey facets
+      //   v3 vert1 = world_verts[0];
+      //   v3 vert2 = world_verts[1];
+      //   v3 vert3 = world_verts[2];
+      //   v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
+      //   r32 intensity = n * light_dir;
+      //   if (intensity >= 0) {
+      //     intensity = lerp(0.2f, 1.0f, intensity);
+      //     const r32 grey = 0.7f;
+      //     u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
+      //     triangle_filled(buffer, screen_verts, color, z_buffer);
+      //   }
+      // }
+
+      // // Debug draw normals
+      // for (int j = 0; j < 3; ++j) {
+      //   world_verts[j] = model->vertices[face.v_ids[j]];
+      //   vns[j] = model->vns[face.vn_ids[j]];
+      //   v3 normal_end =  ResultTransform * (world_verts[j] + (vns[j] *
+      //   0.1f));
+      //   draw_line(buffer, V2i(screen_verts[j]), V2i(normal_end), 0x00FF0000);
+      // }
+    }
   }
 
   // Draw grid
@@ -1367,26 +1371,26 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   }
 }
 
-void Editor_Raytrace::draw(User_Interface *ui, Ray_Tracer *rt, Model model) {
+void Editor_Raytrace::draw(User_Interface *ui, Ray_Tracer *rt) {
   // TODO: ray tracer should probably be member and not
   // a function parameter
 
   // Debug draw texture image
-  // u32 *pitch = model.texture.width
-  Pixel_Buffer *buffer = this->area->buffer;
+  // u32 *pitch = model->texture.width
+  // Pixel_Buffer *buffer = this->area->buffer;
 
-  // TMP - buggy with bytes per pixel = 3
-  u32 *src = model.texture.data;
-  for (int y = 0; y < model.texture.height; ++y) {
-    if (y >= buffer->height) break;
-    for (int x = 0; x < model.texture.width; ++x) {
-      if (x >= buffer->width) continue;
-      u32 *pixel = (u32 *)buffer->memory + x + y * buffer->width;
-      u32 value = *(src + x);
-      *pixel = value;
-    }
-    src += model.texture.width;
-  }
+  // // TMP - buggy with bytes per pixel = 3
+  // u32 *src = model.texture.data;
+  // for (int y = 0; y < model.texture.height; ++y) {
+  //   if (y >= buffer->height) break;
+  //   for (int x = 0; x < model.texture.width; ++x) {
+  //     if (x >= buffer->width) continue;
+  //     u32 *pixel = (u32 *)buffer->memory + x + y * buffer->width;
+  //     u32 value = *(src + x);
+  //     *pixel = value;
+  //   }
+  //   src += model.texture.width;
+  // }
 
   if (rt == NULL) {
     // draw_rect(this->area->buffer, this->area->buffer->get_rect(),

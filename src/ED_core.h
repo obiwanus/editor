@@ -12,7 +12,7 @@ struct Program_State {
 
   User_Interface UI;
 
-  Model model;
+  Model *models = NULL;
 
   Ray_Tracer ray_tracer;
 

@@ -1,10 +1,13 @@
 NOW:
 
-- more than one model in the scene
-- drag the model without manipulator
+- each model has its own position/rotation/scale
+- fix stretchy buffer for c++
+- scene graph - research
+- scene graph - implementation
+- drag models without manipulator
 - make some text appear on the screen
 - add the model move manipulator
-- move the model along the axis using the manipulator
+- move models along the axis using the manipulator
 - maybe don't add special meaning to keys at the platform layer?
 - debug info output onto the screen
 - don't expect obj files to include normals
@@ -30,6 +33,7 @@ LINUX:
 DONE:
 
 [31/12/2016]
+- more than one model in the scene
 - fix the axis icon
 - fix the y axis tilting left and right when rotating (annoying!)
 

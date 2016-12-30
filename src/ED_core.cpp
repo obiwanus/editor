@@ -31,15 +31,19 @@ void Program_State::init(Program_Memory *memory) {
   Area *area = state->UI.create_area(
       NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});
 
-  // Load test model
-  // state->model.read_from_obj_file("../models/african_head/african_head.wobj");
-  // state->model.read_texture("../models/african_head/african_head_diffuse.jpg");
-  state->model.read_from_obj_file("../models/cube/cube.wobj");
-  state->model.read_texture("../models/cube/cube.png");
-  // state->model.read_from_obj_file("../models/capsule/capsule.wobj");
-  // state->model.read_texture("../models/capsule/capsule0.jpg");
-  // state->model.read_from_obj_file("../models/teapot/teapot.wobj");
-  // state->model.read_texture("../models/african_head/african_head_diffuse.jpg");
+  Model model;
+
+  model.read_from_obj_file("../models/african_head/african_head.wobj");
+  model.read_texture("../models/african_head/african_head_diffuse.jpg");
+  sb_push(Model *, state->models, model);
+
+  model.read_from_obj_file("../models/cube/cube.wobj");
+  model.read_texture("../models/cube/cube.png");
+  sb_push(Model *, state->models, model);
+
+  // model.read_from_obj_file("../models/capsule/capsule.wobj");
+  // model.read_texture("../models/capsule/capsule0.jpg");
+  // sb_push(Model *, state->models, model);
 
   // Main ray tracer (tmp)
   Ray_Tracer *rt = &state->ray_tracer;
@@ -122,7 +126,7 @@ Update_Result update_and_render(Program_Memory *program_memory,
     }
   }
 
-  result = state->UI.update_and_draw(pixel_buffer, input, state->model);
+  result = state->UI.update_and_draw(pixel_buffer, input, state->models);
 
   return result;
 }
