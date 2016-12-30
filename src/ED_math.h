@@ -239,6 +239,15 @@ inline v2i V2i(v3 A) {
   return result;
 }
 
+inline v2i V2i(v4 A) {
+  v2i result;
+
+  result.x = round_i32(A.x);
+  result.y = round_i32(A.y);
+
+  return result;
+}
+
 inline v3i V3i(v3 A) {
   v3i result;
 
@@ -306,24 +315,17 @@ inline v3 V3(v3i A) {
 }
 
 inline v3 V3(r32 X, r32 Y, r32 Z) {
-  v3 result;
-
-  result.x = X;
-  result.y = Y;
-  result.z = Z;
-
+  v3 result = {X, Y, Z};
   return result;
 }
 
 inline v3 V3(i32 X, i32 Y, i32 Z) {
   v3 result = {(r32)X, (r32)Y, (r32)Z};
-
   return result;
 }
 
 inline v3 V3(u32 X, u32 Y, u32 Z) {
   v3 result = {(r32)X, (r32)Y, (r32)Z};
-
   return result;
 }
 
@@ -349,6 +351,21 @@ inline v4 V4_v(v3 A) {
 
 inline v4 V4_p(v3 A) {
   v4 result = {A.x, A.y, A.z, 1};
+  return result;
+}
+
+inline v4 V4(r32 X, r32 Y, r32 Z, r32 W) {
+  v4 result = {X, Y, Z, W};
+  return result;
+}
+
+inline v4 V4(i32 X, i32 Y, i32 Z, i32 W) {
+  v4 result = {(r32)X, (r32)Y, (r32)Z, (r32)W};
+  return result;
+}
+
+inline v4 V4(u32 X, u32 Y, u32 Z, u32 W) {
+  v4 result = {(r32)X, (r32)Y, (r32)Z, (r32)W};
   return result;
 }
 

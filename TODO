@@ -1,15 +1,17 @@
 NOW:
 
-- fix the axis icon
-- add the model dragger axis
-- drag the model
-- render letters into an asset file
+- more than one model in the scene
+- drag the model without manipulator
+- make some text appear on the screen
+- add the model move manipulator
+- move the model along the axis using the manipulator
 - maybe don't add special meaning to keys at the platform layer?
 - debug info output onto the screen
 - don't expect obj files to include normals
 
 
 SOMEDAY:
+- don't redraw areas unless something is happening
 - fix visible back faces on the cube
 - scale and rotate manipulators
 - shortcut numpad keys to change orientation
@@ -28,6 +30,7 @@ LINUX:
 DONE:
 
 [31/12/2016]
+- fix the axis icon
 - fix the y axis tilting left and right when rotating (annoying!)
 
 [30/12/2016]

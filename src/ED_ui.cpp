@@ -1339,17 +1339,16 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
 
   // Draw the axis in the corner
   {
-    m4x4 AxisIconTransform =
-        Matrix::viewport(5, 30, 60, 60) * CameraSpaceTransform;
+    m4x4 IconViewport = Matrix::viewport(5, 30, 60, 60);
+    v3 x = V3(CameraSpaceTransform * V4(1, 0, 0, 0));
+    v3 y = V3(CameraSpaceTransform * V4(0, 1, 0, 0));
+    v3 z = V3(CameraSpaceTransform * V4(0, 0, 1, 0));
 
-    v2i origin = V2i(AxisIconTransform * V3(0, 0, 0));
-    v2i x = V2i(AxisIconTransform * V3(1, 0, 0));
-    v2i y = V2i(AxisIconTransform * V3(0, 1, 0));
-    v2i z = V2i(AxisIconTransform * V3(0, 0, 1));
+    v2i origin = V2i(IconViewport * V3(0, 0, 0));
 
-    draw_line(buffer, origin, x, kXColor, 2);
-    draw_line(buffer, origin, z, kZColor, 2);
-    draw_line(buffer, origin, y, kYColor, 2);
+    draw_line(buffer, origin, V2i(IconViewport * x), kXColor, 2);
+    draw_line(buffer, origin, V2i(IconViewport * z), kZColor, 2);
+    draw_line(buffer, origin, V2i(IconViewport * y), kYColor, 2);
   }
 
   free(z_buffer);
