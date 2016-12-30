@@ -6,34 +6,6 @@
 #include "ED_model.h"
 #include "raytrace/ED_raytrace.h"
 
-
-// -------- TODO: move out somewhere -----------------
-
-struct Vertex {
-  v3 position;
-};
-
-struct Triangle {
-  v3 color;
-  int vertices[3];
-};
-
-// struct Edge {
-
-// };
-
-struct Mesh {
-  void *memory_block = NULL;
-
-  int num_vertices;
-  Vertex *vertices;
-
-  int num_triangles;
-  Triangle *triangles;
-};
-
-// -------- /TODO: move out somewhere ----------------
-
 enum Input_Button {
   IB_mouse_left = 0,
   IB_mouse_middle,
@@ -43,6 +15,8 @@ enum Input_Button {
   IB_down,
   IB_left,
   IB_right,
+
+  IB_shift,
 
   IB_toggle_projection,
 

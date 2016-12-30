@@ -1182,11 +1182,7 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
   bool active = ui->active_area == this->area;
 
   {
-    u8 bgcolor = 0x32;
-    if (active) {
-      bgcolor = 0x3A;
-    }
-    // bgcolor = 0xff;
+    u8 bgcolor = active ? 0x3A : 0x32;
     memset(buffer->memory, bgcolor,
            buffer->width * buffer->height * sizeof(u32));
   }
@@ -1195,23 +1191,35 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
     if (input->button_went_down(IB_toggle_projection)) {
       this->camera.ortho_projection = !this->camera.ortho_projection;
     }
-    if (input->button_is_down(IB_mouse_middle)) {
-      if (input->button_went_down(IB_mouse_middle)) {
-        this->camera.old_position = this->camera.position;
-        this->camera.old_up = this->camera.up;
-        this->camera.old_basis = this->camera.get_basis();
-      }
-      // Rotate camera around origin
-      const int kSensitivity = 500;
-      v2i delta = input->mouse_positions[IB_mouse_middle] - input->mouse;
-      v2 angles = (M_PI / kSensitivity) * V2(delta);
-      m4x4 CameraRotate = this->camera.rotation_matrix(angles);
-      this->camera.position = CameraRotate * this->camera.old_position;
-      this->camera.up = V3(CameraRotate * V4_v(this->camera.old_up));
-      this->camera.look_at(V3(0, 0, 0));
+    if (input->button_went_down(IB_mouse_middle)) {
+      // Remember position
+      this->camera.old_position = this->camera.position;
+      this->camera.old_up = this->camera.up;
+      this->camera.old_basis = this->camera.get_basis();
+      this->camera.old_pivot = this->camera.pivot;
     }
-    // Move camera on scroll
+    if (input->button_is_down(IB_mouse_middle)) {
+      v2i delta = input->mouse_positions[IB_mouse_middle] - input->mouse;
+      if (!input->button_is_down(IB_shift)) {
+        // Rotate camera around pivot
+        const int kSensitivity = 500;
+        v2 angles = (M_PI / kSensitivity) * V2(delta);
+        m4x4 CameraRotate = this->camera.rotation_matrix(angles);
+        this->camera.position = CameraRotate * this->camera.old_position;
+        this->camera.up = V3(CameraRotate * V4_v(this->camera.old_up));
+      } else {
+        // Move the pivot
+        basis3 basis = this->camera.old_basis;
+        v3 right = basis.u;
+        v3 up = basis.v;
+        v3 move_vector = (right * delta.x - up * delta.y) * 0.008f;
+        this->camera.pivot = this->camera.old_pivot + move_vector;
+        this->camera.position = this->camera.old_position + move_vector;
+      }
+      this->camera.look_at(this->camera.pivot);
+    }
     if (input->scroll && !input->button_is_down(IB_mouse_middle)) {
+      // Move camera on scroll
       this->camera.position += this->camera.direction *
                                this->camera.distance_to_pivot() *
                                (input->scroll / 10.0f);

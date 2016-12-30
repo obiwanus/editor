@@ -7,9 +7,6 @@
 #include "raytrace/ED_raytrace.h"
 
 struct Program_State {
-  // Tmp mesh
-  Mesh mesh;
-
   int kWindowWidth;
   int kWindowHeight;
 

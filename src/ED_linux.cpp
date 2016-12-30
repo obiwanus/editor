@@ -97,7 +97,6 @@ int main(int argc, char const *argv[]) {
   gRunning = true;
 
   while (gRunning) {
-
     // Process events
     while (XPending(display)) {
       XEvent event;
@@ -149,6 +148,8 @@ int main(int argc, char const *argv[]) {
             new_input->buttons[IB_left] = pressed;
           } else if (key == XK_Right) {
             new_input->buttons[IB_right] = pressed;
+          } else if (key == XK_Shift_L || key == XK_Shift_R) {
+            new_input->buttons[IB_shift] = pressed;
           } else if (symbol == '5') {
             new_input->buttons[IB_toggle_projection] = pressed;
           }

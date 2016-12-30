@@ -49,6 +49,7 @@ struct Camera : Entity {
   bool ortho_projection = false;
 
   v3 pivot = {};
+  v3 old_pivot = {};
   v3 old_position = {};
   v3 old_up = {};
   basis3 old_basis = {};

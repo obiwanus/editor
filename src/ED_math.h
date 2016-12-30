@@ -285,6 +285,16 @@ inline v2 V2(v2i A) {
   return result;
 }
 
+inline v3 V3(v2i A) {
+  v3 result;
+
+  result.x = (r32)A.x;
+  result.y = (r32)A.y;
+  result.z = 0;
+
+  return result;
+}
+
 inline v3 V3(v3i A) {
   v3 result;
 
