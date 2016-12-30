@@ -221,12 +221,11 @@ void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[], r32 *z_buffer,
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
         r32 intensity = lerp(A_in, B_in, t);
-        if (intensity >= 0) {
-          intensity = lerp(0.2f, 1.0f, intensity);
-          const r32 grey = 0.7f;
-          u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
-          draw_pixel(buffer, V2i(x, y), color, false);
-        }
+        if (intensity < 0) intensity = 0;
+        intensity = lerp(0.2f, 1.0f, intensity);
+        const r32 grey = 0.7f;
+        u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
+        draw_pixel(buffer, V2i(x, y), color, false);
       }
     }
   }
@@ -1199,11 +1198,11 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       this->camera.old_pivot = this->camera.pivot;
     }
     if (input->button_is_down(IB_mouse_middle)) {
-      v2i delta = input->mouse_positions[IB_mouse_middle] - input->mouse;
+      v2 delta = V2(input->mouse_positions[IB_mouse_middle] - input->mouse);
       if (!input->button_is_down(IB_shift)) {
         // Rotate camera around pivot
         const int kSensitivity = 500;
-        v2 angles = (M_PI / kSensitivity) * V2(delta);
+        v2 angles = (M_PI / kSensitivity) * delta;
         m4x4 CameraRotate = this->camera.rotation_matrix(angles);
         this->camera.position = CameraRotate * this->camera.old_position;
         this->camera.up = V3(CameraRotate * V4_v(this->camera.old_up));

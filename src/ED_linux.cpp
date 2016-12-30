@@ -140,17 +140,23 @@ int main(int argc, char const *argv[]) {
         if (pressed || released) {
           if (key == XK_Escape) {
             gRunning = false;
-          } else if (key == XK_Up) {
+          }
+          if (key == XK_Up) {
             new_input->buttons[IB_up] = pressed;
-          } else if (key == XK_Down) {
+          }
+          if (key == XK_Down) {
             new_input->buttons[IB_down] = pressed;
-          } else if (key == XK_Left) {
+          }
+          if (key == XK_Left) {
             new_input->buttons[IB_left] = pressed;
-          } else if (key == XK_Right) {
+          }
+          if (key == XK_Right) {
             new_input->buttons[IB_right] = pressed;
-          } else if (key == XK_Shift_L || key == XK_Shift_R) {
+          }
+          if (key == XK_Shift_L || key == XK_Shift_R) {
             new_input->buttons[IB_shift] = pressed;
-          } else if (symbol == '5') {
+          }
+          if (symbol == '5') {
             new_input->buttons[IB_toggle_projection] = pressed;
           }
         }
