@@ -143,12 +143,16 @@ m4x4 Camera::projection_matrix() {
 
 m4x4 Camera::rotation_matrix(v2 angles) {
   m4x4 Horizontal = Matrix::Ry(angles.x);
-  if (this->old_up.y < 0) {
-    Horizontal = Horizontal.transposed();
-  }
+  // if (this->old_up.y < 0) {
+  //   Horizontal = Horizontal.transposed();
+  // }
   m4x4 Vertical = Matrix::frame_to_canonical(this->old_basis, this->pivot) *
                   Matrix::Rx(angles.y) *
                   Matrix::canonical_to_frame(this->old_basis, this->pivot);
+  basis3 original_basis = {V3(1,0,0), V3(0,1,0), V3(0,0,1)};
+  Horizontal = Matrix::frame_to_canonical(original_basis, this->pivot) *
+                  Horizontal *
+                  Matrix::canonical_to_frame(original_basis, this->pivot);
   m4x4 result = Horizontal * Vertical;
   return result;
 }
