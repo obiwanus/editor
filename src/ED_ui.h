@@ -35,6 +35,7 @@ struct User_Input {
   User_Input *old;
 
   bool button_is_down(Input_Button);
+  bool button_was_down(Input_Button);
   bool button_went_down(Input_Button);
   bool button_went_up(Input_Button);
 };
@@ -105,8 +106,15 @@ struct Area_Editor {
   void update_and_draw(Pixel_Buffer *, User_Input *){};
 };
 
+enum Editor_3DView_State {
+  Editor_3DView_State_Normal = 0,
+  Editor_3DView_State_Camera_Rotate,
+  Editor_3DView_State_Pivot_Move,
+};
+
 struct Editor_3DView : Area_Editor {
   Camera camera;
+  Editor_3DView_State state;
 
   void draw(User_Interface *, Model, User_Input *);
 };

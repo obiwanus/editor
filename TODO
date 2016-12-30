@@ -1,8 +1,6 @@
 NOW:
 
-- fix the y axis tilting left and right when rotating (annoying!)
 - fix the axis icon
-- fix the disappearing face at some angles
 - add the model dragger axis
 - drag the model
 - render letters into an asset file
@@ -29,7 +27,11 @@ LINUX:
 
 DONE:
 
+[31/12/2016]
+- fix the y axis tilting left and right when rotating (annoying!)
+
 [30/12/2016]
+- fix the disappearing face at some angles
 - move camera base point with shift
 - vertical rotation of camera
 - use gouraud shading on models (or phong-)

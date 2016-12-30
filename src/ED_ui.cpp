@@ -381,19 +381,22 @@ int Rect::get_area() {
   return this->get_width() * this->get_height();
 }
 
-bool User_Input::button_is_down(Input_Button button) {
+inline bool User_Input::button_was_down(Input_Button button) {
+  if (this->old == NULL) return false;
+  return this->old->button_is_down(button);
+}
+
+inline bool User_Input::button_is_down(Input_Button button) {
   assert(button < IB__COUNT);
   return this->buttons[button];
 }
 
-bool User_Input::button_went_down(Input_Button button) {
-  if (this->old == NULL) return false;
-  return this->button_is_down(button) && !this->old->button_is_down(button);
+inline bool User_Input::button_went_down(Input_Button button) {
+  return this->button_is_down(button) && !this->button_was_down(button);
 }
 
-bool User_Input::button_went_up(Input_Button button) {
-  if (this->old == NULL) return false;
-  return !this->button_is_down(button) && this->old->button_is_down(button);
+inline bool User_Input::button_went_up(Input_Button button) {
+  return !this->button_is_down(button) && this->button_was_down(button);
 }
 
 Rect Area::get_split_handle(int num) {
@@ -1196,26 +1199,36 @@ void Editor_3DView::draw(User_Interface *ui, Model model, User_Input *input) {
       this->camera.old_up = this->camera.up;
       this->camera.old_basis = this->camera.get_basis();
       this->camera.old_pivot = this->camera.pivot;
+      if (input->button_is_down(IB_shift)) {
+        this->state = Editor_3DView_State_Pivot_Move;
+      } else {
+        this->state = Editor_3DView_State_Camera_Rotate;
+      }
     }
     if (input->button_is_down(IB_mouse_middle)) {
       v2 delta = V2(input->mouse_positions[IB_mouse_middle] - input->mouse);
-      if (!input->button_is_down(IB_shift)) {
+      if (this->state == Editor_3DView_State_Camera_Rotate) {
+        this->camera.pivot = this->camera.old_pivot;
         // Rotate camera around pivot
         const int kSensitivity = 500;
         v2 angles = (M_PI / kSensitivity) * delta;
         m4x4 CameraRotate = this->camera.rotation_matrix(angles);
         this->camera.position = CameraRotate * this->camera.old_position;
         this->camera.up = V3(CameraRotate * V4_v(this->camera.old_up));
-      } else {
+      } else if (this->state == Editor_3DView_State_Pivot_Move) {
         // Move the pivot
+        const r32 kSensitivity = 0.008f;  // TODO: vary?
+        this->camera.up = this->camera.old_up;
         basis3 basis = this->camera.old_basis;
         v3 right = basis.u;
         v3 up = basis.v;
-        v3 move_vector = (right * delta.x - up * delta.y) * 0.008f;
+        v3 move_vector = (right * delta.x - up * delta.y) * kSensitivity;
         this->camera.pivot = this->camera.old_pivot + move_vector;
         this->camera.position = this->camera.old_position + move_vector;
       }
       this->camera.look_at(this->camera.pivot);
+    } else {
+      this->state = Editor_3DView_State_Normal;
     }
     if (input->scroll && !input->button_is_down(IB_mouse_middle)) {
       // Move camera on scroll
