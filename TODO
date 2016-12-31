@@ -1,6 +1,6 @@
 NOW:
 
-- vary pivot moving speed depending on the distance
+- don't allocate z-buffer each frame
 - scene graph - research
 - scene graph - implementation
 - selecting models with mouse click
@@ -40,6 +40,7 @@ LINUX:
 DONE:
 
 [01/01/2017]
+- vary pivot moving speed depending on the distance
 - fix stretchy buffer for c++
 - custom orientation for models
 

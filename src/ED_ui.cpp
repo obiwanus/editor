@@ -1218,12 +1218,12 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
         this->camera.up = V3(CameraRotate * V4_v(this->camera.old_up));
       } else if (this->state == Editor_3DView_State_Pivot_Move) {
         // Move the pivot
-        const r32 kSensitivity = 0.008f;  // TODO: vary?
+        r32 sensitivity = 0.001f * this->camera.distance_to_pivot();
         this->camera.up = this->camera.old_up;
         basis3 basis = this->camera.old_basis;
         v3 right = basis.u;
         v3 up = basis.v;
-        v3 move_vector = (right * delta.x - up * delta.y) * kSensitivity;
+        v3 move_vector = (right * delta.x - up * delta.y) * sensitivity;
         this->camera.pivot = this->camera.old_pivot + move_vector;
         this->camera.position = this->camera.old_position + move_vector;
       }
