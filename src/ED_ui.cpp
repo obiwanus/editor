@@ -381,21 +381,21 @@ int Rect::get_area() {
   return this->get_width() * this->get_height();
 }
 
-inline bool User_Input::button_was_down(Input_Button button) {
+bool User_Input::button_was_down(Input_Button button) {
   if (this->old == NULL) return false;
   return this->old->button_is_down(button);
 }
 
-inline bool User_Input::button_is_down(Input_Button button) {
+bool User_Input::button_is_down(Input_Button button) {
   assert(button < IB__COUNT);
   return this->buttons[button];
 }
 
-inline bool User_Input::button_went_down(Input_Button button) {
+bool User_Input::button_went_down(Input_Button button) {
   return this->button_is_down(button) && !this->button_was_down(button);
 }
 
-inline bool User_Input::button_went_up(Input_Button button) {
+bool User_Input::button_went_up(Input_Button button) {
   return !this->button_is_down(button) && this->button_was_down(button);
 }
 
@@ -1241,8 +1241,6 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
   this->camera.adjust_frustum(buffer->width, buffer->height);
 
   m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
-  m4x4 ModelTransform =  // Matrix::identity();
-      Matrix::S(0.5f) * Matrix::T(-1.0f, 0.3f, -0.5f) * Matrix::Ry(M_PI / 3);
 
   m4x4 ProjectionMatrix = camera.projection_matrix();
 
@@ -1252,8 +1250,6 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
   m4x4 WorldTransform =
       ViewportTransform * ProjectionMatrix * CameraSpaceTransform;
 
-  m4x4 ResultTransform = WorldTransform * ModelTransform;
-
   // TODO: move it
   r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));
   for (int i = 0; i < buffer->width * buffer->height; ++i) {
@@ -1262,6 +1258,46 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
 
   for (int m = 0; m < sb_count(models); ++m) {
     Model *model = models + m;
+    if (!model->display) continue;
+
+    // Put model in the scene
+    m4x4 ModelTransform;
+    {
+      model->direction = Matrix::Ry(0.1f) * model->direction;
+
+      // v3 d = V3(model->transform_to_entity_space() *
+      // V4_v(model->default_direction.normalized()));
+      // basis3 original_basis = {V3(1, 0, 0), V3(0, 1, 0), V3(0, 0, 1)};
+      // m4x4 Horizontal = Matrix::frame_to_canonical(original_basis,
+      // this->pivot) *
+      //                   (this->old_up.y > 0 ? Matrix::Ry(angles.x)
+      //                                       :
+      //                                       Matrix::Ry(angles.x).transposed())
+      //                                       *
+      //                   Matrix::canonical_to_frame(original_basis,
+      //                   this->pivot);
+
+      // m4x4 Vertical = Matrix::frame_to_canonical(this->old_basis,
+      // this->pivot) *
+      //                 Matrix::Rx(angles.y) *
+      //                 Matrix::canonical_to_frame(this->old_basis,
+      //                 this->pivot);
+
+      // m4x4 result = Horizontal * Vertical;
+
+      r32 angle_y = acos(model->direction * model->default_direction);
+      if (model->default_direction.cross(model->direction).y < 0) {
+        angle_y = -angle_y;
+      }
+
+      assert(angle_y < 0 || angle_y >= 0);
+
+      // static r32 angle_y = 0;
+      // angle_y += 0.1f;
+
+      ModelTransform = //Matrix::T(model->position) * Matrix::S(model->scale) *
+          Matrix::Ry(angle_y); // * Matrix::Rx(asin(d.y));
+    }
 
     for (int f = 0; f < sb_count(model->faces); ++f) {
       Face face = model->faces[f];
@@ -1273,7 +1309,7 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
       for (int i = 0; i < 3; ++i) {
         world_verts[i] = model->vertices[face.v_ids[i]];
         texture_verts[i] = model->vts[face.vt_ids[i]];
-        screen_verts[i] = ResultTransform * world_verts[i];
+        screen_verts[i] = WorldTransform * ModelTransform * world_verts[i];
         vns[i] = model->vns[face.vn_ids[i]];
         vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
       }
@@ -1307,6 +1343,16 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
       //   draw_line(buffer, V2i(screen_verts[j]), V2i(normal_end), 0x00FF0000);
       // }
     }
+
+
+    draw_line(buffer, WorldTransform * model->position,
+                WorldTransform * (model->position + model->direction),
+                0x00FF0000, z_buffer);
+
+
+    draw_line(buffer, WorldTransform * model->position,
+                WorldTransform * (model->position + model->default_direction),
+                0x0000FF00, z_buffer);
   }
 
   // Draw grid

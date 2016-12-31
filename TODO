@@ -2,6 +2,7 @@ NOW:
 
 - each model has its own position/rotation/scale
 - fix stretchy buffer for c++
+- [bug] model disappears when changing direction
 - scene graph - research
 - scene graph - implementation
 - drag models without manipulator
@@ -11,6 +12,8 @@ NOW:
 - maybe don't add special meaning to keys at the platform layer?
 - debug info output onto the screen
 - don't expect obj files to include normals
+- use quaternions for model orientation
+- clipping
 
 
 SOMEDAY:
@@ -19,6 +22,7 @@ SOMEDAY:
 - scale and rotate manipulators
 - shortcut numpad keys to change orientation
 - a panel with buttons to add primitives
+- save scenes (and models)
 
 - Warp cursor pointer when rotating
 - Fix the blue axis in the corner
@@ -26,10 +30,14 @@ SOMEDAY:
 - Logging
 
 
+IDEAS:
+- don't transform the same vertex a few times
+
+
 LINUX:
 - window resize
 
-
+==============================================================================
 DONE:
 
 [31/12/2016]

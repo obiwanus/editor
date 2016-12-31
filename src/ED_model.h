@@ -20,9 +20,9 @@ struct Image {
 };
 
 struct Entity {
-  v3 position;
-  v3 up;
-  v3 direction;
+  v3 position = {{0, 0, 0}};
+  v3 up = {{0, 1.0f, 0}};
+  v3 direction = {{1.0f, 0, 0}};
 
   basis3 get_basis();
   m4x4 transform_to_entity_space();
@@ -34,6 +34,12 @@ struct Model : Entity {
   v2 *vts;
   Face *faces;
   Image texture;
+
+  r32 scale = 1.0f;
+  bool display = true;
+
+  // TODO: use quaternions for orientation
+  v3 default_direction = {{1.0f, 0, 0}};
 
   void read_from_obj_file(char *);
   void read_texture(char *);

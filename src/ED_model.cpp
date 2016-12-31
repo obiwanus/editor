@@ -142,6 +142,7 @@ m4x4 Camera::projection_matrix() {
 }
 
 m4x4 Camera::rotation_matrix(v2 angles) {
+  // NOTE: this function assumes this->old_basis had been computed!
   basis3 original_basis = {V3(1, 0, 0), V3(0, 1, 0), V3(0, 0, 1)};
   m4x4 Horizontal = Matrix::frame_to_canonical(original_basis, this->pivot) *
                     (this->old_up.y > 0 ? Matrix::Ry(angles.x)
