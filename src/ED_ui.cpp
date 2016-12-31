@@ -691,7 +691,7 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
     if (sb_count(this->areas) > this->num_areas) {
       this->areas[this->num_areas] = area;
     } else {
-      sb_push(Area **, this->areas, area);
+      sb_push(this->areas, area);
     }
     this->num_areas++;
 
@@ -835,7 +835,7 @@ Area_Splitter *User_Interface::split_area(Area *area, v2i mouse,
     if (sb_count(this->splitters) > this->num_splitters) {
       this->splitters[this->num_splitters] = splitter;
     } else {
-      sb_push(Area_Splitter **, this->splitters, splitter);
+      sb_push(this->splitters, splitter);
     }
     area->splitter = splitter;
     this->num_splitters++;
@@ -1233,7 +1233,7 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
     }
     if (input->scroll && !input->button_is_down(IB_mouse_middle)) {
       // Move camera on scroll
-      this->camera.position += this->camera.direction *
+      this->camera.position += -this->camera.direction *
                                this->camera.distance_to_pivot() *
                                (input->scroll / 10.0f);
     }

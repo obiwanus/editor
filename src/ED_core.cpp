@@ -41,7 +41,7 @@ void Program_State::init(Program_Memory *memory) {
   model.position = V3(-1.0f, 0.5f, 0.0f);
   model.direction = V3(-1, 1, 1);
   model.debug = true;
-  sb_push(Model *, state->models, model);
+  sb_push(state->models, model);
 
   model.read_from_obj_file("../models/cube/cube.wobj");
   model.read_texture("../models/cube/cube.png");
@@ -50,7 +50,7 @@ void Program_State::init(Program_Memory *memory) {
   model.direction = V3(1, 1, 1);
   model.display = true;
   model.debug = true;
-  sb_push(Model *, state->models, model);
+  sb_push(state->models, model);
 
   // model.read_from_obj_file("../models/capsule/capsule.wobj");
   // model.read_texture("../models/capsule/capsule0.jpg");

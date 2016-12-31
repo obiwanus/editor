@@ -33,7 +33,7 @@ void Model::read_from_obj_file(char *filename) {
     if (string[0] == 'v' && string[1] == ' ') {
       v3 vertex;
       sscanf(string + 2, "%f %f %f", &vertex.x, &vertex.y, &vertex.z);
-      sb_push(v3 *, this->vertices, vertex);
+      sb_push(this->vertices, vertex);
     }
     if (string[0] == 'f' && string[1] == ' ') {
       Face face;
@@ -46,17 +46,17 @@ void Model::read_from_obj_file(char *filename) {
         face.vn_ids[i]--;
         face.vt_ids[i]--;
       }
-      sb_push(Face *, this->faces, face);
+      sb_push(this->faces, face);
     }
     if (string[0] == 'v' && string[1] == 't' && string[2] == ' ') {
       v2 vt;  // only expecting 2d textures
       sscanf(string + 3, "%f %f", &vt.x, &vt.y);
-      sb_push(v2 *, this->vts, vt);
+      sb_push(this->vts, vt);
     }
     if (string[0] == 'v' && string[1] == 'n' && string[2] == ' ') {
       v3 vn;
       sscanf(string + 3, "%f %f %f", &vn.x, &vn.y, &vn.z);
-      sb_push(v3 *, this->vns, vn);
+      sb_push(this->vns, vn);
     }
   }
 

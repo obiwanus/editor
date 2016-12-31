@@ -1,7 +1,6 @@
 NOW:
 
-- custom orientation for models
-- fix stretchy buffer for c++
+- vary pivot moving speed depending on the distance
 - scene graph - research
 - scene graph - implementation
 - selecting models with mouse click
@@ -39,6 +38,10 @@ LINUX:
 
 ==============================================================================
 DONE:
+
+[01/01/2017]
+- fix stretchy buffer for c++
+- custom orientation for models
 
 [31/12/2016]
 - each model has its own position/scale

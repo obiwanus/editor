@@ -12,9 +12,9 @@
 #endif
 
 #define stb_sb_free(a)         ((a) ? free(stb__sbraw(a)),0 : 0)
-#define stb_sb_push(t,a,v)       (stb__sbmaybegrow(a,1,t), (a)[stb__sbn(a)++] = (v))
+#define stb_sb_push(a,v)       (stb__sbmaybegrow(a,1), (a)[stb__sbn(a)++] = (v))
 #define stb_sb_count(a)        ((a) ? stb__sbn(a) : 0)
-#define stb_sb_add(t,a,n)        (stb__sbmaybegrow(a,n,t), stb__sbn(a)+=(n), &(a)[stb__sbn(a)-(n)])
+#define stb_sb_add(a,n)        (stb__sbmaybegrow(a,n), stb__sbn(a)+=(n), &(a)[stb__sbn(a)-(n)])
 #define stb_sb_last(a)         ((a)[stb__sbn(a)-1])
 
 #define stb__sbraw(a) ((int *) (a) - 2)
@@ -22,12 +22,12 @@
 #define stb__sbn(a)   stb__sbraw(a)[1]
 
 #define stb__sbneedgrow(a,n)  ((a)==0 || stb__sbn(a)+(n) >= stb__sbm(a))
-#define stb__sbmaybegrow(a,n,t) (stb__sbneedgrow(a,(n)) ? stb__sbgrow(a,n,t) : 0)
-#define stb__sbgrow(a,n,t)      ((a) = (t)stb__sbgrowf((a), (n), sizeof(*(a))))
+#define stb__sbmaybegrow(a,n) (stb__sbneedgrow(a,(n)) ? stb__sbgrow(a,n) : 0)
+#define stb__sbgrow(a,n)      ((a) = stb__sbgrowf((a), (n), sizeof(*(a))))
 
 #include <stdlib.h>
 
-static void * stb__sbgrowf(void *arr, int increment, int itemsize)
+static void * stb__raw_sbgrowf(void *arr, int increment, int itemsize)
 {
    int dbl_cur = arr ? 2*stb__sbm(arr) : 0;
    int min_needed = stb_sb_count(arr) + increment;
@@ -45,4 +45,14 @@ static void * stb__sbgrowf(void *arr, int increment, int itemsize)
       return (void *) (2*sizeof(int)); // try to force a NULL pointer exception later
    }
 }
+
+#ifdef __cplusplus
+template<class T>
+static T * stb__sbgrowf(T * arr, int increment, int itemsize) {
+    return (T*)stb__raw_sbgrowf((void *)arr, increment, itemsize);
+}
+#else
+#define stb__sbgrowf stb__raw_sbgrowf
+#endif
+
 #endif // STB_STRETCHY_BUFFER_H_INCLUDED
