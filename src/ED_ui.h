@@ -134,6 +134,8 @@ struct Area {
   Area_Splitter *splitter = NULL;
   Pixel_Buffer *buffer = NULL;
 
+  r32 *z_buffer = NULL;
+
   Area_Editor_Type editor_type;
   Editor_3DView editor_3dview;
   Editor_Raytrace editor_raytrace;

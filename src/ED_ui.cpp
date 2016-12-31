@@ -729,6 +729,8 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
     area->buffer->allocate();
     area->buffer->width = area->get_width();
     area->buffer->height = area->get_height();
+
+    area->z_buffer = NULL;
   }
 
   // Init camera for 3d view (or copy from parent)
@@ -755,7 +757,16 @@ void User_Interface::remove_area(Area *area) {
   assert(sister_area != NULL);
 
   // Copy data from sister area
-  { parent_area->editor_3dview.camera = sister_area->editor_3dview.camera; }
+  {
+    parent_area->editor_3dview.camera = sister_area->editor_3dview.camera;
+    parent_area->z_buffer = sister_area->z_buffer;
+  }
+
+  // Remove z-buffer if any
+  if (area->z_buffer != NULL) {
+    free(area->z_buffer);
+    area->z_buffer = NULL;
+  }
 
   // Remove splitter
   {
@@ -860,10 +871,14 @@ Area_Splitter *User_Interface::split_area(Area *area, v2i mouse,
     splitter->areas[0] = this->create_area(area, rect1);
     splitter->areas[1] = this->create_area(area, rect2);
 
+    int smaller_area = rect1.get_area() < rect2.get_area() ? 0 : 1;
+    int bigger_area = (smaller_area + 1) % 2;
+
     // Make the new (smaller) area active
-    this->active_area = rect1.get_area() < rect2.get_area()
-                            ? splitter->areas[0]
-                            : splitter->areas[1];
+    this->active_area = splitter->areas[smaller_area];
+
+    // Use parent z-buffer in the bigger area
+    splitter->areas[bigger_area]->z_buffer = area->z_buffer;
   }
 
   return splitter;
@@ -1185,7 +1200,7 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
   bool active = ui->active_area == this->area;
 
   {
-    u8 bgcolor = active ? 0x3A : 0x32;
+    u8 bgcolor = active ? 0x3A : 0x36;
     memset(buffer->memory, bgcolor,
            buffer->width * buffer->height * sizeof(u32));
   }
@@ -1250,8 +1265,11 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
   m4x4 WorldTransform =
       ViewportTransform * ProjectionMatrix * CameraSpaceTransform;
 
-  // TODO: move it
-  r32 *z_buffer = (r32 *)malloc(buffer->width * buffer->height * sizeof(r32));
+  if (this->area->z_buffer == NULL) {
+    this->area->z_buffer =
+        (r32 *)malloc(buffer->max_width * buffer->max_height * sizeof(r32));
+  }
+  r32 *z_buffer = this->area->z_buffer;
   for (int i = 0; i < buffer->width * buffer->height; ++i) {
     z_buffer[i] = -INFINITY;
   }
@@ -1362,8 +1380,6 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
     draw_line(buffer, origin, V2i(IconViewport * z), kZColor, 2);
     draw_line(buffer, origin, V2i(IconViewport * y), kYColor, 2);
   }
-
-  free(z_buffer);
 
   // test dragging
   if (ui->active_area == this->area) {
