@@ -38,16 +38,19 @@ void Program_State::init(Program_Memory *memory) {
   model.read_from_obj_file("../models/african_head/african_head.wobj");
   model.read_texture("../models/african_head/african_head_diffuse.jpg");
   model.scale = 0.5f;
-  model.position = V3(-1, 1, -1);
-  model.default_direction = V3(0, 0, 1);
+  model.position = V3(-1.0f, 0.5f, 0.0f);
+  model.direction = V3(-1, 1, 1);
+  model.debug = true;
   sb_push(Model *, state->models, model);
 
-  // model.read_from_obj_file("../models/cube/cube.wobj");
-  // model.read_texture("../models/cube/cube.png");
-  // model.scale = 0.4f;
-  // model.position = V3(2, 1, -1);
-  // model.display = false;
-  // sb_push(Model *, state->models, model);
+  model.read_from_obj_file("../models/cube/cube.wobj");
+  model.read_texture("../models/cube/cube.png");
+  model.scale = 0.4f;
+  model.position = V3(0.5f, 0.3f, 0.0f);
+  model.direction = V3(1, 1, 1);
+  model.display = true;
+  model.debug = true;
+  sb_push(Model *, state->models, model);
 
   // model.read_from_obj_file("../models/capsule/capsule.wobj");
   // model.read_texture("../models/capsule/capsule0.jpg");

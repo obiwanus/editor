@@ -107,7 +107,7 @@ m4x4 Entity::transform_to_entity_space() {
 
 basis3 Entity::get_basis() {
   basis3 result;
-  result.w = -this->direction.normalized();
+  result.w = this->direction.normalized();
   result.u = this->up.cross(result.w).normalized();
   result.v = result.w.cross(result.u);
   return result;
@@ -124,7 +124,7 @@ void Camera::adjust_frustum(int width, int height) {
 
 void Camera::look_at(v3 point) {
   this->pivot = point;
-  this->direction = (point - this->position).normalized();
+  this->direction = -(point - this->position).normalized();
 }
 
 m4x4 Camera::projection_matrix() {

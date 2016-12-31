@@ -8,12 +8,16 @@ r32 v2::len() { return (r32)sqrt(x * x + y * y); }
 r32 v3::len() { return (r32)sqrt(x * x + y * y + z * z); }
 
 v2 v2::normalized() {
-  v2 result = *this / this->len();
+  r32 len = this->len();
+  if (len == 0) return V2(0, 0);
+  v2 result = *this / len;
   return result;
 }
 
 v3 v3::normalized() {
-  v3 result = *this / this->len();
+  r32 len = this->len();
+  if (len == 0) return V3(0, 0, 0);
+  v3 result = *this / len;
   return result;
 }
 

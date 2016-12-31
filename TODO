@@ -4,6 +4,7 @@ NOW:
 - fix stretchy buffer for c++
 - scene graph - research
 - scene graph - implementation
+- selecting models with mouse click
 - drag models without manipulator
 - make some text appear on the screen
 - add the model move manipulator

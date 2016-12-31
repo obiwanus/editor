@@ -1261,45 +1261,9 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
     if (!model->display) continue;
 
     // Put model in the scene
-    m4x4 ModelTransform;
-    {
-      model->direction = Matrix::Ry(0.1f) * model->direction;
-
-      // v3 d = V3(model->transform_to_entity_space() *
-      // V4_v(model->default_direction.normalized()));
-      // basis3 original_basis = {V3(1, 0, 0), V3(0, 1, 0), V3(0, 0, 1)};
-      // m4x4 Horizontal = Matrix::frame_to_canonical(original_basis,
-      // this->pivot) *
-      //                   (this->old_up.y > 0 ? Matrix::Ry(angles.x)
-      //                                       :
-      //                                       Matrix::Ry(angles.x).transposed())
-      //                                       *
-      //                   Matrix::canonical_to_frame(original_basis,
-      //                   this->pivot);
-
-      // m4x4 Vertical = Matrix::frame_to_canonical(this->old_basis,
-      // this->pivot) *
-      //                 Matrix::Rx(angles.y) *
-      //                 Matrix::canonical_to_frame(this->old_basis,
-      //                 this->pivot);
-
-      // m4x4 result = Horizontal * Vertical;
-
-      r32 angle_y = (r32)acos(model->direction.normalized() *
-                              model->default_direction.normalized());
-      if (model->default_direction.cross(model->direction).y < 0) {
-        angle_y = -angle_y;
-      }
-
-      assert(angle_y < 0 || angle_y >= 0);
-
-      // static r32 angle_y = 0;
-      // angle_y += 0.1f;
-
-      ModelTransform =  // Matrix::T(model->position) * Matrix::S(model->scale)
-                        // *
-          Matrix::Ry(angle_y);  // * Matrix::Rx(asin(d.y));
-    }
+    m4x4 ModelTransform =
+        Matrix::frame_to_canonical(model->get_basis(), model->position) *
+        Matrix::S(model->scale);
 
     for (int f = 0; f < sb_count(model->faces); ++f) {
       Face face = model->faces[f];
@@ -1316,7 +1280,7 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
         vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
       }
 
-      v3 light_dir = this->camera.direction;
+      v3 light_dir = -this->camera.direction;
       // TODO: fix the textures
       triangle_shaded(buffer, screen_verts, vns, z_buffer, light_dir);
 
@@ -1340,19 +1304,17 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
       // for (int j = 0; j < 3; ++j) {
       //   world_verts[j] = model->vertices[face.v_ids[j]];
       //   vns[j] = model->vns[face.vn_ids[j]];
-      //   v3 normal_end =  ResultTransform * (world_verts[j] + (vns[j] *
-      //   0.1f));
-      //   draw_line(buffer, V2i(screen_verts[j]), V2i(normal_end), 0x00FF0000);
+      //   v3 normal_end = WorldTransform * ModelTransform *
+      //                   (world_verts[j] + (vns[j] * 0.1f));
+      //   draw_line(buffer, screen_verts[j], normal_end, 0x00FF0000, z_buffer);
       // }
     }
 
-    draw_line(buffer, WorldTransform * model->position,
-              WorldTransform * (model->position + model->direction), 0x00FF0000,
-              z_buffer);
-
-    draw_line(buffer, WorldTransform * model->position,
-              WorldTransform * (model->position + model->default_direction),
-              0x0000FF00, z_buffer);
+    if (model->debug) {
+      draw_line(buffer, WorldTransform * model->position,
+                WorldTransform * (model->position + model->direction),
+                0x00FF0000, z_buffer);
+    }
   }
 
   // Draw grid

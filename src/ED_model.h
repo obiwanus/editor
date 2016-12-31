@@ -37,9 +37,7 @@ struct Model : Entity {
 
   r32 scale = 1.0f;
   bool display = true;
-
-  // TODO: use quaternions for orientation
-  v3 default_direction = {{1.0f, 0, 0}};
+  bool debug = false;
 
   void read_from_obj_file(char *);
   void read_texture(char *);
