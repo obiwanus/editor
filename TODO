@@ -1,8 +1,7 @@
 NOW:
 
-- each model has its own position/rotation/scale
+- custom orientation for models
 - fix stretchy buffer for c++
-- [bug] model disappears when changing direction
 - scene graph - research
 - scene graph - implementation
 - drag models without manipulator
@@ -41,6 +40,8 @@ LINUX:
 DONE:
 
 [31/12/2016]
+- each model has its own position/scale
+- [fixed] model disappears when changing direction
 - more than one model in the scene
 - fix the axis icon
 - fix the y axis tilting left and right when rotating (annoying!)

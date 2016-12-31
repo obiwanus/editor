@@ -1285,7 +1285,8 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
 
       // m4x4 result = Horizontal * Vertical;
 
-      r32 angle_y = acos(model->direction * model->default_direction);
+      r32 angle_y = (r32)acos(model->direction.normalized() *
+                              model->default_direction.normalized());
       if (model->default_direction.cross(model->direction).y < 0) {
         angle_y = -angle_y;
       }
@@ -1295,8 +1296,9 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
       // static r32 angle_y = 0;
       // angle_y += 0.1f;
 
-      ModelTransform = //Matrix::T(model->position) * Matrix::S(model->scale) *
-          Matrix::Ry(angle_y); // * Matrix::Rx(asin(d.y));
+      ModelTransform =  // Matrix::T(model->position) * Matrix::S(model->scale)
+                        // *
+          Matrix::Ry(angle_y);  // * Matrix::Rx(asin(d.y));
     }
 
     for (int f = 0; f < sb_count(model->faces); ++f) {
@@ -1344,15 +1346,13 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
       // }
     }
 
+    draw_line(buffer, WorldTransform * model->position,
+              WorldTransform * (model->position + model->direction), 0x00FF0000,
+              z_buffer);
 
     draw_line(buffer, WorldTransform * model->position,
-                WorldTransform * (model->position + model->direction),
-                0x00FF0000, z_buffer);
-
-
-    draw_line(buffer, WorldTransform * model->position,
-                WorldTransform * (model->position + model->default_direction),
-                0x0000FF00, z_buffer);
+              WorldTransform * (model->position + model->default_direction),
+              0x0000FF00, z_buffer);
   }
 
   // Draw grid
