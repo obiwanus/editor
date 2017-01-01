@@ -1208,7 +1208,8 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
       // Set cursor position to the point of intersection between the ray
       // and the plane passing through the camera pivot and orthogonal
       // to camera's direction
-      Ray ray = this->camera.get_ray_through_pixel(input->mouse);
+      v2i click = this->area->get_rect().projected_to_area(input->mouse);
+      Ray ray = this->camera.get_ray_through_pixel(click);
       r32 t = (this->camera.pivot - ray.origin) * this->camera.direction /
               (ray.direction * this->camera.direction);
       ui->cursor = ray.point_at(t);

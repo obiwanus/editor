@@ -11,7 +11,6 @@ FILES_TO_COMPILE="src/ED_linux.cpp \
     src/ED_core.cpp \
     src/ED_math.cpp \
     src/ED_ui.cpp \
-    src/raytrace/ED_raytrace.cpp \
     src/ED_model.cpp \
     "
 
