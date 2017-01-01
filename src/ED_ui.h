@@ -213,6 +213,8 @@ struct User_Interface {
   Area *area_being_deleted;
   Area_Splitter *splitter_being_moved;
 
+  v3 cursor;
+
   Area *create_area(Area *, Rect);
   void remove_area(Area *);
   Area_Splitter *split_area(Area *, v2i, bool);

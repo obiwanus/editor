@@ -3,7 +3,7 @@
 #include "ED_raytrace.h"
 #include "ED_core.h"
 
-r32 Sphere::hit_by(Ray *ray) {
+r32 Sphere::hit_by(RTRay *ray) {
   // Returns the value of parameter t of the ray,
   // or -1 if no hit for positive t-s
   r32 t = -1;
@@ -33,7 +33,7 @@ v3 Sphere::get_normal(v3 hit_point) {
   return result;
 }
 
-r32 Plane::hit_by(Ray *ray) {
+r32 Plane::hit_by(RTRay *ray) {
   r32 t = ((this->point - ray->origin) * this->normal) /
           (ray->direction * this->normal);
   return t;
@@ -44,7 +44,7 @@ v3 Plane::get_normal(v3 hit_point) {
   return this->normal;
 }
 
-// r32 Triangle::hit_by(Ray *ray) {
+// r32 Triangle::hit_by(RTRay *ray) {
 //   m3x3 A;
 //   A.rows[0] = {a.x - b.x, a.x - c.x, ray->direction.x};
 //   A.rows[1] = {a.y - b.y, a.y - c.y, ray->direction.y};
@@ -91,8 +91,8 @@ v3 Plane::get_normal(v3 hit_point) {
 //   return result;
 // }
 
-Ray RayCamera::get_ray_through_pixel(int x, int y, v2i pixel_count) {
-  Ray result;
+RTRay RayCamera::get_ray_through_pixel(int x, int y, v2i pixel_count) {
+  RTRay result;
 
   v3 pixel = {left + (x + 0.5f) * (right - left) / pixel_count.x,
               bottom + (y + 0.5f) * (top - bottom) / pixel_count.y, 0};
@@ -103,9 +103,9 @@ Ray RayCamera::get_ray_through_pixel(int x, int y, v2i pixel_count) {
   return result;
 }
 
-RayHit Ray::get_object_hit(Ray_Tracer *rt, r32 tmin, r32 tmax,
+RayHit RTRay::get_object_hit(Ray_Tracer *rt, r32 tmin, r32 tmax,
                            RayObject *ignore_object, b32 any) {
-  Ray *ray = this;
+  RTRay *ray = this;
 
   RayHit ray_hit = {};
   r32 min_hit = 0;
@@ -132,9 +132,9 @@ RayHit Ray::get_object_hit(Ray_Tracer *rt, r32 tmin, r32 tmax,
   return ray_hit;
 }
 
-v3 Ray::get_color(Ray_Tracer *rt, RayObject *reflected_from,
+v3 RTRay::get_color(Ray_Tracer *rt, RayObject *reflected_from,
                   int recurse_further) {
-  Ray *ray = this;
+  RTRay *ray = this;
 
   v3 color = {};
 
@@ -157,7 +157,7 @@ v3 Ray::get_color(Ray_Tracer *rt, RayObject *reflected_from,
     b32 point_in_shadow = false;
     {
       // Cast shadow ray
-      Ray shadow_ray = Ray();
+      RTRay shadow_ray = RTRay();
       shadow_ray.origin = hit_point;
       shadow_ray.direction =
           light->source - hit_point;  // not normalizing on purpose
@@ -192,7 +192,7 @@ v3 Ray::get_color(Ray_Tracer *rt, RayObject *reflected_from,
 
   // Calculate mirror reflection
   if (recurse_further) {
-    Ray reflection_ray = {};
+    RTRay reflection_ray = {};
     reflection_ray.origin = hit_point;
     reflection_ray.direction =
         ray->direction - 2 * (ray->direction * normal) * normal;

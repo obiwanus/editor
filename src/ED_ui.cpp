@@ -1206,6 +1206,9 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
   }
 
   if (active) {
+    if (input->button_went_down(IB_mouse_left)) {
+      // ui->cu;
+    }
     if (input->button_went_down(IB_toggle_projection)) {
       this->camera.ortho_projection = !this->camera.ortho_projection;
     }
@@ -1310,12 +1313,11 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
       //   v3 vert3 = world_verts[2];
       //   v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
       //   r32 intensity = n * light_dir;
-      //   if (intensity >= 0) {
-      //     intensity = lerp(0.2f, 1.0f, intensity);
-      //     const r32 grey = 0.7f;
-      //     u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
-      //     triangle_filled(buffer, screen_verts, color, z_buffer);
-      //   }
+      //   if (intensity < 0) { intensity = 0; }
+      //   intensity = lerp(0.2f, 1.0f, intensity);
+      //   const r32 grey = 0.7f;
+      //   u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
+      //   triangle_filled(buffer, screen_verts, color, z_buffer);
       // }
 
       // // Debug draw normals
@@ -1367,6 +1369,13 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
     }
   }
 
+  // Draw cursor
+  {
+    v2i cursor = V2i(WorldTransform * ui->cursor);
+    Rect cursor_rect = {cursor.x - 3, cursor.y - 3, cursor.x + 3, cursor.y + 3};
+    draw_rect(buffer, cursor_rect, 0x00FF0000);
+  }
+
   // Draw the axis in the corner
   {
     m4x4 IconViewport = Matrix::viewport(5, 30, 60, 60);
@@ -1382,17 +1391,17 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
   }
 
   // test dragging
-  if (ui->active_area == this->area) {
-    Rect area_rect = this->area->get_rect();
-    const u32 colors[] = {0x0000FF00, 0x00FF0000, 0x000000FF};
-    v2i to = area_rect.projected_to_area(input->mouse);
-    for (int i = 0; i < 3; ++i) {
-      if (input->button_is_down((Input_Button)i)) {
-        v2i from = area_rect.projected_to_area(input->mouse_positions[i]);
-        draw_line(buffer, from, to, colors[i], 4);
-      }
-    }
-  }
+  // if (ui->active_area == this->area) {
+  //   Rect area_rect = this->area->get_rect();
+  //   const u32 colors[] = {0x0000FF00, 0x00FF0000, 0x000000FF};
+  //   v2i to = area_rect.projected_to_area(input->mouse);
+  //   for (int i = 0; i < 3; ++i) {
+  //     if (input->button_is_down((Input_Button)i)) {
+  //       v2i from = area_rect.projected_to_area(input->mouse_positions[i]);
+  //       draw_line(buffer, from, to, colors[i], 4);
+  //     }
+  //   }
+  // }
 }
 
 void Editor_Raytrace::draw(User_Interface *ui, Ray_Tracer *rt) {
@@ -1441,7 +1450,7 @@ void Editor_Raytrace::draw(User_Interface *ui, Ray_Tracer *rt) {
 
   for (int x = 0; x < pixel_count.x; x++) {
     for (int y = 0; y < pixel_count.y; y++) {
-      Ray ray = camera->get_ray_through_pixel(x, y, pixel_count);
+      RTRay ray = camera->get_ray_through_pixel(x, y, pixel_count);
 
       const v3 ambient_color = {0.2f, 0.2f, 0.2f};
       const r32 ambient_light_intensity = 0.3f;

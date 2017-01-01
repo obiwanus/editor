@@ -113,8 +113,14 @@ basis3 Entity::get_basis() {
   return result;
 }
 
+Ray Camera::get_ray_through_pixel() {
+  // TODO:
+  dfsdfsd
+}
+
 void Camera::adjust_frustum(int width, int height) {
   assert(width > 0 && height > 0);
+  this->viewport = V2i(width, height);
   r32 aspect_ratio = (r32)width / (r32)height;
   // Vertical field of view is fixed at 60 degrees
   const r32 kVerticalFOV = M_PI / 3;

@@ -43,14 +43,21 @@ struct Model : Entity {
   void read_texture(char *);
 };
 
+struct Ray {
+  v3 origin;
+  v3 direction;
+};
+
 struct Camera : Entity {
   // View frustum
   r32 near = -1.0f;
   r32 far = -20.0f;
   r32 top;
   r32 right;
+  v2i viewport;
 
   bool ortho_projection = false;
+
 
   v3 pivot = {};
   v3 old_pivot = {};
@@ -63,6 +70,9 @@ struct Camera : Entity {
   m4x4 projection_matrix();
   m4x4 rotation_matrix(v2);
   r32 distance_to_pivot();
+  Ray get_ray_through_pixel(v2i);
 };
+
+
 
 #endif  // ED_MODEL_H

@@ -1,8 +1,11 @@
 NOW:
 
-- scene graph - research
-- scene graph - implementation
+- add cursor
+- insert a cube in the cursor position on button press
+- find a faster way to rasterize triangles
+- find a faster way to draw
 - selecting models with mouse click
+- drawing a silhouette of the selected model
 - drag models without manipulator
 - make some text appear on the screen
 - add the model move manipulator
@@ -10,8 +13,9 @@ NOW:
 - maybe don't add special meaning to keys at the platform layer?
 - debug info output onto the screen
 - don't expect obj files to include normals
-- use quaternions for model orientation
 - clipping
+- scene graph - research
+- scene graph - implementation
 
 
 SOMEDAY:
@@ -20,6 +24,7 @@ SOMEDAY:
 - scale and rotate manipulators
 - shortcut numpad keys to change orientation
 - a panel with buttons to add primitives
+- use quaternions for model orientation
 - save scenes (and models)
 - nice icons for splitting and removing
 
