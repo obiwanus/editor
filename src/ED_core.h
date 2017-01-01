@@ -108,6 +108,7 @@ struct Program_State {
   User_Interface *UI;
 
   Model *models = NULL;
+  Model *selected_model = NULL;
 
   void init(Program_Memory *);
 };

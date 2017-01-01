@@ -1,9 +1,9 @@
 NOW:
 
-- insert a cube in the cursor position on button press
-- selecting models with mouse click
 - find a faster way to rasterize triangles
 - find a faster way to draw
+- properly outline triangles
+- [linux] try to find a working solution with vsync and glx
 - use 2 light sources (maybe even point ones)
 - drawing a silhouette of the selected model
 - drag models without manipulator
@@ -19,6 +19,7 @@ NOW:
 
 
 SOMEDAY:
+- [linux] window resize
 - don't redraw areas unless something is happening
 - fix visible back faces on the cube
 - scale and rotate manipulators
@@ -38,14 +39,14 @@ IDEAS:
 - don't transform the same vertex a few times
 
 
-LINUX:
-- window resize
-
 
 ==============================================================================
 DONE:
 
 [02/01/2017]
+- selecting models with mouse click
+- insert a cube in the cursor position on button press
+- single compilation unit
 - debug rays through pixels (set camera to 0 first)
 
 [01/01/2017]

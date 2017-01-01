@@ -1,6 +1,13 @@
 #ifndef ED_MODEL_H
 #define ED_MODEL_H
 
+struct Ray {
+  v3 origin;
+  v3 direction;
+
+  v3 point_at(r32 t);
+};
+
 struct Face {
   int v_ids[3];   // vertex
   int vn_ids[3];  // vertex normal
@@ -25,6 +32,14 @@ struct Entity {
   m4x4 transform_to_entity_space();
 };
 
+struct AA_Bounding_Box {
+  r32 x_min, x_max;
+  r32 y_min, y_max;
+  r32 z_min, z_max;
+
+  r32 hit_by(Ray);
+};
+
 struct Model : Entity {
   v3 *vertices;
   v3 *vns;
@@ -36,15 +51,10 @@ struct Model : Entity {
   bool display = true;
   bool debug = false;
 
+  AA_Bounding_Box aabb;
+
   void read_from_obj_file(char *);
   void read_texture(char *);
-};
-
-struct Ray {
-  v3 origin;
-  v3 direction;
-
-  v3 point_at(r32 t);
 };
 
 struct Camera : Entity {
@@ -74,6 +84,12 @@ struct Camera : Entity {
 struct Plane {
   v3 normal;
   v3 point;
+
+  r32 hit_by(Ray);
+};
+
+struct Triangle {
+  v3 vertices[3];
 
   r32 hit_by(Ray);
 };

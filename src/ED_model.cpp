@@ -121,7 +121,8 @@ Ray Camera::get_ray_through_pixel(v2i pixel) {
   }
 
   // Transform into world coordinates
-  m4x4 WorldTransform = Matrix::frame_to_canonical(this->get_basis(), this->position);
+  m4x4 WorldTransform =
+      Matrix::frame_to_canonical(this->get_basis(), this->position);
   result.origin = WorldTransform * result.origin;
   result.direction = V3(WorldTransform * V4_v(result.direction));
 
@@ -176,4 +177,44 @@ m4x4 Camera::rotation_matrix(v2 angles) {
 r32 Camera::distance_to_pivot() {
   r32 result = (this->pivot - this->position).len();
   return result;
+}
+
+r32 Triangle::hit_by(Ray ray) {
+  v3 a = this->vertices[0];
+  v3 b = this->vertices[1];
+  v3 c = this->vertices[2];
+
+  // clang-format off
+  m3x3 A = {
+    a.x - b.x, a.x - c.x, ray.direction.x,
+    a.y - b.y, a.y - c.y, ray.direction.y,
+    a.z - b.z, a.z - c.z, ray.direction.z,
+  };
+  // clang-format on
+
+  r32 D = A.determinant();
+  if (D == 0) {
+    return -1;
+  }
+
+  v3 R = {a.x - ray.origin.x, a.y - ray.origin.y, a.z - ray.origin.z};
+
+  // Use Cramer's rule to find t, beta, and gamma
+  m3x3 A2 = A.replace_column(2, R);
+  r32 t = A2.determinant() / D;
+  if (t <= 0) {
+    return -1;
+  }
+
+  r32 gamma = A.replace_column(1, R).determinant() / D;
+  if (gamma < 0 || gamma > 1) {
+    return -1;
+  }
+
+  r32 beta = A.replace_column(0, R).determinant() / D;
+  if (beta < 0 || beta > (1 - gamma)) {
+    return -1;
+  }
+
+  return t;
 }

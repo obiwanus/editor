@@ -24,9 +24,12 @@ void Program_State::init(Program_Memory *memory) {
 
   state->UI->cursor = V3(0, 0, 0);
 
-  Model model = {};
+  // For some reason these pointers are not initialized by default
+  // on windows using C++11 struct initializers
   state->models = NULL;
+  state->selected_model = NULL;
 
+  Model model = {};
   model.read_from_obj_file("../models/african_head/african_head.wobj");
   model.read_texture("../models/african_head/african_head_diffuse.jpg");
   model.scale = 0.5f;
@@ -44,6 +47,8 @@ void Program_State::init(Program_Memory *memory) {
   model.display = true;
   model.debug = true;
   sb_push(state->models, model);
+
+  state->selected_model = models + 0;  // head
 
   // model.read_from_obj_file("../models/capsule/capsule.wobj");
   // model.read_texture("../models/capsule/capsule0.jpg");

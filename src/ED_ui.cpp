@@ -163,7 +163,7 @@ void triangle_filled(Pixel_Buffer *buffer, v3 verts[], u32 color,
 }
 
 void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[], r32 *z_buffer,
-                     v3 light_dir) {
+                     v3 light_dir, bool outline = false) {
   // clang-format off
   v2i t0 = V2i(verts[0]); r32 z0 = verts[0].z;
   v2i t1 = V2i(verts[1]); r32 z1 = verts[1].z;
@@ -219,6 +219,9 @@ void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[], r32 *z_buffer,
         intensity = lerp(0.2f, 1.0f, intensity);
         const r32 grey = 0.7f;
         u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
+        if (outline && (x == A.x || x == B.x || y == t0.y || y == t2.y)) {
+          color = 0x00FFAA40;
+        }
         draw_pixel(buffer, V2i(x, y), color, false);
       }
     }
@@ -1199,15 +1202,43 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
   this->camera.adjust_frustum(buffer->width, buffer->height);
 
   if (active) {
+    v2i mouse_position = this->area->get_rect().projected_to_area(input->mouse);
+    Ray ray = this->camera.get_ray_through_pixel(mouse_position);
+
     if (input->button_went_down(IB_mouse_left)) {
       // Set cursor position to the point of intersection between the ray
       // and the plane passing through the camera pivot and orthogonal
       // to camera's direction
-      v2i click = this->area->get_rect().projected_to_area(input->mouse);
-      Ray ray = this->camera.get_ray_through_pixel(click);
       r32 t = (this->camera.pivot - ray.origin) * this->camera.direction /
               (ray.direction * this->camera.direction);
       ui->cursor = ray.point_at(t);
+    } else if (input->button_went_down(IB_mouse_right)) {
+      // Attempt to select a model
+      // TODO: add bounding box check
+      // (I don't like this loop)
+      for (int m = 0; m < sb_count(state->models); ++m) {
+        Model *model = state->models + m;
+        if (!model->display) continue;
+        if (model == state->selected_model) continue;
+
+        // Put model in the scene
+        m4x4 ModelTransform =
+            Matrix::frame_to_canonical(model->get_basis(), model->position) *
+            Matrix::S(model->scale);
+
+        for (int f = 0; f < sb_count(model->faces); ++f) {
+          Face face = model->faces[f];
+          Triangle triangle;
+          for (int i = 0; i < 3; ++i) {
+            triangle.vertices[i] =
+                ModelTransform * model->vertices[face.v_ids[i]];
+          }
+          if (triangle.hit_by(ray) > 0) {
+            state->selected_model = model;
+            break;
+          }
+        }
+      }
     }
     if (input->button_went_down(IB_key) && input->symbol == 'a') {
       Model model = state->models[1];  // cube
@@ -1293,29 +1324,31 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
 
     for (int f = 0; f < sb_count(model->faces); ++f) {
       Face face = model->faces[f];
-      v3 world_verts[3];
+      v3 scene_verts[3];
       v3 screen_verts[3];
       v2 texture_verts[3];
       v3 vns[3];
 
       for (int i = 0; i < 3; ++i) {
-        world_verts[i] = ModelTransform * model->vertices[face.v_ids[i]];
+        scene_verts[i] = ModelTransform * model->vertices[face.v_ids[i]];
         texture_verts[i] = model->vts[face.vt_ids[i]];
-        screen_verts[i] = WorldTransform * world_verts[i];
+        screen_verts[i] = WorldTransform * scene_verts[i];
         vns[i] = model->vns[face.vn_ids[i]];
         vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
       }
 
       v3 light_dir = -this->camera.direction;
-      // TODO: fix the textures
-      triangle_shaded(buffer, screen_verts, vns, z_buffer, light_dir);
 
-      // triangle_wireframe(buffer, screen_verts, 0x00999999);
+      bool outline = (model == state->selected_model);
+      triangle_shaded(buffer, screen_verts, vns, z_buffer, light_dir, outline);
+
+      // triangle_wireframe(buffer, screen_verts, 0x00FFAA40);
+
       // {
       //   // Draw single color grey facets
-      //   v3 vert1 = world_verts[0];
-      //   v3 vert2 = world_verts[1];
-      //   v3 vert3 = world_verts[2];
+      //   v3 vert1 = scene_verts[0];
+      //   v3 vert2 = scene_verts[1];
+      //   v3 vert3 = scene_verts[2];
       //   v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
       //   r32 intensity = n * light_dir;
       //   if (intensity < 0) { intensity = 0; }
@@ -1327,10 +1360,10 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
 
       // // Debug draw normals
       // for (int j = 0; j < 3; ++j) {
-      //   world_verts[j] = model->vertices[face.v_ids[j]];
+      //   scene_verts[j] = model->vertices[face.v_ids[j]];
       //   vns[j] = model->vns[face.vn_ids[j]];
       //   v3 normal_end = WorldTransform * ModelTransform *
-      //                   (world_verts[j] + (vns[j] * 0.1f));
+      //                   (scene_verts[j] + (vns[j] * 0.1f));
       //   draw_line(buffer, screen_verts[j], normal_end, 0x00FF0000, z_buffer);
       // }
     }
