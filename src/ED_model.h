@@ -46,6 +46,8 @@ struct Model : Entity {
 struct Ray {
   v3 origin;
   v3 direction;
+
+  v3 point_at(r32 t);
 };
 
 struct Camera : Entity {
@@ -57,7 +59,6 @@ struct Camera : Entity {
   v2i viewport;
 
   bool ortho_projection = false;
-
 
   v3 pivot = {};
   v3 old_pivot = {};
@@ -73,6 +74,12 @@ struct Camera : Entity {
   Ray get_ray_through_pixel(v2i);
 };
 
+struct Plane {
+  v3 normal;
+  v3 point;
+
+  r32 hit_by(Ray);
+};
 
 
 #endif  // ED_MODEL_H

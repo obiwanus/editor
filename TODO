@@ -1,6 +1,6 @@
 NOW:
 
-- add cursor
+- debug rays through pixels (set camera to 0 first)
 - insert a cube in the cursor position on button press
 - find a faster way to rasterize triangles
 - find a faster way to draw
@@ -46,6 +46,7 @@ LINUX:
 DONE:
 
 [01/01/2017]
+- add cursor
 - don't allocate z-buffer each frame
 - vary pivot moving speed depending on the distance
 - fix stretchy buffer for c++

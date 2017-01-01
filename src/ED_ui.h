@@ -4,7 +4,6 @@
 #include "ED_base.h"
 #include "ED_math.h"
 #include "ED_model.h"
-#include "raytrace/ED_raytrace.h"
 
 enum Input_Button {
   IB_mouse_left = 0,
@@ -120,7 +119,7 @@ struct Editor_3DView : Area_Editor {
 };
 
 struct Editor_Raytrace : Area_Editor {
-  void draw(User_Interface *, Ray_Tracer *);
+  void draw(User_Interface *);
 };
 
 struct Area {

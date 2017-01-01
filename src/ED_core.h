@@ -4,7 +4,6 @@
 #include "ED_base.h"
 #include "ED_ui.h"
 #include "ED_model.h"
-#include "raytrace/ED_raytrace.h"
 
 struct Program_State {
   int kWindowWidth;
@@ -13,8 +12,6 @@ struct Program_State {
   User_Interface UI;
 
   Model *models = NULL;
-
-  Ray_Tracer ray_tracer;
 
   void init(Program_Memory *);
 };

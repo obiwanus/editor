@@ -322,7 +322,8 @@ void triangle_textured(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
 //   draw_ui_line(buffer, a, b, color);
 // }
 
-void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
+void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color,
+               bool top_left = true) {
   if (rect.left < 0) rect.left = 0;
   if (rect.top < 0) rect.top = 0;
   if (rect.right > buffer->width) rect.right = buffer->width;
@@ -331,13 +332,9 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
   for (int x = rect.left; x < rect.right; x++) {
     for (int y = rect.top; y < rect.bottom; y++) {
       // Don't care about performance (yet)
-      draw_pixel(buffer, V2i(x, y), color, true);
+      draw_pixel(buffer, V2i(x, y), color, top_left);
     }
   }
-}
-
-void draw_rect(Pixel_Buffer *buffer, Rect rect, v3 color) {
-  draw_rect(buffer, rect, get_rgb_u32(color));
 }
 
 bool Rect::contains(v2i point) {
@@ -1084,7 +1081,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
       } break;
 
       case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.draw(ui, NULL);
+        area->editor_raytrace.draw(ui);
       } break;
 
       default: { assert(!"Unknown editor type"); } break;
@@ -1154,13 +1151,13 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     if (!area->is_visible()) continue;
 
     // Draw split handles
-    draw_rect(buffer, area->get_split_handle(0), {0.5f, 0.5f, 0.5f});
-    draw_rect(buffer, area->get_split_handle(1), {0.5f, 0.5f, 0.5f});
+    draw_rect(buffer, area->get_split_handle(0), 0x00777777);
+    draw_rect(buffer, area->get_split_handle(1), 0x00777777);
 
     // Draw delete buttons
     if (i > 0) {
       // Can't delete area 0
-      draw_rect(buffer, area->get_delete_button(), {0.4f, 0.1f, 0.1f});
+      draw_rect(buffer, area->get_delete_button(), 0x00772222);
     }
   }
 
@@ -1204,10 +1201,17 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
     memset(buffer->memory, bgcolor,
            buffer->width * buffer->height * sizeof(u32));
   }
+  this->camera.adjust_frustum(buffer->width, buffer->height);
 
   if (active) {
     if (input->button_went_down(IB_mouse_left)) {
-      // ui->cu;
+      // Set cursor position to the point of intersection between the ray
+      // and the plane passing through the camera pivot and orthogonal
+      // to camera's direction
+      Ray ray = this->camera.get_ray_through_pixel(input->mouse);
+      r32 t = (this->camera.pivot - ray.origin) * this->camera.direction /
+              (ray.direction * this->camera.direction);
+      ui->cursor = ray.point_at(t);
     }
     if (input->button_went_down(IB_toggle_projection)) {
       this->camera.ortho_projection = !this->camera.ortho_projection;
@@ -1256,7 +1260,6 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
                                (input->scroll / 10.0f);
     }
   }
-  this->camera.adjust_frustum(buffer->width, buffer->height);
 
   m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
 
@@ -1294,9 +1297,9 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
       v3 vns[3];
 
       for (int i = 0; i < 3; ++i) {
-        world_verts[i] = model->vertices[face.v_ids[i]];
+        world_verts[i] = ModelTransform * model->vertices[face.v_ids[i]];
         texture_verts[i] = model->vts[face.vt_ids[i]];
-        screen_verts[i] = WorldTransform * ModelTransform * world_verts[i];
+        screen_verts[i] = WorldTransform * world_verts[i];
         vns[i] = model->vns[face.vn_ids[i]];
         vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
       }
@@ -1373,7 +1376,7 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
   {
     v2i cursor = V2i(WorldTransform * ui->cursor);
     Rect cursor_rect = {cursor.x - 3, cursor.y - 3, cursor.x + 3, cursor.y + 3};
-    draw_rect(buffer, cursor_rect, 0x00FF0000);
+    draw_rect(buffer, cursor_rect, 0x00FF0000, false);
   }
 
   // Draw the axis in the corner
@@ -1404,7 +1407,7 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
   // }
 }
 
-void Editor_Raytrace::draw(User_Interface *ui, Ray_Tracer *rt) {
+void Editor_Raytrace::draw(User_Interface *ui) {
   // TODO: ray tracer should probably be member and not
   // a function parameter
 
@@ -1425,51 +1428,51 @@ void Editor_Raytrace::draw(User_Interface *ui, Ray_Tracer *rt) {
   //   src += model.texture.width;
   // }
 
-  if (rt == NULL) {
-    // draw_rect(this->area->buffer, this->area->buffer->get_rect(),
-    //           0x00123123);
-    return;
-  }
+  // if (rt == NULL) {
+  //   // draw_rect(this->area->buffer, this->area->buffer->get_rect(),
+  //   //           0x00123123);
+  //   return;
+  // }
 
-  RayCamera *camera = &rt->camera;
-  LightSource *lights = rt->lights;
-  RayObject **ray_objects = rt->ray_objects;
+  // RayCamera *camera = &rt->camera;
+  // LightSource *lights = rt->lights;
+  // RayObject **ray_objects = rt->ray_objects;
 
-  Rect client_rect = this->area->get_client_rect();
+  // Rect client_rect = this->area->get_client_rect();
 
-  v2i pixel_count = {client_rect.right - client_rect.left,
-                     client_rect.bottom - client_rect.top};
+  // v2i pixel_count = {client_rect.right - client_rect.left,
+  //                    client_rect.bottom - client_rect.top};
 
-  // TODO: this is wrong but tmp.
-  // Ideally a raytrace view should have its own camera,
-  // but this is probably not going to happen anyway
-  camera->left = -pixel_count.x / 2;
-  camera->right = pixel_count.x / 2;
-  camera->top = pixel_count.y / 2;
-  camera->bottom = -pixel_count.y / 2;
+  // // TODO: this is wrong but tmp.
+  // // Ideally a raytrace view should have its own camera,
+  // // but this is probably not going to happen anyway
+  // camera->left = -pixel_count.x / 2;
+  // camera->right = pixel_count.x / 2;
+  // camera->top = pixel_count.y / 2;
+  // camera->bottom = -pixel_count.y / 2;
 
-  for (int x = 0; x < pixel_count.x; x++) {
-    for (int y = 0; y < pixel_count.y; y++) {
-      RTRay ray = camera->get_ray_through_pixel(x, y, pixel_count);
+  // for (int x = 0; x < pixel_count.x; x++) {
+  //   for (int y = 0; y < pixel_count.y; y++) {
+  //     RTRay ray = camera->get_ray_through_pixel(x, y, pixel_count);
 
-      const v3 ambient_color = {0.2f, 0.2f, 0.2f};
-      const r32 ambient_light_intensity = 0.3f;
+  //     const v3 ambient_color = {0.2f, 0.2f, 0.2f};
+  //     const r32 ambient_light_intensity = 0.3f;
 
-      v3 color = ambient_color * ambient_light_intensity;
+  //     v3 color = ambient_color * ambient_light_intensity;
 
-      color += ray.get_color(rt, 0, rt->kMaxRecursion);
+  //     color += ray.get_color(rt, 0, rt->kMaxRecursion);
 
-      // Crop
-      for (int i = 0; i < 3; ++i) {
-        if (color.E[i] > 1) {
-          color.E[i] = 1;
-        }
-        if (color.E[i] < 0) {
-          color.E[i] = 0;
-        }
-      }
+  //     // Crop
+  //     for (int i = 0; i < 3; ++i) {
+  //       if (color.E[i] > 1) {
+  //         color.E[i] = 1;
+  //       }
+  //       if (color.E[i] < 0) {
+  //         color.E[i] = 0;
+  //       }
+  //     }
 
-      draw_pixel(this->area->buffer, V2i(x, y), get_rgb_u32(color));
-    }
-  }
+  //     draw_pixel(this->area->buffer, V2i(x, y), get_rgb_u32(color));
+  //   }
+  // }
 }

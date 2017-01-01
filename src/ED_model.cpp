@@ -113,9 +113,35 @@ basis3 Entity::get_basis() {
   return result;
 }
 
-Ray Camera::get_ray_through_pixel() {
-  // TODO:
-  dfsdfsd
+v3 Ray::point_at(r32 t) {
+  v3 result = this->origin + this->direction * t;
+  return result;
+}
+
+Ray Camera::get_ray_through_pixel(v2i pixel) {
+  Ray result;
+
+  // Get pixel in camera coordinates
+  v2 pixel_size = V2(2 * right / viewport.x, 2 * top / viewport.y);
+  v3 camera_pixel;
+  camera_pixel.x = -right + (pixel.x + 0.5f) * pixel_size.x;
+  camera_pixel.y = -top + (pixel.y + 0.5f) * pixel_size.y;
+  camera_pixel.z = this->near;
+
+  if (this->ortho_projection) {
+    result.origin = camera_pixel;
+    result.direction = V3(0, 0, -1);
+  } else {
+    result.origin = V3(0, 0, 0);
+    result.direction = camera_pixel - result.origin;
+  }
+
+  // Transform into world coordinates
+  m4x4 WorldTransform = Matrix::frame_to_canonical(this->get_basis(), this->position);
+  result.origin = WorldTransform * result.origin;
+  result.direction = V3(WorldTransform * V4_v(result.direction));
+
+  return result;
 }
 
 void Camera::adjust_frustum(int width, int height) {
