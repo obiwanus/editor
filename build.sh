@@ -7,12 +7,12 @@ LFLAGS="$(pkg-config --cflags --libs x11) -ldl -lpthread"
 
 mkdir -p build
 
-FILES_TO_COMPILE="src/ED_linux.cpp \
-    src/ED_core.cpp \
-    src/ED_math.cpp \
-    src/ED_ui.cpp \
-    src/ED_model.cpp \
-    "
+# FILES_TO_COMPILE="src/ED_linux.cpp \
+#     src/ED_core.cpp \
+#     src/ED_math.cpp \
+#     src/ED_ui.cpp \
+#     src/ED_model.cpp \
+#     "
 
 OPTIMIZE=false
 RUN=false
@@ -26,7 +26,7 @@ if $OPTIMIZE; then
     CFLAGS="$CFLAGS -O2"
 fi
 
-g++ --std=c++11 -Isrc/ $CFLAGS $FILES_TO_COMPILE $LFLAGS -o build/editor
+g++ --std=c++11 -Isrc/ $CFLAGS src/ED_linux.cpp $LFLAGS -o build/editor
 
 if $RUN; then
     cd build

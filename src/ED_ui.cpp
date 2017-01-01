@@ -1,9 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include "include/stb_stretchy_buffer.h"
-#include "ED_core.h"
-#include "ED_ui.h"
 
 inline u32 get_rgb_u32(v3 color) {
   assert(color.r >= 0 && color.r <= 1);
@@ -955,7 +949,7 @@ void User_Interface::resize_window(int new_width, int new_height) {
 
 Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
                                               User_Input *input,
-                                              Model *models) {
+                                              Program_State *state) {
   Update_Result result = {};
   User_Interface *ui = this;
 
@@ -1076,7 +1070,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     switch (area->editor_type) {
       case Area_Editor_Type_3DView: {
         if (!area->editor_3dview.is_drawn) {
-          area->editor_3dview.draw(ui, models, input);
+          area->editor_3dview.draw(state, input);
         }
       } break;
 
@@ -1192,7 +1186,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   return result;
 }
 
-void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
+void Editor_3DView::draw(Program_State *state, User_Input *input) {
+  User_Interface *ui = state->UI;
   Pixel_Buffer *buffer = this->area->buffer;
   bool active = ui->active_area == this->area;
 
@@ -1213,6 +1208,12 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
       r32 t = (this->camera.pivot - ray.origin) * this->camera.direction /
               (ray.direction * this->camera.direction);
       ui->cursor = ray.point_at(t);
+    }
+    if (input->button_went_down(IB_key) && input->symbol == 'a') {
+      Model model = state->models[1];  // cube
+      model.position = ui->cursor;
+      model.direction = (this->camera.position - model.position).normalized();
+      sb_push(state->models, model);
     }
     if (input->button_went_down(IB_toggle_projection)) {
       this->camera.ortho_projection = !this->camera.ortho_projection;
@@ -1281,8 +1282,8 @@ void Editor_3DView::draw(User_Interface *ui, Model *models, User_Input *input) {
     z_buffer[i] = -INFINITY;
   }
 
-  for (int m = 0; m < sb_count(models); ++m) {
-    Model *model = models + m;
+  for (int m = 0; m < sb_count(state->models); ++m) {
+    Model *model = state->models + m;
     if (!model->display) continue;
 
     // Put model in the scene

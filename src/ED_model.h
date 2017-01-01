@@ -1,9 +1,6 @@
 #ifndef ED_MODEL_H
 #define ED_MODEL_H
 
-#include "ED_math.h"
-#include "ED_base.h"
-
 struct Face {
   int v_ids[3];   // vertex
   int vn_ids[3];  // vertex normal

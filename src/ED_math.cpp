@@ -1,5 +1,3 @@
-#include <stdlib.h>
-#include "ED_math.h"
 
 r32 v2i::len() { return (r32)sqrt(x * x + y * y); }
 

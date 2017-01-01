@@ -1,5 +1,17 @@
+// ============================ Program code ==================================
+
 #include "ED_base.h"
+#include "ED_math.h"
 #include "ED_core.h"
+#include "ED_model.h"
+#include "ED_ui.h"
+
+#include "ED_core.cpp"
+#include "ED_math.cpp"
+#include "ED_model.cpp"
+#include "ED_ui.cpp"
+
+// ========================== Platform headers ================================
 
 #include <X11/Xlib.h>
 #include <X11/cursorfont.h>
@@ -7,11 +19,11 @@
 
 #include <dlfcn.h>
 #include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+
 #include <time.h>
 #include <unistd.h>
+
+// =========================== Platform code ==================================
 
 global bool gRunning;
 global Pixel_Buffer g_pixel_buffer;
@@ -159,6 +171,10 @@ int main(int argc, char const *argv[]) {
           if (symbol == '5') {
             new_input->buttons[IB_toggle_projection] = pressed;
           }
+          if (symbol) {
+            new_input->buttons[IB_key] = pressed;
+            new_input->symbol = symbol;
+          }
         }
       }
 
@@ -219,6 +235,7 @@ int main(int argc, char const *argv[]) {
     for (size_t i = 0; i < COUNT_OF(new_input->mouse_positions); i++) {
       new_input->mouse_positions[i] = old_input->mouse_positions[i];
     }
+    new_input->symbol = old_input->symbol;
 
     // TODO: think about something more reliable
     usleep(10000);

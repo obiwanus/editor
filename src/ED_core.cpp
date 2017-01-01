@@ -1,12 +1,3 @@
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#include "include/stb_stretchy_buffer.h"
-#include "ED_base.h"
-#include "ED_core.h"
-#include "ED_math.h"
-#include "ED_model.h"
 
 void *Program_Memory::allocate(size_t size) {
   // Deallocation is not intended (yet)
@@ -25,12 +16,13 @@ void Program_State::init(Program_Memory *memory) {
   state->kWindowWidth = 1500;
   state->kWindowHeight = 1000;
 
-  memset(&state->UI, 0, sizeof(state->UI));
-  state->UI.memory = memory;
-  Area *area = state->UI.create_area(
+  state->UI = (User_Interface *)malloc(sizeof(*state->UI));
+  memset(state->UI, 0, sizeof(*state->UI));
+  state->UI->memory = memory;
+  Area *area = state->UI->create_area(
       NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});
 
-  state->UI.cursor = V3(0, 0, 0);
+  state->UI->cursor = V3(0, 0, 0);
 
   Model model = {};
   state->models = NULL;
@@ -138,7 +130,7 @@ Update_Result update_and_render(Program_Memory *program_memory,
     }
   }
 
-  result = state->UI.update_and_draw(pixel_buffer, input, state->models);
+  result = state->UI->update_and_draw(pixel_buffer, input, state);
 
   return result;
 }

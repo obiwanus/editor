@@ -1,19 +1,3 @@
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-
-#include "include/stb_stretchy_buffer.h"
-#define STB_IMAGE_IMPLEMENTATION
-#define STBI_ONLY_JPEG
-#define STBI_ONLY_PNG
-#define STBI_ONLY_BMP
-#define STBI_ONLY_TGA
-#define STBI_ONLY_GIF
-#define STBI_ASSERT(x)
-#include "include/stb_image.h"
-#include "ED_base.h"
-#include "ED_math.h"
-#include "ED_model.h"
 
 void Model::read_from_obj_file(char *filename) {
   FILE *f = fopen(filename, "rb");

@@ -1,14 +1,24 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
+// ============================ Program code ==================================
 
 #include "ED_base.h"
+#include "ED_math.h"
 #include "ED_core.h"
+#include "ED_model.h"
+#include "ED_ui.h"
+
+#include "ED_core.cpp"
+#include "ED_math.cpp"
+#include "ED_model.cpp"
+#include "ED_ui.cpp"
+
+// ========================== Platform headers ================================
 
 #include <intrin.h>
 #include <windows.h>
 #include <windowsX.h>
 #include <gl/gl.h>
+
+// =========================== Platform code ==================================
 
 global bool g_running;
 global LARGE_INTEGER gPerformanceFrequency;

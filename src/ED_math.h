@@ -1,9 +1,6 @@
 #ifndef EDITOR_MATH_H
 #define EDITOR_MATH_H
 
-#include <math.h>
-#include "ED_base.h"
-
 #ifndef M_PI
 #define M_PI ((r32)acos(-1.0))
 #endif  // M_PI

@@ -1,6 +1,21 @@
 #ifndef ED_BASE_H
 #define ED_BASE_H
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
+
+#include "include/stb_stretchy_buffer.h"
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_JPEG
+#define STBI_ONLY_PNG
+#define STBI_ONLY_BMP
+#define STBI_ONLY_TGA
+#define STBI_ONLY_GIF
+#define STBI_ASSERT(x)
+#include "include/stb_image.h"
+
 #include <stdint.h>
 #include <stddef.h>
 #include <limits.h>
@@ -33,23 +48,5 @@ typedef unsigned int uint;
 
 #define COUNT_OF(x) \
   ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
-
-// 256 Mb
-#define MAX_INTERNAL_MEMORY_SIZE (256 * 1024 * 1024)
-
-struct Program_Memory {
-  void *free_memory;
-  size_t allocated;
-
-  // TODO: do something with allocations finally
-  void *allocate(size_t);
-};
-
-template <typename T>
-void swap(T &p1, T &p2) {
-  T buf = p1;
-  p1 = p2;
-  p2 = buf;
-}
 
 #endif  // ED_BASE_H
