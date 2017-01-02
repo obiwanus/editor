@@ -3,7 +3,7 @@
 set -e
 
 CFLAGS="-g -std=c++11 -DBUILD_INTERNAL=1 -DBUILD_SLOW=1 -Wall -Wextra -Wno-write-strings -Wno-missing-field-initializers -Wno-unused -Werror"
-LFLAGS="$(pkg-config --cflags --libs x11) -ldl -lpthread"
+LFLAGS="$(pkg-config --cflags --libs x11) -lGL -ldl -lpthread"
 
 mkdir -p build
 

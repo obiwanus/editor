@@ -1,9 +1,10 @@
 NOW:
 
+- fix a memory leak when deleting areas if there is one
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - properly outline triangles
-- [linux] try to find a working solution with vsync and glx
+- try to update before drawing to remove the lag between different areas
 - use 2 light sources (maybe even point ones)
 - drawing a silhouette of the selected model
 - drag models without manipulator
@@ -44,6 +45,7 @@ IDEAS:
 DONE:
 
 [02/01/2017]
+- [linux] try to find a working solution with vsync and glx
 - selecting models with mouse click
 - insert a cube in the cursor position on button press
 - single compilation unit

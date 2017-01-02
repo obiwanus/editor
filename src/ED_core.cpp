@@ -139,3 +139,56 @@ Update_Result update_and_render(Program_Memory *program_memory,
 
   return result;
 }
+
+bool Rect::contains(v2i point) {
+  bool result = (this->left <= point.x) && (point.x <= this->right) &&
+                (this->top <= point.y) && (point.y <= this->bottom);
+  return result;
+}
+
+v2i Rect::projected(v2i point, bool ui = true) {
+  v2i result = point;
+
+  result.x -= this->left;
+  result.y -= this->top;
+
+  if (!ui) {
+    result.y = this->get_height() - result.y;
+  }
+
+  return result;
+}
+
+v2i Rect::projected_to_area(v2i point) {
+  // Project using the editor origin (bottom left)
+  return this->projected(point, false);
+}
+
+inline int Rect::get_width() {
+  int result = this->right - this->left;
+  assert(result >= 0);
+  return result;
+}
+
+inline int Rect::get_height() {
+  int result = this->bottom - this->top;
+  assert(result >= 0);
+  return result;
+}
+
+int Rect::get_area() {
+  // Physical area
+  return this->get_width() * this->get_height();
+}
+
+void Pixel_Buffer::allocate() {
+  *this = {};
+  this->max_width = 3000;
+  this->max_height = 3000;
+  this->memory = malloc(this->max_width * this->max_height * sizeof(u32));
+}
+
+Rect Pixel_Buffer::get_rect() {
+  Rect result = {0, 0, this->width, this->height};
+  return result;
+}
