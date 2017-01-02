@@ -1207,14 +1207,14 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
       this->camera.old_basis = this->camera.get_basis();
       this->camera.old_pivot = this->camera.pivot;
       if (input->button_is_down(IB_shift)) {
-        this->state = Editor_3DView_State_Pivot_Move;
+        this->mode = Editor_3DView_Mode_Pivot_Move;
       } else {
-        this->state = Editor_3DView_State_Camera_Rotate;
+        this->mode = Editor_3DView_Mode_Camera_Rotate;
       }
     }
     if (input->button_is_down(IB_mouse_middle)) {
       v2 delta = V2(input->mouse_positions[IB_mouse_middle] - input->mouse);
-      if (this->state == Editor_3DView_State_Camera_Rotate) {
+      if (this->mode == Editor_3DView_Mode_Camera_Rotate) {
         this->camera.pivot = this->camera.old_pivot;
         // Rotate camera around pivot
         const int kSensitivity = 500;
@@ -1222,7 +1222,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
         m4x4 CameraRotate = this->camera.rotation_matrix(angles);
         this->camera.position = CameraRotate * this->camera.old_position;
         this->camera.up = V3(CameraRotate * V4_v(this->camera.old_up));
-      } else if (this->state == Editor_3DView_State_Pivot_Move) {
+      } else if (this->mode == Editor_3DView_Mode_Pivot_Move) {
         // Move the pivot
         r32 sensitivity = 0.001f * this->camera.distance_to_pivot();
         this->camera.up = this->camera.old_up;
@@ -1235,7 +1235,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
       }
       this->camera.look_at(this->camera.pivot);
     } else {
-      this->state = Editor_3DView_State_Normal;
+      this->mode = Editor_3DView_Mode_Normal;
     }
     if (input->scroll && !input->button_is_down(IB_mouse_middle)) {
       // Move camera on scroll

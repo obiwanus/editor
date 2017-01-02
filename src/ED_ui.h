@@ -41,15 +41,15 @@ struct Area_Editor {
   void update_and_draw(Pixel_Buffer *, User_Input *){};
 };
 
-enum Editor_3DView_State {
-  Editor_3DView_State_Normal = 0,
-  Editor_3DView_State_Camera_Rotate,
-  Editor_3DView_State_Pivot_Move,
+enum Editor_3DView_Mode {
+  Editor_3DView_Mode_Normal = 0,
+  Editor_3DView_Mode_Camera_Rotate,
+  Editor_3DView_Mode_Pivot_Move,
 };
 
 struct Editor_3DView : Area_Editor {
   Camera camera;
-  Editor_3DView_State state;
+  Editor_3DView_Mode mode;
 
   void draw(Program_State *, User_Input *);
 };
