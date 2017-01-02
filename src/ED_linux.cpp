@@ -509,21 +509,20 @@ int main(int argc, char *argv[]) {
   // Only freeing everything for a leak check
 
   // Free models
-  for (int m = 0; m < sb_count(state->models); m++) {
-    state->models[m].destroy();
+  for (int i = 0; i < sb_count(state->models); ++i) {
+    state->models[i].destroy();
   }
   sb_free(state->models);
 
-  // Free main area
-  Area *main_area = state->UI->areas[0];
-  if (main_area->z_buffer != NULL) {
-    free(main_area->z_buffer);
+  // Free areas
+  for (int i = 0; i < state->UI->num_areas; ++i) {
+    state->UI->areas[0]->destroy();
+
   }
-  free(main_area->buffer.memory);
-  free(main_area);
   sb_free(state->UI->areas);
 
   // Free general stuff
+  sb_free(state->UI->splitters);
   free(state->UI);
   free(g_pixel_buffer.memory);
   free(g_program_memory.start);

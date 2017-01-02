@@ -99,7 +99,7 @@ struct Area {
 
   void draw(Pixel_Buffer *);
 
-  void deallocate();
+  void destroy();
 };
 
 struct Area_Splitter {

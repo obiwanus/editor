@@ -449,9 +449,15 @@ bool Area::mouse_over_split_handle(v2i mouse) {
 
 bool Area::is_visible() { return this->splitter == NULL; }
 
-void Area::deallocate() {
-  free(this->buffer.memory);
+void Area::destroy() {
+  if (this->buffer.memory != NULL) {
+    free(this->buffer.memory);
   this->buffer.memory = NULL;
+  }
+  if (this->z_buffer != NULL) {
+    free(this->z_buffer);
+    this->z_buffer = NULL;
+  }
   free(this);
 }
 
@@ -751,7 +757,7 @@ void User_Interface::remove_area(Area *area) {
     assert(0 <= sister_area_id && sister_area_id < this->num_areas);
     int edge = this->num_areas - 1;
     if (area_id < edge) {
-      this->areas[area_id]->deallocate();
+      this->areas[area_id]->destroy();
       this->areas[area_id] = this->areas[edge];
       this->areas[edge] = {};
       if (sister_area_id == edge) {
@@ -761,7 +767,7 @@ void User_Interface::remove_area(Area *area) {
     }
     edge--;
     if (sister_area_id < edge) {
-      this->areas[sister_area_id]->deallocate();
+      this->areas[sister_area_id]->destroy();
       this->areas[sister_area_id] = this->areas[edge];
       this->areas[edge] = {};
     }
