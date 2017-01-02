@@ -252,9 +252,9 @@ Window linux_create_opengl_window(Display *display, int width, int height) {
 
   // Verifying that context is a direct context
   if (!glXIsDirect(display, ctx)) {
-    printf("Indirect GLX rendering context obtained\n");
+    // printf("Indirect GLX rendering context obtained\n");
   } else {
-    printf("Direct GLX rendering context obtained\n");
+    // printf("Direct GLX rendering context obtained\n");
   }
 
   bool ctx_enabled = glXMakeCurrent(display, window, ctx);
@@ -282,7 +282,8 @@ Window linux_create_opengl_window(Display *display, int width, int height) {
 
 int main(int argc, char *argv[]) {
   // Allocate main memory
-  g_program_memory.free_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
+  g_program_memory.start = malloc(MAX_INTERNAL_MEMORY_SIZE);
+  g_program_memory.free_memory = g_program_memory.start;
 
   // Main program state - note that window size is set there
   Program_State *state =
@@ -504,6 +505,12 @@ int main(int argc, char *argv[]) {
   glXMakeCurrent(display, 0, 0);
   XDestroyWindow(display, window);
   XCloseDisplay(display);
+
+  // Leak check
+  state->destroy();
+  free(g_program_memory.start);
+
+  stb_leakcheck_dumpmem();
 
   return 0;
 }

@@ -450,10 +450,8 @@ bool Area::mouse_over_split_handle(v2i mouse) {
 bool Area::is_visible() { return this->splitter == NULL; }
 
 void Area::deallocate() {
-  if (this->buffer != NULL) {
-    free(this->buffer->memory);
-    free(this->buffer);
-  }
+  free(this->buffer.memory);
+  this->buffer.memory = NULL;
   free(this);
 }
 
@@ -545,10 +543,11 @@ void UI_Select::update_and_draw(User_Input *input) {
 
   Rect area_rect = select->parent_area->get_rect();
   Rect select_rect = select->get_rect();
+  Pixel_Buffer *buffer = &select->parent_area->buffer;
 
   // Draw unhighlighted no matter what
   const u32 colors[10] = {0x00000000, 0x00123123};
-  draw_rect(select->parent_area->buffer, select_rect,
+  draw_rect(buffer, select_rect,
             colors[select->option_selected]);
 
   // If mouse cursor is not in the area, don't interact with select
@@ -582,7 +581,7 @@ void UI_Select::update_and_draw(User_Input *input) {
 
   if (mouse_over_select || select->open) {
     // Draw highlighted
-    draw_rect(select->parent_area->buffer, select_rect, 0x00222222);
+    draw_rect(buffer, select_rect, 0x00222222);
   }
 
   if (select->open) {
@@ -590,7 +589,7 @@ void UI_Select::update_and_draw(User_Input *input) {
     options_border.bottom = select_rect.top + kMargin;
 
     // Draw all options rect first
-    draw_rect(select->parent_area->buffer, options_border, 0x00686868);
+    draw_rect(buffer, options_border, 0x00686868);
 
     int bottom = select_rect.top;
     for (int opt = 0; opt < select->option_count; opt++) {
@@ -606,7 +605,7 @@ void UI_Select::update_and_draw(User_Input *input) {
       if (mouse_over_option) {
         color += 0x00121212;  // highlight
       }
-      draw_rect(select->parent_area->buffer, option, color);
+      draw_rect(buffer, option, color);
       bottom -= select->option_height + 1;
 
       // Select the option on click
@@ -666,10 +665,9 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
 
   // Create draw buffer
   {
-    area->buffer = (Pixel_Buffer *)malloc(sizeof(Pixel_Buffer));
-    area->buffer->allocate();
-    area->buffer->width = area->get_width();
-    area->buffer->height = area->get_height();
+    area->buffer.allocate();
+    area->buffer.width = area->get_width();
+    area->buffer.height = area->get_height();
 
     area->z_buffer = NULL;
   }
@@ -1013,8 +1011,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   for (int i = 0; i < this->num_areas; ++i) {
     Area *area = this->areas[i];
     if (!area->is_visible()) continue;  // ignore wrapper areas
-    area->buffer->width = area->get_width();
-    area->buffer->height = area->get_height();
+    area->buffer.width = area->get_width();
+    area->buffer.height = area->get_height();
 
     // Draw editor contents
     switch (area->editor_type) {
@@ -1032,9 +1030,9 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     }
 
     // Draw panels
-    Rect panel_rect = area->buffer->get_rect();
+    Rect panel_rect = area->buffer.get_rect();
     panel_rect.top = panel_rect.bottom - Area::kPanelHeight;
-    draw_rect(area->buffer, panel_rect, 0x00686868);
+    draw_rect(&area->buffer, panel_rect, 0x00686868);
 
     // Draw type select
     area->type_select.update_and_draw(input);
@@ -1050,7 +1048,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     Area *area = ui->areas[i];
     if (!area->is_visible()) continue;
     Rect client_rect = area->get_client_rect();
-    Pixel_Buffer *src_buffer = area->buffer;
+    Pixel_Buffer *src_buffer = &area->buffer;
     for (int y = 0; y < src_buffer->height; y++) {
       for (int x = 0; x < src_buffer->width; x++) {
         u32 *pixel_src = (u32 *)src_buffer->memory + x + y * src_buffer->width;
@@ -1138,7 +1136,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
 
 void Editor_3DView::draw(Program_State *state, User_Input *input) {
   User_Interface *ui = state->UI;
-  Pixel_Buffer *buffer = this->area->buffer;
+  Pixel_Buffer *buffer = &this->area->buffer;
   bool active = ui->active_area == this->area;
 
   {
@@ -1411,7 +1409,7 @@ void Editor_Raytrace::draw(User_Interface *ui) {
   // }
 
   // if (rt == NULL) {
-  //   // draw_rect(this->area->buffer, this->area->buffer->get_rect(),
+  //   // draw_rect(this->area->buffer, this->area->buffer.get_rect(),
   //   //           0x00123123);
   //   return;
   // }

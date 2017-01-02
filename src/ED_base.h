@@ -49,4 +49,7 @@ typedef unsigned int uint;
 #define COUNT_OF(x) \
   ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
+#define STB_LEAKCHECK_IMPLEMENTATION
+#include <include/stb_leakcheck.h>
+
 #endif  // ED_BASE_H

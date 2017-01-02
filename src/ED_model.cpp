@@ -196,7 +196,6 @@ r32 Triangle::hit_by(Ray ray) {
   if (D == 0) {
     return -1;
   }
-
   v3 R = {a.x - ray.origin.x, a.y - ray.origin.y, a.z - ray.origin.z};
 
   // Use Cramer's rule to find t, beta, and gamma
@@ -205,12 +204,10 @@ r32 Triangle::hit_by(Ray ray) {
   if (t <= 0) {
     return -1;
   }
-
   r32 gamma = A.replace_column(1, R).determinant() / D;
   if (gamma < 0 || gamma > 1) {
     return -1;
   }
-
   r32 beta = A.replace_column(0, R).determinant() / D;
   if (beta < 0 || beta > (1 - gamma)) {
     return -1;

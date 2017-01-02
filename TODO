@@ -17,6 +17,7 @@ NOW:
 - clipping
 - scene graph - research
 - scene graph - implementation
+- [bug] cursor moves when trying to split an area
 
 
 SOMEDAY:

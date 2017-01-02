@@ -67,8 +67,7 @@ struct Area {
 
   Area *parent_area;
   Area_Splitter *splitter = NULL;
-  Pixel_Buffer *buffer = NULL;
-
+  Pixel_Buffer buffer;
   r32 *z_buffer = NULL;
 
   Area_Editor_Type editor_type;

@@ -161,7 +161,8 @@ DWORD WINAPI ThreadProc(LPVOID lpParam) {
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
                      LPSTR lpCmdLine, int nCmdShow) {
   // Allocate program memory
-  g_program_memory.free_memory = malloc(MAX_INTERNAL_MEMORY_SIZE);
+  g_program_memory.start = malloc(MAX_INTERNAL_MEMORY_SIZE);
+  g_program_memory.free_memory = g_program_memory.start;
   // TODO: add checks for overflow when allocating
 
   // Main program state

@@ -10,6 +10,11 @@ void *Program_Memory::allocate(size_t size) {
   return result;
 }
 
+void Program_State::destroy() {
+  // I'm only doing this for leak checks
+  free(this->UI);
+}
+
 void Program_State::init(Program_Memory *memory) {
   Program_State *state = this;
 

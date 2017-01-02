@@ -5,6 +5,7 @@
 #define MAX_INTERNAL_MEMORY_SIZE (256 * 1024 * 1024)
 
 struct Program_Memory {
+  void *start;
   void *free_memory;
   size_t allocated;
 
@@ -111,6 +112,7 @@ struct Program_State {
   Model *selected_model = NULL;
 
   void init(Program_Memory *);
+  void destroy();
 };
 
 Update_Result update_and_render(Program_Memory *, Program_State *,
