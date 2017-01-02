@@ -1,5 +1,6 @@
 NOW:
 
+- [linux] capitalize all ASCII symbols from keypresses
 - fix a memory leak when deleting areas if there is one
 - find a faster way to rasterize triangles
 - find a faster way to draw
@@ -11,7 +12,6 @@ NOW:
 - make some text appear on the screen
 - add the model move manipulator
 - move models along the axis using the manipulator
-- maybe don't add special meaning to keys at the platform layer?
 - debug info output onto the screen
 - don't expect obj files to include normals
 - clipping
@@ -46,6 +46,7 @@ IDEAS:
 DONE:
 
 [02/01/2017]
+- maybe don't add special meaning to keys at the platform layer?
 - [linux] try to find a working solution with vsync and glx
 - selecting models with mouse click
 - insert a cube in the cursor position on button press

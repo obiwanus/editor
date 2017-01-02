@@ -36,8 +36,6 @@ enum Input_Button {
   IB_shift,
   IB_key,
 
-  IB_toggle_projection,
-
   IB__COUNT,
 };
 
@@ -58,6 +56,7 @@ struct User_Input {
   bool button_was_down(Input_Button);
   bool button_went_down(Input_Button);
   bool button_went_up(Input_Button);
+  bool key_went_down(int);
 };
 
 struct Rect {

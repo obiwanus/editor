@@ -335,23 +335,39 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
           if (vk_code == VK_ESCAPE) {
             g_running = false;
           }
-          if (vk_code == VK_UP || vk_code == 'W') {
+          if (vk_code == VK_UP) {
             new_input->buttons[IB_up] = is_down;
           }
-          if (vk_code == VK_DOWN || vk_code == 'S') {
+          if (vk_code == VK_DOWN) {
             new_input->buttons[IB_down] = is_down;
           }
-          if (vk_code == VK_LEFT || vk_code == 'A') {
+          if (vk_code == VK_LEFT) {
             new_input->buttons[IB_left] = is_down;
           }
-          if (vk_code == VK_RIGHT || vk_code == 'D') {
+          if (vk_code == VK_RIGHT) {
             new_input->buttons[IB_right] = is_down;
           }
           if (vk_code == VK_SHIFT) {
             new_input->buttons[IB_shift] = is_down;
           }
-          if (vk_code == '5') {
-            new_input->buttons[IB_toggle_projection] = is_down;
+
+          // Handle symbols
+          int symbol = (int)vk_code;
+          if (vk_code == VK_NUMPAD0) symbol = '0';
+          else if (vk_code == VK_NUMPAD1) symbol = '1';
+          else if (vk_code == VK_NUMPAD2) symbol = '2';
+          else if (vk_code == VK_NUMPAD3) symbol = '3';
+          else if (vk_code == VK_NUMPAD4) symbol = '4';
+          else if (vk_code == VK_NUMPAD5) symbol = '5';
+          else if (vk_code == VK_NUMPAD6) symbol = '6';
+          else if (vk_code == VK_NUMPAD7) symbol = '7';
+          else if (vk_code == VK_NUMPAD8) symbol = '8';
+          else if (vk_code == VK_NUMPAD9) symbol = '9';
+
+          if (('A' <= symbol && symbol <= 'Z') ||
+              ('0' <= symbol && symbol <= '9')) {
+            new_input->buttons[IB_key] = is_down;
+            new_input->symbol = symbol;
           }
         } break;
 
@@ -407,6 +423,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     for (size_t i = 0; i < COUNT_OF(new_input->mouse_positions); i++) {
       new_input->mouse_positions[i] = old_input->mouse_positions[i];
     }
+    new_input->symbol = old_input->symbol;
 
 #if 0
     r32 ms_elapsed =

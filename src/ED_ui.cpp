@@ -334,24 +334,6 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color,
   }
 }
 
-bool User_Input::button_was_down(Input_Button button) {
-  if (this->old == NULL) return false;
-  return this->old->button_is_down(button);
-}
-
-bool User_Input::button_is_down(Input_Button button) {
-  assert(button < IB__COUNT);
-  return this->buttons[button];
-}
-
-bool User_Input::button_went_down(Input_Button button) {
-  return this->button_is_down(button) && !this->button_was_down(button);
-}
-
-bool User_Input::button_went_up(Input_Button button) {
-  return !this->button_is_down(button) && this->button_was_down(button);
-}
-
 Rect Area::get_split_handle(int num) {
   Rect rect = this->get_rect();
   assert(num == 0 || num == 1);
@@ -1191,13 +1173,13 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
         }
       }
     }
-    if (input->button_went_down(IB_key) && input->symbol == 'a') {
+    if (input->key_went_down('A')) {
       Model model = state->models[1];  // cube
       model.position = ui->cursor;
       model.direction = (this->camera.position - model.position).normalized();
       sb_push(state->models, model);
     }
-    if (input->button_went_down(IB_toggle_projection)) {
+    if (input->key_went_down('5')) {
       this->camera.ortho_projection = !this->camera.ortho_projection;
     }
     if (input->button_went_down(IB_mouse_middle)) {

@@ -192,3 +192,25 @@ Rect Pixel_Buffer::get_rect() {
   Rect result = {0, 0, this->width, this->height};
   return result;
 }
+
+bool User_Input::button_was_down(Input_Button button) {
+  if (this->old == NULL) return false;
+  return this->old->button_is_down(button);
+}
+
+bool User_Input::button_is_down(Input_Button button) {
+  assert(button < IB__COUNT);
+  return this->buttons[button];
+}
+
+bool User_Input::button_went_down(Input_Button button) {
+  return this->button_is_down(button) && !this->button_was_down(button);
+}
+
+bool User_Input::button_went_up(Input_Button button) {
+  return !this->button_is_down(button) && this->button_was_down(button);
+}
+
+bool User_Input::key_went_down(int key) {
+  return this->button_went_down(IB_key) && this->symbol == key;
+}
