@@ -506,8 +506,26 @@ int main(int argc, char *argv[]) {
   XDestroyWindow(display, window);
   XCloseDisplay(display);
 
-  // Leak check
-  state->destroy();
+  // Only freeing everything for a leak check
+
+  // Free models
+  for (int m = 0; m < sb_count(state->models); m++) {
+    state->models[m].destroy();
+  }
+  sb_free(state->models);
+
+  // Free main area
+  Area *main_area = state->UI->areas[0];
+  if (main_area->z_buffer != NULL) {
+    free(main_area->z_buffer);
+  }
+  free(main_area->buffer.memory);
+  free(main_area);
+  sb_free(state->UI->areas);
+
+  // Free general stuff
+  free(state->UI);
+  free(g_pixel_buffer.memory);
   free(g_program_memory.start);
 
   stb_leakcheck_dumpmem();

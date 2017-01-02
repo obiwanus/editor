@@ -6,7 +6,6 @@
 #include <string.h>
 #include <math.h>
 
-#include "include/stb_stretchy_buffer.h"
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
 #define STBI_ONLY_PNG
@@ -51,5 +50,6 @@ typedef unsigned int uint;
 
 #define STB_LEAKCHECK_IMPLEMENTATION
 #include <include/stb_leakcheck.h>
+#include "include/stb_stretchy_buffer.h"
 
 #endif  // ED_BASE_H

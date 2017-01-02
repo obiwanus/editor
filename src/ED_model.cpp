@@ -62,6 +62,13 @@ void Model::read_texture(char *filename) {
   this->texture = image;
 }
 
+void Model::destroy() {
+  sb_free(this->vertices);
+  sb_free(this->vns);
+  sb_free(this->vts);
+  sb_free(this->faces);
+}
+
 u32 Image::color(int x, int y, r32 intensity = 1.0f) {
   u32 result;
   // if (this->bytes_per_pixel == 4) {

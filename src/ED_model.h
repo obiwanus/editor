@@ -55,6 +55,7 @@ struct Model : Entity {
 
   void read_from_obj_file(char *);
   void read_texture(char *);
+  void destroy();
 };
 
 struct Camera : Entity {

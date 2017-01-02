@@ -112,7 +112,6 @@ struct Program_State {
   Model *selected_model = NULL;
 
   void init(Program_Memory *);
-  void destroy();
 };
 
 Update_Result update_and_render(Program_Memory *, Program_State *,

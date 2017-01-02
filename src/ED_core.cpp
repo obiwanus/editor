@@ -10,11 +10,6 @@ void *Program_Memory::allocate(size_t size) {
   return result;
 }
 
-void Program_State::destroy() {
-  // I'm only doing this for leak checks
-  free(this->UI);
-}
-
 void Program_State::init(Program_Memory *memory) {
   Program_State *state = this;
 
@@ -24,7 +19,7 @@ void Program_State::init(Program_Memory *memory) {
   state->UI = (User_Interface *)malloc(sizeof(*state->UI));
   memset(state->UI, 0, sizeof(*state->UI));
   state->UI->memory = memory;
-  Area *area = state->UI->create_area(
+  state->UI->create_area(
       NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});
 
   state->UI->cursor = V3(0, 0, 0);
