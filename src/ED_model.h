@@ -32,7 +32,7 @@ struct Entity {
   m4x4 transform_to_entity_space();
 };
 
-struct AA_Bounding_Box {
+struct AABBox {
   r32 x_min, x_max;
   r32 y_min, y_max;
   r32 z_min, z_max;
@@ -51,7 +51,7 @@ struct Model : Entity {
   bool display = true;
   bool debug = false;
 
-  AA_Bounding_Box aabb;
+  AABBox aabb;
 
   void read_from_obj_file(char *);
   void read_texture(char *);

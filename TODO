@@ -1,5 +1,6 @@
 NOW:
 
+- basic culling using AABB
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
@@ -21,6 +22,9 @@ NOW:
 
 
 SOMEDAY:
+- procedural surface generation
+- metaballs
+- eulerian grid fluid
 - [linux] window resize
 - don't redraw areas unless something is happening
 - fix visible back faces on the cube
@@ -35,10 +39,7 @@ SOMEDAY:
 - Fix the blue axis in the corner
 - Allocate max size and no more glitches on resize please
 - Logging
-
-
-IDEAS:
-- don't transform the same vertex a few times
+- don't transform the same vertex several times
 
 
 

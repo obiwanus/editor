@@ -2,10 +2,8 @@
 #define __ED_UI_H__
 
 struct Program_State;
-
-struct Area_Splitter;  // damned C++
-struct Area;           // bloody C++
-struct User_Interface;
+struct Area_Splitter;
+struct Area;
 
 struct UI_Select {
   // Simpler than flags
@@ -25,37 +23,6 @@ struct UI_Select {
 
   Rect get_rect();
   void update_and_draw(User_Input *);
-};
-
-enum Area_Editor_Type {
-  Area_Editor_Type_3DView = 0,
-  Area_Editor_Type_Raytrace,
-
-  Area_Editor_Type__COUNT,
-};
-
-struct Area_Editor {
-  Area *area;
-  bool is_drawn;
-
-  void update_and_draw(Pixel_Buffer *, User_Input *){};
-};
-
-enum Editor_3DView_Mode {
-  Editor_3DView_Mode_Normal = 0,
-  Editor_3DView_Mode_Camera_Rotate,
-  Editor_3DView_Mode_Pivot_Move,
-};
-
-struct Editor_3DView : Area_Editor {
-  Camera camera;
-  Editor_3DView_Mode mode;
-
-  void draw(Program_State *, User_Input *);
-};
-
-struct Editor_Raytrace : Area_Editor {
-  void draw(User_Interface *);
 };
 
 struct Area {
@@ -96,6 +63,7 @@ struct Area {
   void set_right(int);
   void set_top(int);
   void set_bottom(int);
+  void reposition_splitter(r32, r32);
 
   void draw(Pixel_Buffer *);
 

@@ -4,11 +4,13 @@
 #include "ED_math.h"
 #include "ED_core.h"
 #include "ED_model.h"
+#include "editors/editors.h"
 #include "ED_ui.h"
 
 #include "ED_core.cpp"
 #include "ED_math.cpp"
 #include "ED_model.cpp"
+#include "editors/3dview.cpp"
 #include "ED_ui.cpp"
 
 // ========================== Platform headers ================================
