@@ -10,6 +10,7 @@
 #include "ED_core.cpp"
 #include "ED_math.cpp"
 #include "ED_model.cpp"
+#include "ED_drawing.cpp"
 #include "editors/3dview.cpp"
 #include "ED_ui.cpp"
 
