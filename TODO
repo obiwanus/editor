@@ -1,9 +1,9 @@
 NOW:
 
-- [linux] capitalize all ASCII symbols from keypresses
-- fix a memory leak when deleting areas if there is one
 - find a faster way to rasterize triangles
 - find a faster way to draw
+- avoid random heap allocations everywhere
+- try not to overallocate pixel buffers (maybe even use only one and avoid copying?)
 - properly outline triangles
 - try to update before drawing to remove the lag between different areas
 - use 2 light sources (maybe even point ones)
@@ -44,6 +44,10 @@ IDEAS:
 
 ==============================================================================
 DONE:
+
+[03/01/2017]
+- fixed memory leaks
+- [linux] capitalize all ASCII symbols from keypresses
 
 [02/01/2017]
 - maybe don't add special meaning to keys at the platform layer?

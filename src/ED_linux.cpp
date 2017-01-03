@@ -385,10 +385,13 @@ int main(int argc, char *argv[]) {
           if (key == XK_Shift_L || key == XK_Shift_R) {
             new_input->buttons[IB_shift] = pressed;
           }
-          if (symbol == '5') {
-            new_input->buttons[IB_toggle_projection] = pressed;
-          }
-          if (symbol) {
+          if (('a' <= symbol && symbol <= 'z') ||
+              ('A' <= symbol && symbol <= 'Z') ||
+              ('0' <= symbol && symbol <= '9')) {
+            // Convert small letters to capitals
+            if ('a' <= symbol && symbol <= 'z') {
+              symbol += ('A' - 'a');
+            }
             new_input->buttons[IB_key] = pressed;
             new_input->symbol = symbol;
           }
@@ -507,7 +510,9 @@ int main(int argc, char *argv[]) {
   XCloseDisplay(display);
 
   // Only freeing everything for a leak check
+#ifdef EDITOR_CHECK_LEAKS
 
+  printf("======================= freeing ==========================\n");
   // Free models
   for (int i = 0; i < sb_count(state->models); ++i) {
     state->models[i].destroy();
@@ -516,18 +521,25 @@ int main(int argc, char *argv[]) {
 
   // Free areas
   for (int i = 0; i < state->UI->num_areas; ++i) {
-    state->UI->areas[0]->destroy();
-
+    state->UI->areas[i]->destroy();
   }
   sb_free(state->UI->areas);
 
-  // Free general stuff
+  // Free splitters
+  for (int i = 0; i < state->UI->num_splitters; ++i) {
+    free(state->UI->splitters[0]);
+  }
   sb_free(state->UI->splitters);
+
+  // Free general stuff
   free(state->UI);
   free(g_pixel_buffer.memory);
   free(g_program_memory.start);
 
   stb_leakcheck_dumpmem();
+#endif  // EDITOR_CHECK_LEAKS
 
   return 0;
 }
+
+

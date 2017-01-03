@@ -44,13 +44,19 @@ void *stb_leakcheck_malloc(size_t sz, char *file, int line)
    mi->prev = NULL;
    mi->size = (int) sz;
    mi_head = mi;
+   // if (line != 37) {
+   //    printf("malloc: (%zd) %s:%d, addr 0x%zx\n", sz, file, line, (size_t)mi);
+   // }
    return mi+1;
 }
 
-void stb_leakcheck_free(void *ptr)
+void stb_leakcheck_free(void *ptr, char *file, int line)
 {
    if (ptr != NULL) {
       stb_leakcheck_malloc_info *mi = (stb_leakcheck_malloc_info *) ptr - 1;
+      // if (mi->line != 37) {
+      //    printf("free: (%zd) %s:%d, addr 0x%zx\n", mi->size, file, line, (size_t)mi);
+      // }
       mi->size = ~mi->size;
       #ifndef STB_LEAKCHECK_SHOWALL
       if (mi->prev == NULL) {
@@ -66,10 +72,13 @@ void stb_leakcheck_free(void *ptr)
 
 void *stb_leakcheck_realloc(void *ptr, size_t sz, char *file, int line)
 {
+   // if (line != 37) {
+   //    printf("realloc: (%zd) %s:%d, addr 0x%zx\n", sz, file, line, (size_t)ptr);
+   // }
    if (ptr == NULL) {
       return stb_leakcheck_malloc(sz, file, line);
    } else if (sz == 0) {
-      stb_leakcheck_free(ptr);
+      stb_leakcheck_free(ptr, __FILE__, __LINE__);
       return NULL;
    } else {
       stb_leakcheck_malloc_info *mi = (stb_leakcheck_malloc_info *) ptr - 1;
@@ -83,7 +92,7 @@ void *stb_leakcheck_realloc(void *ptr, size_t sz, char *file, int line)
          #endif
          if (q) {
             memcpy(q, ptr, mi->size);
-            stb_leakcheck_free(ptr);
+            stb_leakcheck_free(ptr, __FILE__, __LINE__);
          }
          return q;
       }
@@ -113,7 +122,7 @@ void stb_leakcheck_dumpmem(void)
 #define INCLUDE_STB_LEAKCHECK_H
 
 #define malloc(sz)    stb_leakcheck_malloc(sz, __FILE__, __LINE__)
-#define free(p)       stb_leakcheck_free(p)
+#define free(p)       stb_leakcheck_free(p, __FILE__, __LINE__)
 #define realloc(p,sz) stb_leakcheck_realloc(p,sz, __FILE__, __LINE__)
 
 extern void * stb_leakcheck_malloc(size_t sz, char *file, int line);

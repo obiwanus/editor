@@ -687,12 +687,7 @@ void User_Interface::remove_area(Area *area) {
   {
     parent_area->editor_3dview.camera = sister_area->editor_3dview.camera;
     parent_area->z_buffer = sister_area->z_buffer;
-  }
-
-  // Remove z-buffer if any
-  if (area->z_buffer != NULL) {
-    free(area->z_buffer);
-    area->z_buffer = NULL;
+    sister_area->z_buffer = NULL;  // so we don't free it
   }
 
   // Remove splitter
@@ -735,11 +730,13 @@ void User_Interface::remove_area(Area *area) {
         sister_area_id = i;
       }
     }
+    area->destroy();
+    sister_area->destroy();
+
     assert(0 <= area_id && area_id < this->num_areas);
     assert(0 <= sister_area_id && sister_area_id < this->num_areas);
     int edge = this->num_areas - 1;
     if (area_id < edge) {
-      this->areas[area_id]->destroy();
       this->areas[area_id] = this->areas[edge];
       this->areas[edge] = {};
       if (sister_area_id == edge) {
@@ -749,7 +746,6 @@ void User_Interface::remove_area(Area *area) {
     }
     edge--;
     if (sister_area_id < edge) {
-      this->areas[sister_area_id]->destroy();
       this->areas[sister_area_id] = this->areas[edge];
       this->areas[edge] = {};
     }
@@ -1174,7 +1170,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
       }
     }
     if (input->key_went_down('A')) {
-      Model model = state->models[1];  // cube
+      Model model = state->models[0];  // cube
       model.position = ui->cursor;
       model.direction = (this->camera.position - model.position).normalized();
       sb_push(state->models, model);
@@ -1255,6 +1251,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
         Matrix::frame_to_canonical(model->get_basis(), model->position) *
         Matrix::S(model->scale);
 
+    // #pragma omp parallel for
     for (int f = 0; f < sb_count(model->faces); ++f) {
       Face face = model->faces[f];
       v3 scene_verts[3];

@@ -19,6 +19,8 @@ void Program_State::init(Program_Memory *memory) {
   state->UI = (User_Interface *)malloc(sizeof(*state->UI));
   memset(state->UI, 0, sizeof(*state->UI));
   state->UI->memory = memory;
+
+  sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
   state->UI->create_area(
       NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});
 
