@@ -33,9 +33,8 @@ struct Entity {
 };
 
 struct AABBox {
-  r32 x_min, x_max;
-  r32 y_min, y_max;
-  r32 z_min, z_max;
+  v3 min;
+  v3 max;
 
   r32 hit_by(Ray);
 };

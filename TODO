@@ -4,6 +4,8 @@ NOW:
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
+- when selecting models, take the closest one
+- debug draw AABBs
 - try not to overallocate pixel buffers (maybe even use only one and avoid copying?)
 - properly outline triangles
 - try to update before drawing to remove the lag between different areas
@@ -47,6 +49,7 @@ SOMEDAY:
 DONE:
 
 [03/01/2017]
+- calculating AABBs
 - fixed memory leaks
 - [linux] capitalize all ASCII symbols from keypresses
 

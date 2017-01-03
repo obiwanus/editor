@@ -132,6 +132,10 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
         Matrix::frame_to_canonical(model->get_basis(), model->position) *
         Matrix::S(model->scale);
 
+    // For AABB - note we assume the position is within the model
+    v3 min = model->position;
+    v3 max = model->position;
+
     // #pragma omp parallel for
     for (int f = 0; f < sb_count(model->faces); ++f) {
       Face face = model->faces[f];
@@ -142,6 +146,19 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
 
       for (int i = 0; i < 3; ++i) {
         scene_verts[i] = ModelTransform * model->vertices[face.v_ids[i]];
+
+        // Find AABB. This is probably not a good idea since it
+        // won't work if the next frame the model drastically changes its
+        // position, but we'll see
+        for (int j = 0; j < 3; ++j) {
+          r32 value = scene_verts[i].E[j];
+          if (value < min.E[j]) {
+            min.E[j] = value;
+          } else if (max.E[j] < value) {
+            max.E[j] = value;
+          }
+        }
+
         texture_verts[i] = model->vts[face.vt_ids[i]];
         screen_verts[i] = WorldTransform * scene_verts[i];
         vns[i] = model->vns[face.vn_ids[i]];
@@ -178,6 +195,10 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
       //   draw_line(buffer, screen_verts[j], normal_end, 0x00FF0000, z_buffer);
       // }
     }
+
+    // Update bounding box
+    model->aabb.min = min;
+    model->aabb.max = max;
 
     if (model->debug) {
       draw_line(buffer, WorldTransform * model->position,

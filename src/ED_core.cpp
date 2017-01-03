@@ -37,7 +37,7 @@ void Program_State::init(Program_Memory *memory) {
   model.scale = 0.5f;
   model.position = V3(-1.0f, 0.5f, 0.0f);
   model.direction = V3(-1, 1, 1);
-  model.debug = true;
+  model.debug = false;
   sb_push(state->models, model);
 
   model = {};
@@ -47,7 +47,7 @@ void Program_State::init(Program_Memory *memory) {
   model.position = V3(0.5f, 0.3f, 0.0f);
   model.direction = V3(1, 1, 1);
   model.display = true;
-  model.debug = true;
+  model.debug = false;
   sb_push(state->models, model);
 
   state->selected_model = models + 0;  // head
