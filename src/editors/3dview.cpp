@@ -159,7 +159,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
           }
         }
 
-        texture_verts[i] = model->vts[face.vt_ids[i]];
+        // texture_verts[i] = model->vts[face.vt_ids[i]];
         screen_verts[i] = WorldTransform * scene_verts[i];
         vns[i] = model->vns[face.vn_ids[i]];
         vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
@@ -201,9 +201,43 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
     model->aabb.max = max;
 
     if (model->debug) {
+      // Draw the direction vector
       draw_line(buffer, WorldTransform * model->position,
-                WorldTransform * (model->position + model->direction),
+                WorldTransform * (model->position + model->direction * 0.3f),
                 0x00FF0000, z_buffer);
+
+      // Draw AABBoxes
+      v3 verts[] = {
+          {min.x, min.y, min.z},
+          {min.x, min.y, max.z},
+          {max.x, min.y, max.z},
+          {max.x, min.y, min.z},
+          {max.x, max.y, min.z},
+          {min.x, max.y, min.z},
+          {min.x, max.y, max.z},
+          {max.x, max.y, max.z},
+      };
+      int lines[] = {0, 1, 1, 2, 2, 3, 3, 0, 5, 6, 6, 7,
+                     7, 4, 4, 5, 0, 5, 3, 4, 1, 6, 2, 7};
+      // assert(COUNT_OF(lines) % 2 == 0);
+      for (size_t i = 0; i < COUNT_OF(lines); i += 2) {
+        draw_line(buffer, WorldTransform * verts[lines[i]],
+                  WorldTransform * verts[lines[i + 1]], 0x00FFAA40, z_buffer);
+      }
+      // draw_line(buffer, V3(min.x, 0.0f, min.z), V3(min.x, 0.0f, max.z),
+      // 0x00FFAA40, z_buffer);
+      // draw_line(buffer, V3(max.x, 0.0f, max.z), V3(max.x, 0.0f, min.z),
+      // 0x00FFAA40, z_buffer);
+      // draw_line(buffer, V3(max.x, 0.0f, max.z), V3(min.x, 0.0f, max.z),
+      // 0x00FFAA40, z_buffer);
+
+      // draw_line(buffer, min, V3(min.x, min.y, max.z), 0x00000099, z_buffer);
+      // draw_line(buffer, min, V3(min.x, min.y, max.z), 0x00000099, z_buffer);
+      // draw_line(buffer, min, V3(max.x, min.y, min.z), 0x00990000, z_buffer);
+      // draw_line(buffer, min, V3(min.x, max.y, min.z), 0x00009900, z_buffer);
+      // draw_line(buffer, max, V3(max.x, max.y, min.z), 0x00FFAA40, z_buffer);
+      // draw_line(buffer, max, V3(max.x, min.y, max.z), 0x00FFAA40, z_buffer);
+      // draw_line(buffer, max, V3(min.x, max.y, max.z), 0x00FFAA40, z_buffer);
     }
   }
 
