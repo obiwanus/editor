@@ -37,10 +37,7 @@ typedef unsigned int uint;
 #define local_persist static
 
 #if BUILD_SLOW
-#define assert(Expression) \
-  if (!(Expression)) {     \
-    *(int *)0 = 0;         \
-  }
+#include <assert.h>
 #else
 #define assert(Expression)
 #endif
@@ -54,5 +51,9 @@ typedef unsigned int uint;
 #endif  // EDITOR_CHECK_LEAKS
 
 #include "include/stb_stretchy_buffer.h"
+
+// Tmp: later we'll dump it into asset files
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "include/stb_truetype.h"
 
 #endif  // ED_BASE_H
