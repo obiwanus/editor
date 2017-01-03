@@ -1,9 +1,12 @@
 NOW:
 
+- make some text appear on the screen
+- display fps
 - basic culling using AABB
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
+- [linux] fix window performance problems
 - when selecting models, take the closest one
 - try not to overallocate pixel buffers (maybe even use only one and avoid copying?)
 - properly outline triangles
@@ -11,7 +14,6 @@ NOW:
 - use 2 light sources (maybe even point ones)
 - drawing a silhouette of the selected model
 - drag models without manipulator
-- make some text appear on the screen
 - add the model move manipulator
 - move models along the axis using the manipulator
 - debug info output onto the screen
