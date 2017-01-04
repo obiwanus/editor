@@ -25,14 +25,6 @@
 #include <GL/gl.h>
 #include <GL/glx.h>
 
-//=============================== Globals =====================================
-
-global bool g_running;
-global Pixel_Buffer g_pixel_buffer;
-global Program_Memory g_program_memory;
-
-global XImage *gXImage;
-
 // ============================== OpenGL ======================================
 
 global GLuint g_texture_handle;
@@ -536,9 +528,11 @@ int main(int argc, char *argv[]) {
 
   // Free general stuff
   free(state->UI);
+  free(g_font.bitmap);
   free(g_pixel_buffer.memory);
   free(g_program_memory.start);
 
+  printf("====================== leak check ========================\n");
   stb_leakcheck_dumpmem();
 #endif  // EDITOR_CHECK_LEAKS
 

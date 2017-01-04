@@ -1,7 +1,9 @@
 NOW:
 
 - make some text appear on the screen
+- put things we're not going to free in the permanent memory
 - display fps
+- display performance counters
 - basic culling using AABB
 - find a faster way to rasterize triangles
 - find a faster way to draw

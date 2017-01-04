@@ -654,6 +654,8 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
 
   // Potentially will be in separate threads
 
+  // TODO: maybe take this completely away from ui::draw?
+
   // Update and draw areas
   for (int i = 0; i < this->num_areas; ++i) {
     Area *area = this->areas[i];
@@ -749,6 +751,29 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
       draw_rect(buffer, area->get_delete_button(), 0x00772222);
     }
   }
+
+  // ------- Debug output ----------------------------------------
+
+  {
+    int X = 100, Y = 100;
+
+    char c = 'g';
+    u8 *char_bitmap = g_font.bitmap +
+                      g_font.max_char_width * g_font.max_char_height *
+                          (c - g_font.first_char);
+
+    for (int x = X; x < X + g_font.max_char_width; x++) {
+      for (int y = Y; y < Y + g_font.max_char_height; y++) {
+        u8 grey = char_bitmap[X + Y * g_font.max_char_width];
+        u32 color = get_rgb_u32(V3(grey, grey, grey));
+        // Don't care about performance (yet)
+        // if (grey) {
+          draw_pixel(buffer, V2i(x, y), color, true);
+        // }
+      }
+    }
+  }
+  draw_string(buffer, 100, 100, "Hello world", 0x00FF4000);
 
   // ------- Cursors ---------------------------------------------
 

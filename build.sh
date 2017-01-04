@@ -16,7 +16,7 @@ mkdir -p build
 
 OPTIMIZE=false
 RUN=false
-LEAKCHECK=false
+LEAKCHECK=true
 OPENMP=true
 
 if [ "$1" = "run" ]; then

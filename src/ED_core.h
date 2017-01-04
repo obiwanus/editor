@@ -113,7 +113,25 @@ struct Program_State {
   void init(Program_Memory *);
 };
 
+struct ED_Font {
+  stbtt_fontinfo info;
+  u8 *bitmap;
+  const char first_char = '!';
+  const char last_char = '~';
+  int max_char_width;
+  int max_char_height;
+
+  void load_from_file(char *);
+};
+
 Update_Result update_and_render(Program_Memory *, Program_State *,
                                 Pixel_Buffer *, User_Input *);
+
+// ============================== Globals =====================================
+
+global bool g_running;
+global Pixel_Buffer g_pixel_buffer;
+global Program_Memory g_program_memory;
+global ED_Font g_font;
 
 #endif  // ED_CORE_H

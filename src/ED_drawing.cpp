@@ -333,3 +333,10 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color,
     }
   }
 }
+
+void draw_string(Pixel_Buffer *buffer, int x, int y, const char *string,
+                 u32 color) {
+  char c;
+  while ((c = *string++) != '\0') {
+  }
+}

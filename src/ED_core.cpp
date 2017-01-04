@@ -20,9 +20,12 @@ void Program_State::init(Program_Memory *memory) {
   memset(state->UI, 0, sizeof(*state->UI));
   state->UI->memory = memory;
 
+  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf");
+
+  // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
-  state->UI->create_area(
-      NULL, {0, 0, state->kWindowWidth, state->kWindowHeight});
+  state->UI->create_area(NULL,
+                         {0, 0, state->kWindowWidth, state->kWindowHeight});
 
   state->UI->cursor = V3(0, 0, 0);
 
@@ -122,6 +125,60 @@ void Program_State::init(Program_Memory *memory) {
   // rt->camera.right = state->kWindowWidth / 2;
   // rt->camera.bottom = -state->kWindowHeight / 2;
   // rt->camera.top = state->kWindowHeight / 2;
+}
+
+void ED_Font::load_from_file(char *filename) {
+  // Load font into buffer
+  u8 *buffer = NULL;
+  {
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+      printf("Can't open file '%s'\n", filename);
+      exit(1);
+    }
+
+    fseek(file, 0, SEEK_END);
+    size_t size = ftell(file);
+    rewind(file);
+
+    buffer = (u8 *)malloc(size * sizeof(*buffer));
+    assert(buffer != NULL);
+    size_t result = fread(buffer, 1, size, file);
+
+    fclose(file);
+  }
+
+  int result = stbtt_InitFont(&this->info, buffer, 0);
+  if (!result) {
+    printf("Can't init font\n");
+    exit(1);
+  }
+
+  r32 scale = stbtt_ScaleForPixelHeight(&this->info, 15);
+  int ascent, descent, line_gap;
+  stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
+
+  const char first_char = '!';
+  const char last_char = '~';
+  const int alphabet_size = last_char - first_char + 1;
+  {
+    int x0, y0, x1, y1;
+    stbtt_GetFontBoundingBox(&this->info, &x0, &y0, &x1, &y1);
+    this->max_char_width = round_i32(scale * (x1 - x0));
+    this->max_char_height = round_i32(scale * (y1 - y0));
+  }
+  size_t char_size = this->max_char_width * this->max_char_height;
+  this->bitmap =
+      (u8 *)malloc(char_size * alphabet_size * sizeof(*this->bitmap));
+
+  for (int i = 0; i < alphabet_size; ++i) {
+    u8 *char_bitmap = this->bitmap + i * char_size;
+    stbtt_MakeCodepointBitmap(&this->info, char_bitmap, this->max_char_width,
+                              this->max_char_height, 0, scale, scale,
+                              first_char + i);
+  }
+
+  free(buffer);
 }
 
 Update_Result update_and_render(Program_Memory *program_memory,

@@ -23,11 +23,7 @@
 
 // =========================== Platform code ==================================
 
-global bool g_running;
 global LARGE_INTEGER gPerformanceFrequency;
-
-global Pixel_Buffer g_pixel_buffer;
-global Program_Memory g_program_memory;
 global GLuint gTextureHandle;
 
 struct Win32_Thread_Param {
