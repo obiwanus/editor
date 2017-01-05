@@ -148,7 +148,8 @@ void ED_Font::load_from_file(char *filename) {
     fclose(file);
   }
 
-  int result = stbtt_InitFont(&this->info, buffer, 0);
+  int result = stbtt_InitFont(&this->info, buffer,
+                              stbtt_GetFontOffsetForIndex(buffer, 0));
   if (!result) {
     printf("Can't init font\n");
     exit(1);
@@ -158,14 +159,16 @@ void ED_Font::load_from_file(char *filename) {
   int ascent, descent, line_gap;
   stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
 
-  const char first_char = '!';
-  const char last_char = '~';
-  const int alphabet_size = last_char - first_char + 1;
+  int alphabet_size = this->last_char - this->first_char + 1;
   {
     int x0, y0, x1, y1;
-    stbtt_GetFontBoundingBox(&this->info, &x0, &y0, &x1, &y1);
-    this->max_char_width = round_i32(scale * (x1 - x0));
-    this->max_char_height = round_i32(scale * (y1 - y0));
+    // stbtt_GetFontBoundingBox(&this->info, &x0, &y0, &x1, &y1);
+    stbtt_GetCodepointBitmapBox(&this->info, 'A', scale, scale, &x0, &y0, &x1,
+                                &y1);
+    this->max_char_width = 2 * (x1 - x0);
+    this->max_char_height = 2 * (y1 - y0);
+    // this->max_char_width = round_i32(scale * (x1 - x0));
+    // this->max_char_height = round_i32(scale * (y1 - y0));
   }
   size_t char_size = this->max_char_width * this->max_char_height;
   this->bitmap =
