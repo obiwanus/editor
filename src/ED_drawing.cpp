@@ -383,7 +383,14 @@ void draw_string(Pixel_Buffer *buffer, int string_x, int string_y,
         }
       }
     }
-
-    start.x += codepoint->width + 2;
+    if (*string != '\0') {
+      ED_Font_Codepoint *next_codepoint =
+          g_font.codepoints + (*string - g_font.first_char);
+      int advance, kern_advance;
+      stbtt_GetGlyphHMetrics(&g_font.info, codepoint->glyph, &advance, 0);
+      kern_advance = stbtt_GetGlyphKernAdvance(&g_font.info, codepoint->glyph,
+                                               next_codepoint->glyph);
+      start.x += (advance + kern_advance) * g_font.scale;
+    }
   }
 }

@@ -116,6 +116,7 @@ struct Program_State {
 struct ED_Font_Codepoint {
   int width;
   int height;
+  int glyph;
   u8 *bitmap;
 };
 
@@ -124,6 +125,7 @@ struct ED_Font {
   static const char first_char = '!';
   static const char last_char = '~';
   ED_Font_Codepoint codepoints[last_char - first_char + 1];
+  r32 scale;
   int baseline;
   int line_height;
   u8 *bitmap;

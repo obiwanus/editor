@@ -20,7 +20,7 @@ void Program_State::init(Program_Memory *memory) {
   memset(state->UI, 0, sizeof(*state->UI));
   state->UI->memory = memory;
 
-  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 200);
+  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 20);
 
   // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
@@ -155,11 +155,11 @@ void ED_Font::load_from_file(char *filename, int char_height) {
     exit(1);
   }
 
-  r32 scale = stbtt_ScaleForPixelHeight(&this->info, char_height);
+  this->scale = stbtt_ScaleForPixelHeight(&this->info, char_height);
   int ascent, descent, line_gap;
   stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
-  this->baseline = (int)(ascent * scale);
-  this->line_height = (int)((line_gap + ascent - descent) * scale);
+  this->baseline = (int)(ascent * this->scale);
+  this->line_height = (int)((line_gap + ascent - descent) * this->scale);
 
   int alphabet_size = this->last_char - this->first_char + 1;
 
@@ -167,9 +167,11 @@ void ED_Font::load_from_file(char *filename, int char_height) {
   int buffer_size = 0;
   for (int i = 0; i < alphabet_size; ++i) {
     ED_Font_Codepoint *codepoint = this->codepoints + i;
+    codepoint->glyph =
+        stbtt_FindGlyphIndex(&this->info, this->first_char + i);
     int x0, y0, x1, y1;
-    stbtt_GetCodepointBitmapBox(&this->info, this->first_char + i, scale, scale,
-                                &x0, &y0, &x1, &y1);
+    stbtt_GetGlyphBitmapBox(&this->info, codepoint->glyph, this->scale,
+                            this->scale, &x0, &y0, &x1, &y1);
     codepoint->width = x1 - x0;
     codepoint->height = y1 - y0;
     buffer_size += codepoint->width * codepoint->height;
@@ -182,8 +184,8 @@ void ED_Font::load_from_file(char *filename, int char_height) {
     ED_Font_Codepoint *codepoint = this->codepoints + i;
     codepoint->bitmap = char_bitmap;
     stbtt_MakeCodepointBitmap(&this->info, codepoint->bitmap, codepoint->width,
-                              codepoint->height, codepoint->width, scale, scale,
-                              this->first_char + i);
+                              codepoint->height, codepoint->width, this->scale,
+                              this->scale, this->first_char + i);
     // Advance to the next char
     char_bitmap += codepoint->width * codepoint->height;
   }
