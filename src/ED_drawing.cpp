@@ -334,22 +334,23 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color,
   }
 }
 
-void draw_string(Pixel_Buffer *buffer, int X, int Y, const char *string,
-                 u32 text_color) {
+void draw_string(Pixel_Buffer *buffer, int string_x, int string_y,
+                 const char *string, u32 text_color) {
   char c;
-  v2i start = V2i(X, Y);
+  v2i start = V2i(string_x, string_y + g_font.baseline);
   while ((c = *string++) != '\0') {
     ED_Font_Codepoint *codepoint = g_font.codepoints + (c - g_font.first_char);
     u8 *char_bitmap = codepoint->bitmap;
 
     // TODO: this can be optimized significantly
     for (int x = 0; x < codepoint->width; x++) {
-      if (start.x + x < 0 || start.x + x > buffer->width) continue;
+      int X = start.x + x;
+      if (X < 0 || X > buffer->width) continue;
       for (int y = 0; y < codepoint->height; y++) {
-        if (start.y + y < 0 || start.y + y > buffer->height) continue;
+        int Y = start.y + y - codepoint->height;
+        if (Y < 0 || Y > buffer->height) continue;
         u8 alpha_src = char_bitmap[x + y * codepoint->width];
-        u32 *pixel = (u32 *)buffer->memory + (start.x + x) +
-                     (start.y + y) * buffer->width;
+        u32 *pixel = (u32 *)buffer->memory + X + Y * buffer->width;
         if (alpha_src == 0xFF) {
           // Just draw foreground
           *pixel = text_color;

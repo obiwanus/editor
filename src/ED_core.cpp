@@ -156,8 +156,10 @@ void ED_Font::load_from_file(char *filename, int char_height) {
   }
 
   r32 scale = stbtt_ScaleForPixelHeight(&this->info, char_height);
-  // int ascent, descent, line_gap;
-  // stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
+  int ascent, descent, line_gap;
+  stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
+  this->baseline = (int)(ascent * scale);
+  this->line_height = (int)((line_gap + ascent - descent) * scale);
 
   int alphabet_size = this->last_char - this->first_char + 1;
 

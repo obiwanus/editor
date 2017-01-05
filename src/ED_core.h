@@ -124,6 +124,8 @@ struct ED_Font {
   static const char first_char = '!';
   static const char last_char = '~';
   ED_Font_Codepoint codepoints[last_char - first_char + 1];
+  int baseline;
+  int line_height;
   u8 *bitmap;
 
   void load_from_file(char *, int);
