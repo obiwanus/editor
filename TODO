@@ -1,6 +1,5 @@
 NOW:
 
-- basic alpha blending for fonts
 - baseline and kerning for strings
 - display fps
 - display performance counters
@@ -51,6 +50,9 @@ SOMEDAY:
 
 ==============================================================================
 DONE:
+
+[06/01/2017]
+- basic alpha blending for fonts
 
 [05/01/2017]
 - render a string onto the screen

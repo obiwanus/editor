@@ -126,7 +126,7 @@ struct ED_Font {
   ED_Font_Codepoint codepoints[last_char - first_char + 1];
   u8 *bitmap;
 
-  void load_from_file(char *);
+  void load_from_file(char *, int);
 };
 
 Update_Result update_and_render(Program_Memory *, Program_State *,

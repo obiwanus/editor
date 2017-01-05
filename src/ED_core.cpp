@@ -20,7 +20,7 @@ void Program_State::init(Program_Memory *memory) {
   memset(state->UI, 0, sizeof(*state->UI));
   state->UI->memory = memory;
 
-  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf");
+  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 200);
 
   // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
@@ -127,7 +127,7 @@ void Program_State::init(Program_Memory *memory) {
   // rt->camera.top = state->kWindowHeight / 2;
 }
 
-void ED_Font::load_from_file(char *filename) {
+void ED_Font::load_from_file(char *filename, int char_height) {
   // Load font into buffer
   u8 *buffer = NULL;
   {
@@ -155,7 +155,7 @@ void ED_Font::load_from_file(char *filename) {
     exit(1);
   }
 
-  r32 scale = stbtt_ScaleForPixelHeight(&this->info, 50);
+  r32 scale = stbtt_ScaleForPixelHeight(&this->info, char_height);
   // int ascent, descent, line_gap;
   // stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
 

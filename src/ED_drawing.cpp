@@ -335,22 +335,44 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color,
 }
 
 void draw_string(Pixel_Buffer *buffer, int X, int Y, const char *string,
-                 u32 color) {
+                 u32 text_color) {
   char c;
   v2i start = V2i(X, Y);
   while ((c = *string++) != '\0') {
     ED_Font_Codepoint *codepoint = g_font.codepoints + (c - g_font.first_char);
     u8 *char_bitmap = codepoint->bitmap;
 
+    // TODO: this can be optimized significantly
     for (int x = 0; x < codepoint->width; x++) {
-      if (start.x + x < 0 || start.x + x > buffer->width) break;
+      if (start.x + x < 0 || start.x + x > buffer->width) continue;
       for (int y = 0; y < codepoint->height; y++) {
-        if (start.y + y < 0 || start.y + y > buffer->height) break;
-        u8 grey = char_bitmap[x + y * codepoint->width];
-        u32 Color = grey << 16 | grey << 8 | grey << 0;
-        // Don't care about performance (yet)
-        if (grey) {
-          draw_pixel(buffer, V2i(start.x + x, start.y + y), Color, true);
+        if (start.y + y < 0 || start.y + y > buffer->height) continue;
+        u8 alpha_src = char_bitmap[x + y * codepoint->width];
+        u32 *pixel = (u32 *)buffer->memory + (start.x + x) +
+                     (start.y + y) * buffer->width;
+        if (alpha_src == 0xFF) {
+          // Just draw foreground
+          *pixel = text_color;
+        } else if (alpha_src == 0) {
+          // Don't draw
+        } else {
+          // Blend and draw
+          int alpha = alpha_src + 1;
+          int alpha_inv = 256 - alpha_src;
+          // Background
+          u32 bg = *pixel;
+          u8 R_bg = (u8)((bg & 0x00FF0000) >> 16);
+          u8 G_bg = (u8)((bg & 0x0000FF00) >> 8);
+          u8 B_bg = (u8)((bg & 0x000000FF) >> 0);
+          // Foreground
+          u8 R_fg = (u8)((text_color & 0x00FF0000) >> 16);
+          u8 G_fg = (u8)((text_color & 0x0000FF00) >> 8);
+          u8 B_fg = (u8)((text_color & 0x000000FF) >> 0);
+          // Blend
+          u8 R = (u8)((alpha * R_fg + alpha_inv * R_bg) >> 8);
+          u8 G = (u8)((alpha * G_fg + alpha_inv * G_bg) >> 8);
+          u8 B = (u8)((alpha * B_fg + alpha_inv * B_bg) >> 8);
+          *pixel = R << 16 | G << 8 | B << 0;
         }
       }
     }
