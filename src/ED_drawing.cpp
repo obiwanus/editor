@@ -334,9 +334,27 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color,
   }
 }
 
-void draw_string(Pixel_Buffer *buffer, int x, int y, const char *string,
+void draw_string(Pixel_Buffer *buffer, int X, int Y, const char *string,
                  u32 color) {
   char c;
+  v2i start = V2i(X, Y);
   while ((c = *string++) != '\0') {
+    ED_Font_Codepoint *codepoint = g_font.codepoints + (c - g_font.first_char);
+    u8 *char_bitmap = codepoint->bitmap;
+
+    for (int x = 0; x < codepoint->width; x++) {
+      if (start.x + x < 0 || start.x + x > buffer->width) break;
+      for (int y = 0; y < codepoint->height; y++) {
+        if (start.y + y < 0 || start.y + y > buffer->height) break;
+        u8 grey = char_bitmap[x + y * codepoint->width];
+        u32 Color = grey << 16 | grey << 8 | grey << 0;
+        // Don't care about performance (yet)
+        if (grey) {
+          draw_pixel(buffer, V2i(start.x + x, start.y + y), Color, true);
+        }
+      }
+    }
+
+    start.x += codepoint->width + 2;
   }
 }

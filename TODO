@@ -1,13 +1,14 @@
 NOW:
 
-- render a string onto the screen
-- put things we're not going to free in the permanent memory
+- basic alpha blending for fonts
+- baseline and kerning for strings
 - display fps
 - display performance counters
 - basic culling using AABB
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
+- put things we're not going to free in the permanent memory
 - [linux] fix window performance problems
 - when selecting models, take the closest one
 - try not to overallocate pixel buffers (maybe even use only one and avoid copying?)
@@ -52,7 +53,8 @@ SOMEDAY:
 DONE:
 
 [05/01/2017]
-- Displayed a letter on the screen
+- render a string onto the screen
+- displayed a letter on the screen
 
 [04/01/2017]
 - debug draw AABBs
