@@ -45,10 +45,10 @@ typedef unsigned int uint;
 #define COUNT_OF(x) \
   ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 
-#ifdef EDITOR_CHECK_LEAKS
+#ifdef ED_LEAKCHECK
 #define STB_LEAKCHECK_IMPLEMENTATION
 #include <include/stb_leakcheck.h>
-#endif  // EDITOR_CHECK_LEAKS
+#endif  // ED_LEAKCHECK
 
 #include "include/stb_stretchy_buffer.h"
 

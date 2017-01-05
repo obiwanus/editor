@@ -133,6 +133,10 @@ struct ED_Font {
   void load_from_file(char *, int);
 };
 
+enum ED_Perf_Counter {
+
+};
+
 Update_Result update_and_render(Program_Memory *, Program_State *,
                                 Pixel_Buffer *, User_Input *);
 
@@ -142,6 +146,11 @@ global bool g_running;
 global Pixel_Buffer g_pixel_buffer;
 global Program_Memory g_program_memory;
 global ED_Font g_font;
+
 global int g_FPS;
+// global ED_Performance_Counters[]
+
+// ============================== Macros ======================================
+
 
 #endif  // ED_CORE_H

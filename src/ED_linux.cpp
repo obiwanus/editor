@@ -277,6 +277,7 @@ Window linux_create_opengl_window(Display *display, int width, int height) {
 // =========================== Platform code ==================================
 
 global timespec g_timestamp;
+global XImage *g_ximage;
 
 u64 linux_time_elapsed() {
   // Assumes g_timestamp has been set
@@ -305,23 +306,63 @@ int main(int argc, char *argv[]) {
       (Program_State *)g_program_memory.allocate(sizeof(Program_State));
   state->init(&g_program_memory);
 
+  // Allocate memory for the main buffer
+  g_pixel_buffer.allocate();
+  g_pixel_buffer.width = state->kWindowWidth;
+  g_pixel_buffer.height = state->kWindowHeight;
+
+  Display *display;
+  Window window;
+
   // Open display
-  Display *display = XOpenDisplay(NULL);
+  display = XOpenDisplay(NULL);
   if (!display) {
     fprintf(stderr, "Failed to open X display\n");
     exit(1);
   }
 
-  Window window = linux_create_opengl_window(display, state->kWindowWidth,
-                                             state->kWindowHeight);
+#if ED_LINUX_OPENGL
+  window = linux_create_opengl_window(display, state->kWindowWidth,
+                                      state->kWindowHeight);
+#else
+  int screen = DefaultScreen(display);
+
+  window = XCreateSimpleWindow(display, RootWindow(display, screen), 300, 300,
+                               state->kWindowWidth, state->kWindowHeight, 0,
+                               WhitePixel(display, screen),
+                               BlackPixel(display, screen));
+
+  XSetStandardProperties(display, window, "Editor", "Hi!", None, NULL, 0, NULL);
+
+  XSelectInput(display, window, ExposureMask | KeyPressMask | KeyReleaseMask |
+                                    ButtonPressMask | StructureNotifyMask);
+  XMapRaised(display, window);
+
+  GC gc;
+  XGCValues gcvalues;
+
+  // Create x image
+  {
+    for (;;) {
+      XEvent e;
+      XNextEvent(display, &e);
+      if (e.type == MapNotify) break;
+    }
+
+    g_ximage = XGetImage(display, window, 0, 0, state->kWindowWidth,
+                         state->kWindowHeight, AllPlanes, ZPixmap);
+
+    free(g_pixel_buffer.memory);
+    g_pixel_buffer.memory = (void *)g_ximage->data;
+    g_pixel_buffer.width = state->kWindowWidth;
+    g_pixel_buffer.height = state->kWindowHeight - 1;
+
+    gc = XCreateGC(display, window, 0, &gcvalues);
+  }
+#endif
 
   Atom wmDeleteMessage = XInternAtom(display, "WM_DELETE_WINDOW", False);
   XSetWMProtocols(display, window, &wmDeleteMessage, 1);
-
-  // Allocate memory for the main buffer
-  g_pixel_buffer.allocate();
-  g_pixel_buffer.width = state->kWindowWidth;
-  g_pixel_buffer.height = state->kWindowHeight;
 
   // Define cursors
   Cursor linux_cursors[Cursor_Type__COUNT];
@@ -453,6 +494,7 @@ int main(int argc, char *argv[]) {
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
 
+#if ED_LINUX_OPENGL
     {
       glViewport(0, 0, g_pixel_buffer.width, g_pixel_buffer.height);
 
@@ -502,6 +544,11 @@ int main(int argc, char *argv[]) {
 
       glXSwapBuffers(display, window);
     }
+#else
+    XPutImage(display, window, gc, g_ximage, 0, 0, 0, 0, state->kWindowWidth,
+              state->kWindowHeight);
+    // usleep(10000);
+#endif  // ED_LINUX_OPENGL
 
     u64 ns_elapsed = linux_time_elapsed();
     g_FPS = (int)(1.0e9 / ns_elapsed);
@@ -531,7 +578,7 @@ int main(int argc, char *argv[]) {
   XCloseDisplay(display);
 
 // Only freeing everything for a leak check
-#ifdef EDITOR_CHECK_LEAKS
+#if ED_LEAKCHECK
 
   printf("======================= freeing ==========================\n");
   // Free models
@@ -555,12 +602,14 @@ int main(int argc, char *argv[]) {
   // Free general stuff
   free(state->UI);
   free(g_font.bitmap);
+#if ED_LINUX_OPENGL
   free(g_pixel_buffer.memory);
+#endif
   free(g_program_memory.start);
 
   printf("====================== leak check ========================\n");
   stb_leakcheck_dumpmem();
-#endif  // EDITOR_CHECK_LEAKS
+#endif  // ED_LEAKCHECK
 
   return 0;
 }
