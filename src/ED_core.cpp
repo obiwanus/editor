@@ -20,7 +20,7 @@ void Program_State::init(Program_Memory *memory) {
   memset(state->UI, 0, sizeof(*state->UI));
   state->UI->memory = memory;
 
-  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 20);
+  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 17);
 
   // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
@@ -41,6 +41,7 @@ void Program_State::init(Program_Memory *memory) {
   model.position = V3(-1.0f, 0.5f, 0.0f);
   model.direction = V3(-1, 1, 1);
   model.debug = true;
+  model.display = false;
   sb_push(state->models, model);
 
   model = {};

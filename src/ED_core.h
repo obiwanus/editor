@@ -142,5 +142,6 @@ global bool g_running;
 global Pixel_Buffer g_pixel_buffer;
 global Program_Memory g_program_memory;
 global ED_Font g_font;
+global int g_FPS;
 
 #endif  // ED_CORE_H

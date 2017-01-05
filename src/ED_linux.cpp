@@ -17,6 +17,7 @@
 // ========================== Platform headers ================================
 
 #include <unistd.h>
+#include <time.h>
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -268,12 +269,31 @@ Window linux_create_opengl_window(Display *display, int width, int height) {
     printf("No vsync available. Exiting.\n");
     exit(1);
   }
-  glXSwapIntervalEXT(display, window, 1);
+  glXSwapIntervalEXT(display, window, 0);
 
   return window;
 }
 
 // =========================== Platform code ==================================
+
+global timespec g_timestamp;
+
+u64 linux_time_elapsed() {
+  // Assumes g_timestamp has been set
+  u64 result;
+  timespec now, result_timespec;
+  clock_gettime(CLOCK_MONOTONIC, &now);
+  if ((now.tv_nsec - g_timestamp.tv_nsec) < 0) {
+    result_timespec.tv_sec = now.tv_sec - g_timestamp.tv_sec - 1;
+    result_timespec.tv_nsec = 1000000000 + now.tv_nsec - g_timestamp.tv_nsec;
+  } else {
+    result_timespec.tv_sec = now.tv_sec - g_timestamp.tv_sec;
+    result_timespec.tv_nsec = now.tv_nsec - g_timestamp.tv_nsec;
+  }
+  result = result_timespec.tv_nsec;
+  g_timestamp = now;
+  return result;
+}
 
 int main(int argc, char *argv[]) {
   // Allocate main memory
@@ -319,6 +339,8 @@ int main(int argc, char *argv[]) {
   *new_input = {};
 
   g_running = true;
+
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &g_timestamp);
 
   while (g_running) {
     // Process events
@@ -481,6 +503,10 @@ int main(int argc, char *argv[]) {
       glXSwapBuffers(display, window);
     }
 
+    u64 ns_elapsed = linux_time_elapsed();
+    g_FPS = (int)(1.0e9 / ns_elapsed);
+    // printf("fps: %d, ns: %lu\n", g_FPS, ns_elapsed);
+
     // Swap inputs
     User_Input *tmp = old_input;
     old_input = new_input;
@@ -504,7 +530,7 @@ int main(int argc, char *argv[]) {
   XDestroyWindow(display, window);
   XCloseDisplay(display);
 
-  // Only freeing everything for a leak check
+// Only freeing everything for a leak check
 #ifdef EDITOR_CHECK_LEAKS
 
   printf("======================= freeing ==========================\n");
@@ -538,5 +564,3 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
-
-

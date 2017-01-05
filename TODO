@@ -1,13 +1,13 @@
 NOW:
 
-- baseline and kerning for strings
-- display fps
 - display performance counters
 - basic culling using AABB
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
 - put things we're not going to free in the permanent memory
+- render strings on the fly using subpixel positioning
+- [optimise] maybe pre-render strings and store them if rendering on the fly is too slow
 - [linux] fix window performance problems
 - when selecting models, take the closest one
 - try not to overallocate pixel buffers (maybe even use only one and avoid copying?)
@@ -45,6 +45,7 @@ SOMEDAY:
 - Allocate max size and no more glitches on resize please
 - Logging
 - don't transform the same vertex several times
+- auto code reloading on recompile
 
 
 
@@ -52,6 +53,8 @@ SOMEDAY:
 DONE:
 
 [06/01/2017]
+- display fps on linux
+- baseline and kerning for strings
 - basic alpha blending for fonts
 
 [05/01/2017]

@@ -755,9 +755,10 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   // ------- Debug output ----------------------------------------
 
   {
-    int X = 100, Y = 100;
-
-    draw_string(buffer, X, Y, "Hello world!", 0x00FF4000);
+    // Display FPS
+    char fps_string[10];
+    sprintf(fps_string, "%d", g_FPS);
+    draw_string(buffer, 10, 10, fps_string, 0x00FFFFFF);
   }
 
   // ------- Cursors ---------------------------------------------
