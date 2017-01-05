@@ -155,30 +155,35 @@ void ED_Font::load_from_file(char *filename) {
     exit(1);
   }
 
-  r32 scale = stbtt_ScaleForPixelHeight(&this->info, 15);
-  int ascent, descent, line_gap;
-  stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
+  r32 scale = stbtt_ScaleForPixelHeight(&this->info, 20);
+  // int ascent, descent, line_gap;
+  // stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
 
   int alphabet_size = this->last_char - this->first_char + 1;
-  {
-    int x0, y0, x1, y1;
-    // stbtt_GetFontBoundingBox(&this->info, &x0, &y0, &x1, &y1);
-    stbtt_GetCodepointBitmapBox(&this->info, 'A', scale, scale, &x0, &y0, &x1,
-                                &y1);
-    this->max_char_width = 2 * (x1 - x0);
-    this->max_char_height = 2 * (y1 - y0);
-    // this->max_char_width = round_i32(scale * (x1 - x0));
-    // this->max_char_height = round_i32(scale * (y1 - y0));
-  }
-  size_t char_size = this->max_char_width * this->max_char_height;
-  this->bitmap =
-      (u8 *)malloc(char_size * alphabet_size * sizeof(*this->bitmap));
 
+  // Fill the char metadata and calculate the
+  int buffer_size = 0;
   for (int i = 0; i < alphabet_size; ++i) {
-    u8 *char_bitmap = this->bitmap + i * char_size;
-    stbtt_MakeCodepointBitmap(&this->info, char_bitmap, this->max_char_width,
-                              this->max_char_height, 0, scale, scale,
-                              first_char + i);
+    ED_Font_Codepoint *codepoint = this->codepoints + i;
+    int x0, y0, x1, y1;
+    stbtt_GetCodepointBitmapBox(&this->info, this->first_char + i, scale, scale,
+                                &x0, &y0, &x1, &y1);
+    codepoint->width = x1 - x0;
+    codepoint->height = y1 - y0;
+    buffer_size += codepoint->width * codepoint->height;
+  }
+  this->bitmap = (u8 *)malloc(buffer_size * sizeof(*this->bitmap));
+
+  // Fill the char bitmaps
+  u8 *char_bitmap = this->bitmap;
+  for (int i = 0; i < alphabet_size; ++i) {
+    ED_Font_Codepoint *codepoint = this->codepoints + i;
+    codepoint->bitmap = char_bitmap;
+    stbtt_MakeCodepointBitmap(&this->info, codepoint->bitmap, codepoint->width,
+                              codepoint->height, codepoint->width, scale, scale,
+                              this->first_char + i);
+    // Advance to the next char
+    char_bitmap += codepoint->width * codepoint->height;
   }
 
   free(buffer);

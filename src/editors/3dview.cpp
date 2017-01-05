@@ -141,7 +141,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
       Face face = model->faces[f];
       v3 scene_verts[3];
       v3 screen_verts[3];
-      v2 texture_verts[3];
+      // v2 texture_verts[3];
       v3 vns[3];
 
       for (int i = 0; i < 3; ++i) {

@@ -113,13 +113,18 @@ struct Program_State {
   void init(Program_Memory *);
 };
 
+struct ED_Font_Codepoint {
+  int width;
+  int height;
+  u8 *bitmap;
+};
+
 struct ED_Font {
   stbtt_fontinfo info;
+  static const char first_char = '!';
+  static const char last_char = '~';
+  ED_Font_Codepoint codepoints[last_char - first_char + 1];
   u8 *bitmap;
-  const char first_char = '!';
-  const char last_char = '~';
-  int max_char_width;
-  int max_char_height;
 
   void load_from_file(char *);
 };

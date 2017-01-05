@@ -758,17 +758,22 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     int X = 100, Y = 100;
 
     char c = 'g';
-    u8 *char_bitmap = g_font.bitmap +
-                      g_font.max_char_width * g_font.max_char_height *
-                          (c - g_font.first_char);
+    // u8 *char_bitmap = g_font.bitmap +
+    //                   g_font.max_char_width * g_font.max_char_height *
+    //                       (c - g_font.first_char);
 
-    for (int x = X; x < X + g_font.max_char_width; x++) {
-      for (int y = Y; y < Y + g_font.max_char_height; y++) {
-        u8 grey = char_bitmap[X + Y * g_font.max_char_width];
-        u32 color = get_rgb_u32(V3(grey, grey, grey));
+    ED_Font_Codepoint *codepoint = g_font.codepoints + (c - g_font.first_char);
+    u8 *char_bitmap = codepoint->bitmap;
+
+    for (int x = 0; x < codepoint->width; x++) {
+      if (x > buffer->width) break;
+      for (int y = 0; y < codepoint->height; y++) {
+        if (y > buffer->height) break;
+        u8 grey = char_bitmap[x + y * codepoint->width];
+        u32 color = grey << 16 | grey << 8 | grey << 0;
         // Don't care about performance (yet)
         // if (grey) {
-          draw_pixel(buffer, V2i(x, y), color, true);
+          draw_pixel(buffer, V2i(X + x, Y + y), color, true);
         // }
       }
     }

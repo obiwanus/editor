@@ -1,6 +1,6 @@
 NOW:
 
-- make some text appear on the screen
+- render a string onto the screen
 - put things we're not going to free in the permanent memory
 - display fps
 - display performance counters
@@ -50,6 +50,9 @@ SOMEDAY:
 
 ==============================================================================
 DONE:
+
+[05/01/2017]
+- Displayed a letter on the screen
 
 [04/01/2017]
 - debug draw AABBs
