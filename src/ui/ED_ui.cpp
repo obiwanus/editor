@@ -757,7 +757,7 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   {
     int X = 100, Y = 100;
 
-    draw_string(buffer, X, Y, "Hello world!", 0x00FF4000);
+    draw_string(buffer, X, Y, "Hello\nworld!", 0x00FF4000);
   }
 
   // ------- Cursors ---------------------------------------------

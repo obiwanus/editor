@@ -339,6 +339,12 @@ void draw_string(Pixel_Buffer *buffer, int string_x, int string_y,
   char c;
   v2i start = V2i(string_x, string_y + g_font.baseline);
   while ((c = *string++) != '\0') {
+    if (c == '\n') {
+      start.x = string_x;
+      start.y += g_font.line_height;
+      continue;
+    }
+
     ED_Font_Codepoint *codepoint = g_font.codepoints + (c - g_font.first_char);
     u8 *char_bitmap = codepoint->bitmap;
 
