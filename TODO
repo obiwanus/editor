@@ -1,13 +1,13 @@
 NOW:
 
-- basic culling using AABB
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
 - put things we're not going to free in the permanent memory
 - render strings on the fly using subpixel positioning
+- thread-safe performance counters
 - [optimise] maybe pre-render strings and store them if rendering on the fly is too slow
-- [linux] fix window performance problems
+- [linux] fix window performance problems for opengl
 - when selecting models, take the closest one
 - try not to overallocate pixel buffers (maybe even use only one and avoid copying?)
 - properly outline triangles
@@ -47,11 +47,13 @@ SOMEDAY:
 - auto code reloading on recompile
 
 
+idea: try to look at the objects in clip space from different angles
 
 ==============================================================================
 DONE:
 
 [07/01/2017]
+- basic frustum culling using AABB
 - display performance counters
 
 [06/01/2017]

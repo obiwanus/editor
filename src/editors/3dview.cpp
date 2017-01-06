@@ -112,8 +112,10 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
   m4x4 ViewportTransform =
       Matrix::viewport(0, 0, buffer->width, buffer->height);
 
+  m4x4 ClipSpaceTransform = ProjectionMatrix * CameraSpaceTransform;
+
   m4x4 WorldTransform =
-      ViewportTransform * ProjectionMatrix * CameraSpaceTransform;
+      ViewportTransform * ClipSpaceTransform;
 
   if (this->area->z_buffer == NULL) {
     this->area->z_buffer =
@@ -127,6 +129,38 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
   for (int m = 0; m < sb_count(state->models); ++m) {
     Model *model = state->models + m;
     if (!model->display) continue;
+
+    // Basic frustum culling - using the AABB calculated in the prev frame
+    // (the vertices are already in the scene space)
+    {
+      v3 min = model->aabb.min;
+      v3 max = model->aabb.max;
+      v3 verts[] = {
+          {min.x, min.y, min.z},
+          {min.x, min.y, max.z},
+          {max.x, min.y, max.z},
+          {max.x, min.y, min.z},
+          {max.x, max.y, min.z},
+          {min.x, max.y, min.z},
+          {min.x, max.y, max.z},
+          {max.x, max.y, max.z},
+      };
+      bool all_outside_clipping_volume = true;
+      for (int i = 0; i < 8; ++i) {
+        v3 v = ClipSpaceTransform * verts[i];
+        bool vertex_inside = (-1.0f <= v.x && v.x <= 1.0f) &&
+                             (-1.0f <= v.y && v.y <= 1.0f) &&
+                             (-1.0f <= v.z && v.z <= 1.0f);
+        if (vertex_inside) {
+          all_outside_clipping_volume = false;
+          break;
+        }
+      }
+      if (all_outside_clipping_volume) {
+        printf("frustum culled\n");
+        continue;  // skip the model
+      }
+    }
 
     // Put model in the scene
     m4x4 ModelTransform =
@@ -207,6 +241,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
                 WorldTransform * (model->position + model->direction * 0.3f),
                 0x00FF0000, z_buffer);
 
+#if 0
       // Draw AABBoxes
       v3 verts[] = {
           {min.x, min.y, min.z},
@@ -225,20 +260,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
         draw_line(buffer, WorldTransform * verts[lines[i]],
                   WorldTransform * verts[lines[i + 1]], 0x00FFAA40, z_buffer);
       }
-      // draw_line(buffer, V3(min.x, 0.0f, min.z), V3(min.x, 0.0f, max.z),
-      // 0x00FFAA40, z_buffer);
-      // draw_line(buffer, V3(max.x, 0.0f, max.z), V3(max.x, 0.0f, min.z),
-      // 0x00FFAA40, z_buffer);
-      // draw_line(buffer, V3(max.x, 0.0f, max.z), V3(min.x, 0.0f, max.z),
-      // 0x00FFAA40, z_buffer);
-
-      // draw_line(buffer, min, V3(min.x, min.y, max.z), 0x00000099, z_buffer);
-      // draw_line(buffer, min, V3(min.x, min.y, max.z), 0x00000099, z_buffer);
-      // draw_line(buffer, min, V3(max.x, min.y, min.z), 0x00990000, z_buffer);
-      // draw_line(buffer, min, V3(min.x, max.y, min.z), 0x00009900, z_buffer);
-      // draw_line(buffer, max, V3(max.x, max.y, min.z), 0x00FFAA40, z_buffer);
-      // draw_line(buffer, max, V3(max.x, min.y, max.z), 0x00FFAA40, z_buffer);
-      // draw_line(buffer, max, V3(min.x, max.y, max.z), 0x00FFAA40, z_buffer);
+#endif
     }
   }
 
