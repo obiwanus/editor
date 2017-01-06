@@ -622,3 +622,5 @@ int main(int argc, char *argv[]) {
 
   return 0;
 }
+
+ED_Perf_Counter g_performance_counters[__COUNTER__ + 1];
