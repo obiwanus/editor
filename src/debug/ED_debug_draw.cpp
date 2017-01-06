@@ -16,21 +16,19 @@
   draw_string(buffer, 10, 10, fps_string, 0x00FFFFFF);
 
 #if 1  // Display performance counters
-  char perf_counters[1000];
-  char *pc_string = perf_counters;
+  int line_start = 50;
+  int line_height = 25;
+  char perf_counters[200];
   for (int i = 0; i < g_num_perf_counters; ++i) {
     ED_Perf_Counter *counter = g_performance_counters + i;
-    int chars_written = sprintf(pc_string, "%s:%d (%s): %u | %lu\n",
-                                counter->file, counter->line, counter->function,
-                                counter->hits, counter->ticks);
-    if (chars_written > 0) {
-      pc_string += chars_written;
-    }
+    sprintf(perf_counters, "%s:%d (%s): %'u | %'lu", counter->file,
+            counter->line, counter->function, counter->hits, counter->ticks);
+    draw_string(buffer, 10, line_start, perf_counters, 0x00FFFFFF);
+    line_start += line_height;
 
     // Reset the hits number
     counter->hits = 0;
   }
-  draw_string(buffer, 10, 100, perf_counters, 0x00FFFFFF);
 #endif
 }
 #endif
