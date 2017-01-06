@@ -4,7 +4,7 @@ set -e
 
 mkdir -p build
 
-OPTIMIZE=true
+OPTIMIZE=false
 RUN=false
 OPENMP=false
 OPENGL=false
