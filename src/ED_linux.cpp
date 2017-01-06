@@ -1,11 +1,14 @@
 // ============================ Program code ==================================
 
+#include <x86intrin.h>  // __rdtsc()
+
 #include "ED_base.h"
 #include "ED_math.h"
 #include "ED_core.h"
 #include "ED_model.h"
 #include "editors/editors.h"
 #include "ui/ED_ui.h"
+#include "ED_debug.h"
 
 #include "ED_core.cpp"
 #include "ED_math.cpp"
@@ -547,7 +550,7 @@ int main(int argc, char *argv[]) {
 #else
     XPutImage(display, window, gc, g_ximage, 0, 0, 0, 0, state->kWindowWidth,
               state->kWindowHeight);
-    // usleep(10000);
+// usleep(10000);
 #endif  // ED_LINUX_OPENGL
 
     u64 ns_elapsed = linux_time_elapsed();
@@ -577,9 +580,15 @@ int main(int argc, char *argv[]) {
   XDestroyWindow(display, window);
   XCloseDisplay(display);
 
-// Only freeing everything for a leak check
-#if ED_LEAKCHECK
+#if COMPILER_LLVM
+  printf("COMPILER_LLVM!\n");
+#endif
+#if COMPILER_GCC
+  printf("COMPILER_GCC!\n");
+#endif
 
+#if ED_LEAKCHECK
+  // Only freeing everything for a leak check
   printf("======================= freeing ==========================\n");
   // Free models
   for (int i = 0; i < sb_count(state->models); ++i) {
@@ -595,7 +604,7 @@ int main(int argc, char *argv[]) {
 
   // Free splitters
   for (int i = 0; i < state->UI->num_splitters; ++i) {
-    free(state->UI->splitters[0]);
+    free(state->UI->splitters[i]);
   }
   sb_free(state->UI->splitters);
 
