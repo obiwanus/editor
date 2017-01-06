@@ -197,6 +197,7 @@ void ED_Font::load_from_file(char *filename, int char_height) {
 Update_Result update_and_render(Program_Memory *program_memory,
                                 Program_State *state,
                                 Pixel_Buffer *pixel_buffer, User_Input *input) {
+
   Update_Result result = {};
 
   // Remember where dragging starts

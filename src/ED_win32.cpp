@@ -6,6 +6,7 @@
 #include "ED_model.h"
 #include "editors/editors.h"
 #include "ui/ED_ui.h"
+#include "ED_debug.h"
 
 #include "ED_core.cpp"
 #include "ED_math.cpp"

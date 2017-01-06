@@ -6,9 +6,12 @@ mkdir -p build
 
 OPTIMIZE=false
 RUN=false
-LEAKCHECK=true
 OPENMP=true
 OPENGL=false
+
+LEAKCHECK=true
+BUILD_INTERNAL=true
+BUILD_SLOW=true
 
 if [ "$1" = "run" ]; then
     # OPTIMIZE=true
@@ -17,8 +20,8 @@ fi
 
 CFLAGS="-g -std=c++11\
         -Wall -Wextra -Wno-write-strings -Wno-missing-field-initializers -Wno-unused -Werror\
-        -DBUILD_INTERNAL=1\
-        -DBUILD_SLOW=1\
+        -DBUILD_INTERNAL=$BUILD_INTERNAL\
+        -DBUILD_SLOW=$BUILD_SLOW\
         -DED_LINUX_OPENGL=$OPENGL\
         -DED_LEAKCHECK=$LEAKCHECK\
         "
