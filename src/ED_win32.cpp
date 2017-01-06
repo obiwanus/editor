@@ -424,12 +424,12 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     }
     new_input->symbol = old_input->symbol;
 
-#if 0
     r32 ms_elapsed =
         Win32GetMillisecondsElapsed(last_timestamp, Win32GetWallClock());
-    printf("%.2f - ", ms_elapsed);
+    g_FPS = (int)(1000.0f / ms_elapsed);
+    printf("fps: %d\n", g_FPS);
+    // printf("%.2f - ", ms_elapsed);
     last_timestamp = Win32GetWallClock();
-#endif
   }
 
   return 0;

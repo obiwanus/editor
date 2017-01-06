@@ -156,7 +156,7 @@ void ED_Font::load_from_file(char *filename, int char_height) {
     exit(1);
   }
 
-  this->scale = stbtt_ScaleForPixelHeight(&this->info, char_height);
+  this->scale = stbtt_ScaleForPixelHeight(&this->info, (r32)char_height);
   int ascent, descent, line_gap;
   stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
   this->baseline = (int)(ascent * this->scale);
