@@ -752,16 +752,6 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     }
   }
 
-  // ------- Debug output ----------------------------------------
-
-  {
-    // Display FPS
-    char fps_string[10];
-    sprintf(fps_string, "%d", g_FPS);
-    // char *fps_string = "60";
-    draw_string(buffer, 10, 10, fps_string, 0x00FFFFFF);
-  }
-
   // ------- Cursors ---------------------------------------------
 
   // Splitter resize cursor

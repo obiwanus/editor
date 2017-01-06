@@ -56,4 +56,10 @@ typedef unsigned int uint;
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "include/stb_truetype.h"
 
+#define STB_SPRINTF_IMPLEMENTATION
+#include "include/stb_sprintf.h"
+
+#define sprintf stbsp_sprintf
+#define snprintf stbsp_snprintf
+
 #endif  // ED_BASE_H

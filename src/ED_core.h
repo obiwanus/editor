@@ -137,7 +137,7 @@ Update_Result update_and_render(Program_Memory *, Program_State *,
                                 Pixel_Buffer *, User_Input *);
 
 struct ED_Perf_Counter {
-  char *filename;
+  char *file;
   char *function;
   int line;
   u32 hits;
@@ -151,7 +151,8 @@ global Pixel_Buffer g_pixel_buffer;
 global Program_Memory g_program_memory;
 global ED_Font g_font;
 
-global int g_FPS;
+global v3i g_FPS;
+extern int g_num_perf_counters;
 extern ED_Perf_Counter g_performance_counters[];
 
 #endif  // ED_CORE_H

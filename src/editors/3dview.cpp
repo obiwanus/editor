@@ -1,5 +1,7 @@
 
 void Editor_3DView::draw(Program_State *state, User_Input *input) {
+  TIMED_BLOCK();
+
   User_Interface *ui = state->UI;
   Pixel_Buffer *buffer = &this->area->buffer;
   bool active = ui->active_area == this->area;

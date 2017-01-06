@@ -1,6 +1,5 @@
 NOW:
 
-- display performance counters
 - basic culling using AABB
 - find a faster way to rasterize triangles
 - find a faster way to draw
@@ -51,6 +50,9 @@ SOMEDAY:
 
 ==============================================================================
 DONE:
+
+[07/01/2017]
+- display performance counters
 
 [06/01/2017]
 - display fps on linux

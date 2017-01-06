@@ -13,6 +13,10 @@ void *Program_Memory::allocate(size_t size) {
 void Program_State::init(Program_Memory *memory) {
   Program_State *state = this;
 
+  g_FPS.x = 0;
+  g_FPS.y = 100;
+  g_FPS.z = 0;
+
   state->kWindowWidth = 1500;
   state->kWindowHeight = 1000;
 

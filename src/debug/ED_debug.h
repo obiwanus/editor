@@ -12,9 +12,9 @@
 struct Timed_Block {
   ED_Perf_Counter *perf_counter;
 
-  Timed_Block(char *filename, char *function, int line, int counter) {
+  Timed_Block(char *file, char *function, int line, int counter) {
     perf_counter = g_performance_counters + counter;
-    perf_counter->filename = filename;
+    perf_counter->file = file;
     perf_counter->function = function;
     perf_counter->line = line;
     perf_counter->ticks = __rdtsc();
@@ -23,7 +23,7 @@ struct Timed_Block {
   ~Timed_Block() {
     perf_counter->hits++;
     perf_counter->ticks = __rdtsc() - perf_counter->ticks;
-    printf("%s: %lu\n", perf_counter->function, perf_counter->ticks);
+    // printf("%s: %lu\n", perf_counter->function, perf_counter->ticks);
   }
 };
 

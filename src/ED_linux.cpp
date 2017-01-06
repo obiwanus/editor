@@ -8,7 +8,7 @@
 #include "ED_model.h"
 #include "editors/editors.h"
 #include "ui/ED_ui.h"
-#include "ED_debug.h"
+#include "debug/ED_debug.h"
 
 #include "ED_core.cpp"
 #include "ED_math.cpp"
@@ -494,6 +494,8 @@ int main(int argc, char *argv[]) {
     Update_Result result =
         update_and_render(&g_program_memory, state, &g_pixel_buffer, new_input);
 
+    #include "debug/ED_debug_draw.cpp"
+
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
 
@@ -554,7 +556,8 @@ int main(int argc, char *argv[]) {
 #endif  // ED_LINUX_OPENGL
 
     u64 ns_elapsed = linux_time_elapsed();
-    g_FPS = (int)(1.0e9 / ns_elapsed);
+    g_FPS.x = (int)(1.0e9 / ns_elapsed);
+
     // printf("fps: %d, ns: %lu\n", g_FPS, ns_elapsed);
 
     // Swap inputs
@@ -579,13 +582,6 @@ int main(int argc, char *argv[]) {
   glXMakeCurrent(display, 0, 0);
   XDestroyWindow(display, window);
   XCloseDisplay(display);
-
-#if COMPILER_LLVM
-  printf("COMPILER_LLVM!\n");
-#endif
-#if COMPILER_GCC
-  printf("COMPILER_GCC!\n");
-#endif
 
 #if ED_LEAKCHECK
   // Only freeing everything for a leak check
@@ -623,4 +619,6 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-ED_Perf_Counter g_performance_counters[__COUNTER__ + 1];
+int g_num_perf_counters = __COUNTER__;
+ED_Perf_Counter g_performance_counters[__COUNTER__];
+
