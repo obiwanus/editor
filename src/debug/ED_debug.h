@@ -2,9 +2,11 @@
 #define __ED_DEBUG_H__
 
 #if BUILD_INTERNAL
-#define TIMED_BLOCK()                                                        \
-  Timed_Block timed_block##__LINE__((char *)__FILE__, (char *) __FUNCTION__, \
-                                    __LINE__, __COUNTER__);
+#define TIMED_BLOCK__(counter)                                                        \
+  Timed_Block timed_block##counter((char *)__FILE__, (char *) __FUNCTION__, \
+                                    __LINE__, counter);
+#define TIMED_BLOCK_(counter) TIMED_BLOCK__(counter)
+#define TIMED_BLOCK() TIMED_BLOCK_(__COUNTER__)
 #else
 #define TIMED_BLOCK()
 #endif
