@@ -6,7 +6,7 @@
 #include "ED_model.h"
 #include "editors/editors.h"
 #include "ui/ED_ui.h"
-#include "ED_debug.h"
+#include "debug/ED_debug.h"
 
 #include "ED_core.cpp"
 #include "ED_math.cpp"
@@ -399,6 +399,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     Update_Result result =
         update_and_render(&g_program_memory, state, &g_pixel_buffer, new_input);
 
+    // #include "debug/ED_debug_draw.cpp"
+
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     SetCursor(win_cursors[result.cursor]);
 
@@ -424,11 +426,14 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     r32 ms_elapsed =
         Win32GetMillisecondsElapsed(last_timestamp, Win32GetWallClock());
-    g_FPS = (int)(1000.0f / ms_elapsed);
-    printf("fps: %d\n", g_FPS);
+    g_FPS.x = (int)(1000.0f / ms_elapsed);
+    // printf("fps: %d\n", g_FPS.x);
     // printf("%.2f - ", ms_elapsed);
     last_timestamp = Win32GetWallClock();
   }
 
   return 0;
 }
+
+int g_num_perf_counters = __COUNTER__;
+ED_Perf_Counter g_performance_counters[__COUNTER__];
