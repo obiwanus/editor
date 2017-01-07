@@ -10,7 +10,7 @@ void *Program_Memory::allocate(size_t size) {
   return result;
 }
 
-void Program_State::init(Program_Memory *memory) {
+void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   Program_State *state = this;
 
   g_FPS.x = 0;
@@ -23,8 +23,14 @@ void Program_State::init(Program_Memory *memory) {
   state->UI = (User_Interface *)malloc(sizeof(*state->UI));
   memset(state->UI, 0, sizeof(*state->UI));
   state->UI->memory = memory;
+  state->UI->buffer = buffer;
 
-  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 17);
+  // Allocate memory for the main buffer
+  buffer->allocate();
+  buffer->width = state->kWindowWidth;
+  buffer->height = state->kWindowHeight;
+
+  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 16);
 
   // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
@@ -143,7 +149,7 @@ Update_Result update_and_render(Program_Memory *program_memory,
     }
   }
 
-  result = state->UI->update_and_draw(pixel_buffer, input, state);
+  result = state->UI->update_and_draw(input, state);
 
   return result;
 }

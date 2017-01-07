@@ -307,12 +307,7 @@ int main(int argc, char *argv[]) {
   // Main program state - note that window size is set there
   Program_State *state =
       (Program_State *)g_program_memory.allocate(sizeof(Program_State));
-  state->init(&g_program_memory);
-
-  // Allocate memory for the main buffer
-  g_pixel_buffer.allocate();
-  g_pixel_buffer.width = state->kWindowWidth;
-  g_pixel_buffer.height = state->kWindowHeight;
+  state->init(&g_program_memory, &g_pixel_buffer);
 
   Display *display;
   Window window;
@@ -491,10 +486,16 @@ int main(int argc, char *argv[]) {
       new_input->buttons[IB_mouse_right] = mouse_mask & Button3Mask;
     }
 
-    Update_Result result =
-        update_and_render(&g_program_memory, state, &g_pixel_buffer, new_input);
+    Update_Result result;
+    {
+      TIMED_BLOCK();
+      result = update_and_render(&g_program_memory, state,
+                                               &g_pixel_buffer, new_input);
+    }
 
     #include "debug/ED_debug_draw.cpp"
+
+    // usleep(100000);
 
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
@@ -594,7 +595,7 @@ int main(int argc, char *argv[]) {
 
   // Free areas
   for (int i = 0; i < state->UI->num_areas; ++i) {
-    state->UI->areas[i]->destroy();
+    free(state->UI->areas[i]);
   }
   sb_free(state->UI->areas);
 

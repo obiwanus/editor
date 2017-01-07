@@ -37,8 +37,8 @@ if $OPENMP; then
     CFLAGS="$CFLAGS -fopenmp=libomp"
 fi
 
-# g++ --std=c++11 -Isrc/ $CFLAGS src/ED_linux.cpp $LFLAGS -o build/editor
-clang-4.0 --std=c++11 -Isrc/ $CFLAGS src/ED_linux.cpp $LFLAGS -o build/editor
+g++ --std=c++11 -Isrc/ $CFLAGS src/ED_linux.cpp $LFLAGS -o build/editor
+# clang-4.0 --std=c++11 -Isrc/ $CFLAGS src/ED_linux.cpp $LFLAGS -o build/editor
 
 if $RUN; then
     cd build

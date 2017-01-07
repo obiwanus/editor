@@ -11,6 +11,7 @@ NOW:
 - when selecting models, take the closest one
 - try not to overallocate pixel buffers (maybe even use only one and avoid copying?)
 - properly outline triangles
+- when moving the pivot don't do it too slow when the camera is close
 - try to update before drawing to remove the lag between different areas
 - use 2 light sources (maybe even point ones)
 - drawing a silhouette of the selected model

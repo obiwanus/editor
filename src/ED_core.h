@@ -85,6 +85,8 @@ struct Pixel_Buffer {
 
   void allocate();
   Rect get_rect();
+
+  void draw_pixel(v2i, u32, bool);
 };
 
 enum Cursor_Type {
@@ -110,7 +112,7 @@ struct Program_State {
   Model *models = NULL;
   Model *selected_model = NULL;
 
-  void init(Program_Memory *);
+  void init(Program_Memory *, Pixel_Buffer *);
 };
 
 struct ED_Font_Codepoint {

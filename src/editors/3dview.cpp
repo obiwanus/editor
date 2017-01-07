@@ -1,16 +1,15 @@
 
-void Editor_3DView::draw(Program_State *state, User_Input *input) {
+void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
+                         Program_State *state, User_Input *input) {
   TIMED_BLOCK();
+
   User_Interface *ui = state->UI;
-  Pixel_Buffer *buffer = &this->area->buffer;
   bool active = ui->active_area == this->area;
 
-  {
-    u8 bgcolor = active ? 0x3A : 0x36;
-    memset(buffer->memory, bgcolor,
-           buffer->width * buffer->height * sizeof(u32));
-  }
-  this->camera.adjust_frustum(buffer->width, buffer->height);
+  int area_width = this->area->get_width();
+  int area_height = this->area->get_height();
+
+  this->camera.adjust_frustum(area_width, area_height);
 
   if (active) {
     v2i mouse_position = this->area->get_rect().projected_to_area(input->mouse);
@@ -109,22 +108,11 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
 
   m4x4 ProjectionMatrix = camera.projection_matrix();
 
-  m4x4 ViewportTransform =
-      Matrix::viewport(0, 0, buffer->width, buffer->height);
+  m4x4 ViewportTransform = Matrix::viewport(0, 0, area_width, area_height);
 
   m4x4 ClipSpaceTransform = ProjectionMatrix * CameraSpaceTransform;
 
-  m4x4 WorldTransform =
-      ViewportTransform * ClipSpaceTransform;
-
-  if (this->area->z_buffer == NULL) {
-    this->area->z_buffer =
-        (r32 *)malloc(buffer->max_width * buffer->max_height * sizeof(r32));
-  }
-  r32 *z_buffer = this->area->z_buffer;
-  for (int i = 0; i < buffer->width * buffer->height; ++i) {
-    z_buffer[i] = -INFINITY;
-  }
+  m4x4 WorldTransform = ViewportTransform * ClipSpaceTransform;
 
   for (int m = 0; m < sb_count(state->models); ++m) {
     Model *model = state->models + m;
@@ -145,6 +133,8 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
           {min.x, max.y, max.z},
           {max.x, max.y, max.z},
       };
+
+      // TODO: simd?
       bool all_outside_clipping_volume = true;
       for (int i = 0; i < 8; ++i) {
         v3 v = ClipSpaceTransform * verts[i];
@@ -157,7 +147,6 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
         }
       }
       if (all_outside_clipping_volume) {
-        printf("frustum culled\n");
         continue;  // skip the model
       }
     }
@@ -203,7 +192,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
       v3 light_dir = -this->camera.direction;
 
       bool outline = (model == state->selected_model);
-      triangle_shaded(buffer, screen_verts, vns, z_buffer, light_dir, outline);
+      triangle_shaded(area, screen_verts, vns, z_buffer, light_dir, outline);
 
       // triangle_wireframe(buffer, screen_verts, 0x00FFAA40);
 
@@ -227,7 +216,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
       //   vns[j] = model->vns[face.vn_ids[j]];
       //   v3 normal_end = WorldTransform * ModelTransform *
       //                   (scene_verts[j] + (vns[j] * 0.1f));
-      //   draw_line(buffer, screen_verts[j], normal_end, 0x00FF0000, z_buffer);
+      //   draw_line(area, screen_verts[j], normal_end, 0x00FF0000, z_buffer);
       // }
     }
 
@@ -237,7 +226,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
 
     if (model->debug) {
       // Draw the direction vector
-      draw_line(buffer, WorldTransform * model->position,
+      draw_line(area, WorldTransform * model->position,
                 WorldTransform * (model->position + model->direction * 0.3f),
                 0x00FF0000, z_buffer);
 
@@ -257,7 +246,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
                      7, 4, 4, 5, 0, 5, 3, 4, 1, 6, 2, 7};
       // assert(COUNT_OF(lines) % 2 == 0);
       for (size_t i = 0; i < COUNT_OF(lines); i += 2) {
-        draw_line(buffer, WorldTransform * verts[lines[i]],
+        draw_line(area, WorldTransform * verts[lines[i]],
                   WorldTransform * verts[lines[i + 1]], 0x00FFAA40, z_buffer);
       }
 #endif
@@ -282,7 +271,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
         if (i == kLineCount / 2) {
           color = kXColor;
         }
-        draw_line(buffer, vert1, vert2, color, z_buffer);
+        draw_line(area, vert1, vert2, color, z_buffer);
       }
       // Along the z axis
       {
@@ -291,7 +280,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
         if (i == kLineCount / 2) {
           color = kZColor;
         }
-        draw_line(buffer, vert1, vert2, color, z_buffer);
+        draw_line(area, vert1, vert2, color, z_buffer);
       }
     }
   }
@@ -300,7 +289,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
   {
     v2i cursor = V2i(WorldTransform * ui->cursor);
     Rect cursor_rect = {cursor.x - 3, cursor.y - 3, cursor.x + 3, cursor.y + 3};
-    draw_rect(buffer, cursor_rect, 0x00FF0000, false);
+    draw_rect(area, cursor_rect, 0x00FF0000, false);
   }
 
   // Draw the axis in the corner
@@ -312,9 +301,9 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
 
     v2i origin = V2i(IconViewport * V3(0, 0, 0));
 
-    draw_line(buffer, origin, V2i(IconViewport * x), kXColor, 2);
-    draw_line(buffer, origin, V2i(IconViewport * z), kZColor, 2);
-    draw_line(buffer, origin, V2i(IconViewport * y), kYColor, 2);
+    draw_line(area, origin, V2i(IconViewport * x), kXColor, 2);
+    draw_line(area, origin, V2i(IconViewport * z), kZColor, 2);
+    draw_line(area, origin, V2i(IconViewport * y), kYColor, 2);
   }
 
   // test dragging
@@ -325,7 +314,7 @@ void Editor_3DView::draw(Program_State *state, User_Input *input) {
   //   for (int i = 0; i < 3; ++i) {
   //     if (input->button_is_down((Input_Button)i)) {
   //       v2i from = area_rect.projected_to_area(input->mouse_positions[i]);
-  //       draw_line(buffer, from, to, colors[i], 4);
+  //       draw_line(area, from, to, colors[i], 4);
   //     }
   //   }
   // }

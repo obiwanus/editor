@@ -28,7 +28,7 @@ struct Editor_3DView : Area_Editor {
   Camera camera;
   Editor_3DView_Mode mode;
 
-  void draw(Program_State *, User_Input *);
+  void draw(Pixel_Buffer *, r32 *, Program_State *, User_Input *);
 };
 
 struct Editor_Raytrace : Area_Editor {

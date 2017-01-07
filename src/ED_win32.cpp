@@ -168,10 +168,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   // Main program state
   Program_State *state =
       (Program_State *)g_program_memory.allocate(sizeof(Program_State));
-  state->init(&g_program_memory);
-
-  // Init pixel buffer
-  g_pixel_buffer.allocate();
+  state->init(&g_program_memory, &g_pixel_buffer);
 
   // Create window class
   WNDCLASS WindowClass = {};

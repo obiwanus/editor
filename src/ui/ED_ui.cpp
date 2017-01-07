@@ -119,18 +119,6 @@ bool Area::mouse_over_split_handle(v2i mouse) {
 
 bool Area::is_visible() { return this->splitter == NULL; }
 
-void Area::destroy() {
-  if (this->buffer.memory != NULL) {
-    free(this->buffer.memory);
-    this->buffer.memory = NULL;
-  }
-  if (this->z_buffer != NULL) {
-    free(this->z_buffer);
-    this->z_buffer = NULL;
-  }
-  free(this);
-}
-
 Rect Area_Splitter::get_rect() {
   Rect result = {};
   const int kSensitivity = 5;
@@ -216,14 +204,14 @@ Rect UI_Select::get_rect() {
 void UI_Select::update_and_draw(User_Input *input) {
   UI_Select *select = this;
   assert(select->parent_area != NULL);
+  Area *area = select->parent_area;
 
   Rect area_rect = select->parent_area->get_rect();
   Rect select_rect = select->get_rect();
-  Pixel_Buffer *buffer = &select->parent_area->buffer;
 
   // Draw unhighlighted no matter what
   const u32 colors[10] = {0x00000000, 0x00123123};
-  draw_rect(buffer, select_rect, colors[select->option_selected]);
+  draw_rect(area, select_rect, colors[select->option_selected]);
 
   // If mouse cursor is not in the area, don't interact with select
   if (!area_rect.contains(input->mouse)) {
@@ -256,7 +244,7 @@ void UI_Select::update_and_draw(User_Input *input) {
 
   if (mouse_over_select || select->open) {
     // Draw highlighted
-    draw_rect(buffer, select_rect, 0x00222222);
+    draw_rect(area, select_rect, 0x00222222);
   }
 
   if (select->open) {
@@ -264,7 +252,7 @@ void UI_Select::update_and_draw(User_Input *input) {
     options_border.bottom = select_rect.top + kMargin;
 
     // Draw all options rect first
-    draw_rect(buffer, options_border, 0x00686868);
+    draw_rect(area, options_border, 0x00686868);
 
     int bottom = select_rect.top;
     for (int opt = 0; opt < select->option_count; opt++) {
@@ -280,7 +268,7 @@ void UI_Select::update_and_draw(User_Input *input) {
       if (mouse_over_option) {
         color += 0x00121212;  // highlight
       }
-      draw_rect(buffer, option, color);
+      draw_rect(area, option, color);
       bottom -= select->option_height + 1;
 
       // Select the option on click
@@ -320,6 +308,8 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
     }
   }
 
+  area->buffer = this->buffer;
+
   // Init type selector
   {
     UI_Select *select = &area->type_select;
@@ -336,15 +326,6 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
       // Default editor type
       select->option_selected = Area_Editor_Type_3DView;
     }
-  }
-
-  // Create draw buffer
-  {
-    area->buffer.allocate();
-    area->buffer.width = area->get_width();
-    area->buffer.height = area->get_height();
-
-    area->z_buffer = NULL;
   }
 
   // Init camera for 3d view (or copy from parent)
@@ -371,11 +352,7 @@ void User_Interface::remove_area(Area *area) {
   assert(sister_area != NULL);
 
   // Copy data from sister area
-  {
-    parent_area->editor_3dview.camera = sister_area->editor_3dview.camera;
-    parent_area->z_buffer = sister_area->z_buffer;
-    sister_area->z_buffer = NULL;  // so we don't free it
-  }
+  parent_area->editor_3dview.camera = sister_area->editor_3dview.camera;
 
   // Remove splitter
   {
@@ -417,8 +394,6 @@ void User_Interface::remove_area(Area *area) {
         sister_area_id = i;
       }
     }
-    area->destroy();
-    sister_area->destroy();
 
     assert(0 <= area_id && area_id < this->num_areas);
     assert(0 <= sister_area_id && sister_area_id < this->num_areas);
@@ -486,9 +461,6 @@ Area_Splitter *User_Interface::split_area(Area *area, v2i mouse,
 
     // Make the new (smaller) area active
     this->active_area = splitter->areas[smaller_area];
-
-    // Use parent z-buffer in the bigger area
-    splitter->areas[bigger_area]->z_buffer = area->z_buffer;
   }
 
   return splitter;
@@ -542,9 +514,10 @@ void User_Interface::resize_window(int new_width, int new_height) {
   main_area->reposition_splitter(width_ratio, height_ratio);
 }
 
-Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
-                                              User_Input *input,
+Update_Result User_Interface::update_and_draw(User_Input *input,
                                               Program_State *state) {
+  TIMED_BLOCK();
+
   Update_Result result = {};
   User_Interface *ui = this;
 
@@ -656,32 +629,37 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
 
   // TODO: maybe take this completely away from ui::draw?
 
+  // Clear
+  memset(buffer->memory, 0x36, buffer->width * buffer->height * sizeof(u32));
+
+  if (this->z_buffer == NULL) {
+    this->z_buffer =
+        (r32 *)malloc(buffer->max_width * buffer->max_height * sizeof(r32));
+  }
+  for (int i = 0; i < buffer->width * buffer->height; ++i) {
+    this->z_buffer[i] = -INFINITY;
+  }
+
   // Update and draw areas
   for (int i = 0; i < this->num_areas; ++i) {
     Area *area = this->areas[i];
     if (!area->is_visible()) continue;  // ignore wrapper areas
-    area->buffer.width = area->get_width();
-    area->buffer.height = area->get_height();
 
     // Draw editor contents
     switch (area->editor_type) {
       case Area_Editor_Type_3DView: {
         if (!area->editor_3dview.is_drawn) {
-          area->editor_3dview.draw(state, input);
+          area->editor_3dview.draw(buffer, z_buffer, state, input);
         }
-      } break;
-
-      case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.draw();
       } break;
 
       default: { assert(!"Unknown editor type"); } break;
     }
 
     // Draw panels
-    Rect panel_rect = area->buffer.get_rect();
+    Rect panel_rect = area->get_rect();
     panel_rect.top = panel_rect.bottom - Area::kPanelHeight;
-    draw_rect(&area->buffer, panel_rect, 0x00686868);
+    draw_rect(area, panel_rect, 0x00686868);
 
     // Draw type select
     area->type_select.update_and_draw(input);
@@ -692,21 +670,27 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     }
   }
 
-  // Copy area buffers into the main buffer
-  for (int i = 0; i < ui->num_areas; ++i) {
-    Area *area = ui->areas[i];
-    if (!area->is_visible()) continue;
-    Rect client_rect = area->get_client_rect();
-    Pixel_Buffer *src_buffer = &area->buffer;
-    for (int y = 0; y < src_buffer->height; y++) {
-      for (int x = 0; x < src_buffer->width; x++) {
-        u32 *pixel_src = (u32 *)src_buffer->memory + x + y * src_buffer->width;
-        u32 *pixel_dest = (u32 *)buffer->memory + (client_rect.left + x) +
-                          (client_rect.top + y) * buffer->width;
-        *pixel_dest = *pixel_src;
+// Copy area buffers into the main buffer
+#if 0
+  {
+    TIMED_BLOCK();
+    for (int i = 0; i < ui->num_areas; ++i) {
+      Area *area = ui->areas[i];
+      if (!area->is_visible()) continue;
+      Rect client_rect = area->get_client_rect();
+      Pixel_Buffer *src_buffer = &area->buffer;
+      for (int y = 0; y < src_buffer->height; y++) {
+        for (int x = 0; x < src_buffer->width; x++) {
+          u32 *pixel_src =
+              (u32 *)src_buffer->memory + x + y * src_buffer->width;
+          u32 *pixel_dest = (u32 *)buffer->memory + (client_rect.left + x) +
+                            (client_rect.top + y) * buffer->width;
+          *pixel_dest = *pixel_src;
+        }
       }
     }
   }
+#endif
 
   // TODO: optimize multiple loops.
   // or maybe use an iterator if we need to keep them?
@@ -716,24 +700,21 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   // Draw splitters
   for (int i = 0; i < ui->num_splitters; ++i) {
     Area_Splitter *splitter = ui->splitters[i];
-    // draw_rect(buffer, splitter->get_rect(), {1,1,1});
     Area *area = splitter->parent_area;
     int left, top, right, bottom;
     if (splitter->is_vertical) {
       left = splitter->position;
       top = area->top;
       bottom = area->bottom;
-      draw_ui_line(buffer, V2i(left - 1, top), V2i(left - 1, bottom),
-                   0x00323232);
-      draw_ui_line(buffer, V2i(left, top), V2i(left, bottom), 0x00000000);
-      draw_ui_line(buffer, V2i(left + 1, top), V2i(left + 1, bottom),
-                   0x00505050);
+      draw_ui_line(area, V2i(left - 1, top), V2i(left - 1, bottom), 0x00323232);
+      draw_ui_line(area, V2i(left, top), V2i(left, bottom), 0x00000000);
+      draw_ui_line(area, V2i(left + 1, top), V2i(left + 1, bottom), 0x00505050);
     } else {
       top = splitter->position;
       left = area->left;
       right = area->right;
-      draw_ui_line(buffer, V2i(left, top - 1), V2i(right, top - 1), 0x00000000);
-      draw_ui_line(buffer, V2i(left, top), V2i(right, top), 0x00505050);
+      draw_ui_line(area, V2i(left, top - 1), V2i(right, top - 1), 0x00000000);
+      draw_ui_line(area, V2i(left, top), V2i(right, top), 0x00505050);
     }
   }
 
@@ -742,13 +723,13 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
     if (!area->is_visible()) continue;
 
     // Draw split handles
-    draw_rect(buffer, area->get_split_handle(0), 0x00777777);
-    draw_rect(buffer, area->get_split_handle(1), 0x00777777);
+    draw_rect(area, area->get_split_handle(0), 0x00777777);
+    draw_rect(area, area->get_split_handle(1), 0x00777777);
 
     // Draw delete buttons
     if (i > 0) {
       // Can't delete area 0
-      draw_rect(buffer, area->get_delete_button(), 0x00772222);
+      draw_rect(area, area->get_delete_button(), 0x00772222);
     }
   }
 
@@ -781,74 +762,4 @@ Update_Result User_Interface::update_and_draw(Pixel_Buffer *buffer,
   }
 
   return result;
-}
-
-void Editor_Raytrace::draw() {
-  // TODO: ray tracer should probably be member and not
-  // a function parameter
-
-  // Debug draw texture image
-  // u32 *pitch = model->texture.width
-  // Pixel_Buffer *buffer = this->area->buffer;
-
-  // // TMP - buggy with bytes per pixel = 3
-  // u32 *src = model.texture.data;
-  // for (int y = 0; y < model.texture.height; ++y) {
-  //   if (y >= buffer->height) break;
-  //   for (int x = 0; x < model.texture.width; ++x) {
-  //     if (x >= buffer->width) continue;
-  //     u32 *pixel = (u32 *)buffer->memory + x + y * buffer->width;
-  //     u32 value = *(src + x);
-  //     *pixel = value;
-  //   }
-  //   src += model.texture.width;
-  // }
-
-  // if (rt == NULL) {
-  //   // draw_rect(this->area->buffer, this->area->buffer.get_rect(),
-  //   //           0x00123123);
-  //   return;
-  // }
-
-  // RayCamera *camera = &rt->camera;
-  // LightSource *lights = rt->lights;
-  // RayObject **ray_objects = rt->ray_objects;
-
-  // Rect client_rect = this->area->get_client_rect();
-
-  // v2i pixel_count = {client_rect.right - client_rect.left,
-  //                    client_rect.bottom - client_rect.top};
-
-  // // TODO: this is wrong but tmp.
-  // // Ideally a raytrace view should have its own camera,
-  // // but this is probably not going to happen anyway
-  // camera->left = -pixel_count.x / 2;
-  // camera->right = pixel_count.x / 2;
-  // camera->top = pixel_count.y / 2;
-  // camera->bottom = -pixel_count.y / 2;
-
-  // for (int x = 0; x < pixel_count.x; x++) {
-  //   for (int y = 0; y < pixel_count.y; y++) {
-  //     RTRay ray = camera->get_ray_through_pixel(x, y, pixel_count);
-
-  //     const v3 ambient_color = {0.2f, 0.2f, 0.2f};
-  //     const r32 ambient_light_intensity = 0.3f;
-
-  //     v3 color = ambient_color * ambient_light_intensity;
-
-  //     color += ray.get_color(rt, 0, rt->kMaxRecursion);
-
-  //     // Crop
-  //     for (int i = 0; i < 3; ++i) {
-  //       if (color.E[i] > 1) {
-  //         color.E[i] = 1;
-  //       }
-  //       if (color.E[i] < 0) {
-  //         color.E[i] = 0;
-  //       }
-  //     }
-
-  //     draw_pixel(this->area->buffer, V2i(x, y), get_rgb_u32(color));
-  //   }
-  // }
 }

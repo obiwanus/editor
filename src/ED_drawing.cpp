@@ -12,20 +12,22 @@ inline u32 get_rgb_u32(v3 color) {
   return result;
 }
 
-inline void draw_pixel(Pixel_Buffer *buffer, v2i point, u32 color,
-                       bool top_left = false) {
-  int x = point.x;
-  int y = point.y;
+void draw_pixel(Area *area, int x, int y, u32 color) {
+  y = area->buffer->height - y;
 
-  if (!top_left) {
-    y = buffer->height - y;  // Origin in bottom-left
-  }
-  u32 *pixel = (u32 *)buffer->memory + x + y * buffer->width;
+  // Take area's origin into account
+  x += area->left;
+  y += area->top;
+
+  u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
   *pixel = color;
 }
 
-void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
+void draw_line(Area *area, v2i A, v2i B, u32 color, int width = 1,
                bool top_left = false) {
+  int area_width = area->get_width();
+  int area_height = area->get_height();
+
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
     swap(A.x, A.y);
@@ -48,8 +50,8 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
         X = y + i;
         Y = x;
       }
-      if (X >= 0 && X < buffer->width && Y >= 0 && Y < buffer->height) {
-        draw_pixel(buffer, V2i(X, Y), color, top_left);
+      if (X >= 0 && X < area_width && Y >= 0 && Y < area_height) {
+        draw_pixel(area, X, Y, color);
       }
     }
     error += error_step;
@@ -60,12 +62,15 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1,
   }
 }
 
-void draw_ui_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color) {
+void draw_ui_line(Area *area, v2i A, v2i B, u32 color) {
   // Draw line with the top left corner as the origin
-  draw_line(buffer, A, B, color, 1, true);
+  draw_line(area, A, B, color, 1, true);
 }
 
-void draw_line(Pixel_Buffer *buffer, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
+void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
+  int area_width = area->get_width();
+  int area_height = area->get_height();
+
   // Super unoptimized, as everything related to drawing so far
   bool swapped = false;
   if (abs(Bf.x - Af.x) < abs(Bf.y - Af.y)) {
@@ -88,13 +93,13 @@ void draw_line(Pixel_Buffer *buffer, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
   for (int x = A.x; x <= B.x; ++x) {
     int X = x, Y = y;
     if (swapped) swap(X, Y);  // unswap for drawing
-    if (X >= 0 && X < buffer->width && Y >= 0 && Y < buffer->height) {
+    if (X >= 0 && X < area_width && Y >= 0 && Y < area_height) {
       r32 t = (r32)(x - A.x) / dx;
       r32 z = (1.0f - t) * Af.z + t * Bf.z;
-      int index = buffer->width * Y + X;
+      int index = area->buffer->width * Y + X;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
-        draw_pixel(buffer, V2i(X, Y), color, false);
+        draw_pixel(area, X, Y, color);
       }
     }
     error += error_step;
@@ -105,17 +110,19 @@ void draw_line(Pixel_Buffer *buffer, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
   }
 }
 
-void triangle_wireframe(Pixel_Buffer *buffer, v3 verts[], u32 color) {
+void triangle_wireframe(Area *area, v3 verts[], u32 color) {
   v2i vert0 = V2i(verts[0]);
   v2i vert1 = V2i(verts[1]);
   v2i vert2 = V2i(verts[2]);
-  draw_line(buffer, vert0, vert1, color);
-  draw_line(buffer, vert0, vert2, color);
-  draw_line(buffer, vert1, vert2, color);
+  draw_line(area, vert0, vert1, color);
+  draw_line(area, vert0, vert2, color);
+  draw_line(area, vert1, vert2, color);
 }
 
-void triangle_filled(Pixel_Buffer *buffer, v3 verts[], u32 color,
-                     r32 *z_buffer) {
+void triangle_filled(Area *area, v3 verts[], u32 color, r32 *z_buffer) {
+  int area_width = area->get_width();
+  int area_height = area->get_height();
+
   // clang-format off
   v2i t0 = V2i(verts[0]); r32 z0 = verts[0].z;
   v2i t1 = V2i(verts[1]); r32 z1 = verts[1].z;
@@ -130,7 +137,7 @@ void triangle_filled(Pixel_Buffer *buffer, v3 verts[], u32 color,
 
   int total_height = t2.y - t0.y;
   for (int y = t0.y; y <= t2.y; y++) {
-    if (y < 0 || y >= buffer->height) continue;
+    if (y < 0 || y >= area_height) continue;
     bool second_half = y > t1.y || t1.y == t0.y;
     int segment_height = second_half ? (t2.y - t1.y) : (t1.y - t0.y);
     r32 dy_total = (r32)(y - t0.y) / total_height;
@@ -149,21 +156,24 @@ void triangle_filled(Pixel_Buffer *buffer, v3 verts[], u32 color,
     }
     if (A.x > B.x) { swap(A, B); swap(A_z, B_z); };
     for (int x = A.x; x <= B.x; x++) {
-      if (x < 0 || x >= buffer->width) continue;
+      if (x < 0 || x >= area_width) continue;
       r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
       r32 z = lerp(A_z, B_z, t);
-      int index = buffer->width * y + x;
+      int index = area->buffer->width * y + x;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
-        draw_pixel(buffer, V2i(x, y), color, false);
+        draw_pixel(area, x, y, color);
       }
     }
   }
   // clang-format on
 }
 
-void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[], r32 *z_buffer,
+void triangle_shaded(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
                      v3 light_dir, bool outline = false) {
+  int area_width = area->get_width();
+  int area_height = area->get_height();
+
   // clang-format off
   v2i t0 = V2i(verts[0]); r32 z0 = verts[0].z;
   v2i t1 = V2i(verts[1]); r32 z1 = verts[1].z;
@@ -185,7 +195,7 @@ void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[], r32 *z_buffer,
 
   int total_height = t2.y - t0.y;
   for (int y = t0.y; y <= t2.y; y++) {
-    if (y < 0 || y >= buffer->height) continue;
+    if (y < 0 || y >= area_height) continue;
     bool second_half = y > t1.y || t1.y == t0.y;
     int segment_height = second_half ? (t2.y - t1.y) : (t1.y - t0.y);
     r32 dy_total = (r32)(y - t0.y) / total_height;
@@ -208,10 +218,10 @@ void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[], r32 *z_buffer,
     }
     if (A.x > B.x) { swap(A, B); swap(A_z, B_z); swap(A_in, B_in); };
     for (int x = A.x; x <= B.x; x++) {
-      if (x < 0 || x >= buffer->width) continue;
+      if (x < 0 || x >= area_width) continue;
       r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
       r32 z = lerp(A_z, B_z, t);
-      int index = buffer->width * y + x;
+      int index = area->buffer->width * y + x;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
         r32 intensity = lerp(A_in, B_in, t);
@@ -222,120 +232,35 @@ void triangle_shaded(Pixel_Buffer *buffer, v3 verts[], v3 vns[], r32 *z_buffer,
         if (outline && (x == A.x || x == B.x || y == t0.y || y == t2.y)) {
           color = 0x00FFAA40;
         }
-        draw_pixel(buffer, V2i(x, y), color, false);
+        draw_pixel(area, x, y, color);
       }
     }
   }
   // clang-format on
 }
 
-void triangle_textured(Pixel_Buffer *buffer, v3i verts[], v2 vts[], v3 vns[],
-                       Image texture, r32 *z_buffer) {
-  v3i t0 = verts[0];
-  v3i t1 = verts[1];
-  v3i t2 = verts[2];
+void draw_rect(Area *area, Rect rect, u32 color, bool top_left = true) {
+  int area_width = area->get_width();
+  int area_height = area->get_height();
 
-  v2 tex0 = vts[0];
-  v2 tex1 = vts[1];
-  v2 tex2 = vts[2];
-
-  v3 n0 = vns[0];
-  v3 n1 = vns[1];
-  v3 n2 = vns[2];
-
-  if (t0.y == t1.y && t1.y == t2.y) return;
-  if (t0.x == t1.x && t1.x == t2.x) return;
-
-  if (t0.y > t1.y) {
-    swap(t0, t1);
-    swap(tex0, tex1);
-    swap(n0, n1);
-  }
-  if (t0.y > t2.y) {
-    swap(t0, t2);
-    swap(tex0, tex2);
-    swap(n0, n2);
-  }
-  if (t1.y > t2.y) {
-    swap(t1, t2);
-    swap(tex1, tex2);
-    swap(n1, n2);
-  }
-
-  int total_height = t2.y - t0.y;
-  for (int y = t0.y; y <= t2.y; y++) {
-    if (y < 0 || y >= buffer->height) continue;
-    bool second_half = y > t1.y || t1.y == t0.y;
-    int segment_height = second_half ? (t2.y - t1.y + 1) : (t1.y - t0.y + 1);
-    r32 dy_total = (r32)(y - t0.y) / total_height;
-    r32 dy_segment =
-        (r32)(second_half ? (y - t1.y) : (y - t0.y)) / segment_height;
-    v3i A = t0 + V3i(dy_total * V3(t2 - t0));  // TODO: try lerp
-    v3i B;
-    v2 Atex = tex0 + dy_total * (tex2 - tex0);
-    v2 Btex;
-    v3 An = n0 + dy_total * (n2 - n0);
-    v3 Bn;
-    if (!second_half) {
-      B = t0 + V3i(dy_segment * V3(t1 - t0));
-      Btex = tex0 + dy_segment * (tex1 - tex0);
-      Bn = n0 + dy_segment * (n1 - n0);
-    } else {
-      B = t1 + V3i(dy_segment * V3(t2 - t1));
-      Btex = tex1 + dy_segment * (tex2 - tex1);
-      Bn = n1 + dy_segment * (n2 - n1);
-    }
-    if (A.x > B.x) {
-      swap(A, B);
-      swap(Atex, Btex);
-      swap(An, Bn);
-    };
-    for (int x = A.x; x <= B.x; x++) {
-      if (x < 0 || x >= buffer->width) continue;
-      r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
-      r32 z = (r32)lerp(A.z, B.z, t);
-      int index = buffer->width * y + x;
-      if (z_buffer[index] < z) {
-        z_buffer[index] = z;
-        v3 n = lerp(An, Bn, t).normalized();
-        r32 intensity = n * V3(0, 0, 1);
-        if (intensity > 0) {
-          // // Get color from texture
-          v2 texel = lerp(Atex, Btex, t);
-          v2i tex_coords =
-              V2i(texture.width * texel.u, texture.height * texel.v);
-          u32 color = texture.color(tex_coords.x,
-                                    (texture.height - tex_coords.y), intensity);
-          draw_pixel(buffer, V2i(x, y), color);
-        }
-      }
-    }
-  }
-}
-
-// void draw_ui_line(Pixel_Buffer *buffer, v2 A, v2 B, u32 color) {
-//   v2i a = {(int)A.x, (int)A.y};
-//   v2i b = {(int)B.x, (int)B.y};
-//   draw_ui_line(buffer, a, b, color);
-// }
-
-void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color,
-               bool top_left = true) {
   if (rect.left < 0) rect.left = 0;
   if (rect.top < 0) rect.top = 0;
-  if (rect.right > buffer->width) rect.right = buffer->width;
-  if (rect.bottom > buffer->height) rect.bottom = buffer->height;
+  if (rect.right > area_width) rect.right = area_width;
+  if (rect.bottom > area_height) rect.bottom = area_height;
 
   for (int x = rect.left; x < rect.right; x++) {
     for (int y = rect.top; y < rect.bottom; y++) {
       // Don't care about performance (yet)
-      draw_pixel(buffer, V2i(x, y), color, top_left);
+      draw_pixel(area, x, y, color);
     }
   }
 }
 
-void draw_string(Pixel_Buffer *buffer, int string_x, int string_y,
-                 const char *string, u32 text_color) {
+void draw_string(Area *area, int string_x, int string_y, const char *string,
+                 u32 text_color) {
+  int area_width = area->get_width();
+  int area_height = area->get_height();
+
   char c;
   v2i start = V2i(string_x, string_y + g_font.baseline);
   while ((c = *string++) != '\0') {
@@ -351,12 +276,12 @@ void draw_string(Pixel_Buffer *buffer, int string_x, int string_y,
     // TODO: this can be optimized significantly
     for (int x = 0; x < codepoint->width; x++) {
       int X = start.x + x;
-      if (X < 0 || X > buffer->width) continue;
+      if (X < 0 || X > area_width) continue;
       for (int y = 0; y < codepoint->height; y++) {
         int Y = start.y + y - codepoint->height;
-        if (Y < 0 || Y > buffer->height) continue;
+        if (Y < 0 || Y > area_height) continue;
         u8 alpha_src = char_bitmap[x + y * codepoint->width];
-        u32 *pixel = (u32 *)buffer->memory + X + Y * buffer->width;
+        u32 *pixel = (u32 *)area->buffer->memory + X + Y * area->buffer->width;
         if (alpha_src == 0xFF) {
           // Just draw foreground
           *pixel = text_color;

@@ -34,8 +34,8 @@ struct Area {
 
   Area *parent_area;
   Area_Splitter *splitter = NULL;
-  Pixel_Buffer buffer;
-  r32 *z_buffer = NULL;
+
+  Pixel_Buffer *buffer;  // just a pointer to the global buffer
 
   Area_Editor_Type editor_type;
   Editor_3DView editor_3dview;
@@ -65,7 +65,7 @@ struct Area {
   void set_bottom(int);
   void reposition_splitter(r32, r32);
 
-  void draw(Pixel_Buffer *);
+  // void draw(Pixel_Buffer *);
 
   void destroy();
 };
@@ -101,6 +101,9 @@ struct User_Interface {
   Area *area_being_deleted;
   Area_Splitter *splitter_being_moved;
 
+  r32 *z_buffer;
+  Pixel_Buffer *buffer;
+
   v3 cursor;
 
   Area *create_area(Area *, Rect);
@@ -108,7 +111,7 @@ struct User_Interface {
   Area_Splitter *split_area(Area *, v2i, bool);
   void set_movement_boundaries(Area_Splitter *);
   void resize_window(int, int);
-  Update_Result update_and_draw(Pixel_Buffer *, User_Input *, Program_State *);
+  Update_Result update_and_draw(User_Input *, Program_State *);
 };
 
 #endif  // __ED_UI_H__
