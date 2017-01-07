@@ -96,7 +96,7 @@ void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
     if (X >= 0 && X < area_width && Y >= 0 && Y < area_height) {
       r32 t = (r32)(x - A.x) / dx;
       r32 z = (1.0f - t) * Af.z + t * Bf.z;
-      int index = area->buffer->width * Y + X;
+      int index = area->buffer->width * (Y + area->bottom) + (X + area->left);
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
         draw_pixel(area, X, Y, color);
@@ -159,7 +159,7 @@ void triangle_filled(Area *area, v3 verts[], u32 color, r32 *z_buffer) {
       if (x < 0 || x >= area_width) continue;
       r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
       r32 z = lerp(A_z, B_z, t);
-      int index = area->buffer->width * y + x;
+      int index = area->buffer->width * (y + area->bottom) + (x + area->left);
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
         draw_pixel(area, x, y, color);
@@ -217,11 +217,12 @@ void triangle_shaded(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
       B_in = lerp(in[1], in[2], dy_segment);
     }
     if (A.x > B.x) { swap(A, B); swap(A_z, B_z); swap(A_in, B_in); };
+
     for (int x = A.x; x <= B.x; x++) {
       if (x < 0 || x >= area_width) continue;
       r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
       r32 z = lerp(A_z, B_z, t);
-      int index = area->buffer->width * y + x;
+      int index = area->buffer->width * (y + area->bottom) + (x + area->left);
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
         r32 intensity = lerp(A_in, B_in, t);
