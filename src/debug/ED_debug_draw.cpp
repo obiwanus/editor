@@ -21,8 +21,9 @@
   char perf_counters[200];
   for (int i = 0; i < g_num_perf_counters; ++i) {
     ED_Perf_Counter *counter = g_performance_counters + i;
+    u64 ticks = counter->ticks / counter->hits;
     sprintf(perf_counters, "%s:%d (%s): %'u | %'lu", counter->file,
-            counter->line, counter->function, counter->hits, counter->ticks);
+            counter->line, counter->function, counter->hits, ticks);
     draw_string(main_area, 10, line_start, perf_counters, 0x00FFFFFF);
     line_start += line_height;
 
