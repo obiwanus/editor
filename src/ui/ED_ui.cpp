@@ -647,9 +647,13 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     this->z_buffer =
         (r32 *)malloc(buffer->max_width * buffer->max_height * sizeof(r32));
   }
-  for (int i = 0; i < buffer->width * buffer->height; ++i) {
-    this->z_buffer[i] = -INFINITY;
-  }
+  TIMED_BEGIN(memset);
+  memset(this->z_buffer, 0, buffer->width * buffer->height * sizeof(r32));
+  TIMED_END(memset);
+
+  // for (int i = 0; i < buffer->width * buffer->height; ++i) {
+  //   this->z_buffer[i] = -INFINITY;
+  // }
 
   // Update and draw areas
   for (int i = 0; i < this->num_areas; ++i) {
@@ -676,28 +680,6 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     // Draw type select
     area->type_select.update_and_draw(input);
   }
-
-// Copy area buffers into the main buffer
-#if 0
-  {
-    TIMED_BLOCK();
-    for (int i = 0; i < ui->num_areas; ++i) {
-      Area *area = ui->areas[i];
-      if (!area->is_visible()) continue;
-      Rect client_rect = area->get_client_rect();
-      Pixel_Buffer *src_buffer = &area->buffer;
-      for (int y = 0; y < src_buffer->height; y++) {
-        for (int x = 0; x < src_buffer->width; x++) {
-          u32 *pixel_src =
-              (u32 *)src_buffer->memory + x + y * src_buffer->width;
-          u32 *pixel_dest = (u32 *)buffer->memory + (client_rect.left + x) +
-                            (client_rect.top + y) * buffer->width;
-          *pixel_dest = *pixel_src;
-        }
-      }
-    }
-  }
-#endif
 
   // TODO: optimize multiple loops.
   // or maybe use an iterator if we need to keep them?

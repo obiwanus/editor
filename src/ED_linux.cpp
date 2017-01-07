@@ -552,7 +552,7 @@ int main(int argc, char *argv[]) {
 #else
     XPutImage(display, window, gc, g_ximage, 0, 0, 0, 0, state->kWindowWidth,
               state->kWindowHeight);
-// usleep(10000);
+    usleep(30000);
 #endif  // ED_LINUX_OPENGL
 
     u64 ns_elapsed = linux_time_elapsed();

@@ -1,6 +1,5 @@
 NOW:
 
-- if hit count > 1, accumulate ticks
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
@@ -55,6 +54,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [08/01/2017]
+- if hit count > 1, accumulate ticks
 - draw everything from bottom left
 
 [07/01/2017]
