@@ -12,7 +12,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
   this->camera.adjust_frustum(area_width, area_height);
 
   if (active) {
-    v2i mouse_position = this->area->get_rect().projected_to_area(input->mouse);
+    v2i mouse_position = this->area->get_rect().projected(input->mouse);
     Ray ray = this->camera.get_ray_through_pixel(mouse_position);
 
     if (input->button_went_down(IB_mouse_left)) {
@@ -51,7 +51,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       }
     }
     if (input->key_went_down('A')) {
-      Model model = state->models[0];  // cube
+      Model model = state->models[0];
       model.position = ui->cursor;
       model.direction = (this->camera.position - model.position).normalized();
       sb_push(state->models, model);
@@ -78,6 +78,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         // Rotate camera around pivot
         const int kSensitivity = 500;
         v2 angles = (M_PI / kSensitivity) * delta;
+        angles.y = -angles.y;  // origin in bottom left so have to swap
         m4x4 CameraRotate = this->camera.rotation_matrix(angles);
         this->camera.position = CameraRotate * this->camera.old_position;
         this->camera.up = V3(CameraRotate * V4_v(this->camera.old_up));
@@ -88,7 +89,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         basis3 basis = this->camera.old_basis;
         v3 right = basis.u;
         v3 up = basis.v;
-        v3 move_vector = (right * delta.x - up * delta.y) * sensitivity;
+        v3 move_vector = (right * delta.x + up * delta.y) * sensitivity;
         this->camera.pivot = this->camera.old_pivot + move_vector;
         this->camera.position = this->camera.old_position + move_vector;
       }
@@ -288,8 +289,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
   // Draw cursor
   {
     v2i cursor = V2i(WorldTransform * ui->cursor);
-    Rect cursor_rect = {cursor.x - 3, cursor.y - 3, cursor.x + 3, cursor.y + 3};
-    draw_rect(area, cursor_rect, 0x00FF0000, false);
+    Rect cursor_rect = {cursor.x - 3, cursor.y + 3, cursor.x + 3, cursor.y - 3};
+    draw_rect(area, cursor_rect, 0x00FF0000);
   }
 
   // Draw the axis in the corner
@@ -299,11 +300,15 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     v3 y = V3(CameraSpaceTransform * V4(0, 1, 0, 0));
     v3 z = V3(CameraSpaceTransform * V4(0, 0, 1, 0));
 
-    v2i origin = V2i(IconViewport * V3(0, 0, 0));
+    v2i offset = V2i(area->left, area->bottom);
+    v2i origin = V2i(IconViewport * V3(0, 0, 0)) + offset;
+    v2i X = V2i(IconViewport * x) + offset;
+    v2i Y = V2i(IconViewport * y) + offset;
+    v2i Z = V2i(IconViewport * z) + offset;
 
-    draw_line(area, origin, V2i(IconViewport * x), kXColor, 2);
-    draw_line(area, origin, V2i(IconViewport * z), kZColor, 2);
-    draw_line(area, origin, V2i(IconViewport * y), kYColor, 2);
+    draw_line(buffer, origin, X, kXColor, 2);
+    draw_line(buffer, origin, Z, kZColor, 2);
+    draw_line(buffer, origin, Y, kYColor, 2);
   }
 
   // test dragging

@@ -35,7 +35,7 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
   state->UI->create_area(NULL,
-                         {0, 0, state->kWindowWidth, state->kWindowHeight});
+                         {0, state->kWindowHeight, state->kWindowWidth, 0});
 
   state->UI->cursor = V3(0, 0, 0);
 
@@ -138,9 +138,12 @@ void ED_Font::load_from_file(char *filename, int char_height) {
 }
 
 Update_Result update_and_render(Program_Memory *program_memory,
-                                Program_State *state,
-                                Pixel_Buffer *pixel_buffer, User_Input *input) {
+                                Program_State *state, User_Input *input) {
   Update_Result result = {};
+
+  // Project mouse pointer into main area
+  Area *main_area = state->UI->areas[0];
+  input->mouse.y = main_area->get_height() - input->mouse.y;
 
   // Remember where dragging starts
   for (int i = 0; i < 3; ++i) {
@@ -156,26 +159,17 @@ Update_Result update_and_render(Program_Memory *program_memory,
 
 bool Rect::contains(v2i point) {
   bool result = (this->left <= point.x) && (point.x <= this->right) &&
-                (this->top <= point.y) && (point.y <= this->bottom);
+                (this->bottom <= point.y) && (point.y <= this->top);
   return result;
 }
 
-v2i Rect::projected(v2i point, bool ui = true) {
+v2i Rect::projected(v2i point) {
   v2i result = point;
 
   result.x -= this->left;
-  result.y -= this->top;
-
-  if (!ui) {
-    result.y = this->get_height() - result.y;
-  }
+  result.y -= this->bottom;
 
   return result;
-}
-
-v2i Rect::projected_to_area(v2i point) {
-  // Project using the editor origin (bottom left)
-  return this->projected(point, false);
 }
 
 inline int Rect::get_width() {
@@ -185,7 +179,7 @@ inline int Rect::get_width() {
 }
 
 inline int Rect::get_height() {
-  int result = this->bottom - this->top;
+  int result = this->top - this->bottom;
   assert(result >= 0);
   return result;
 }

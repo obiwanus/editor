@@ -68,8 +68,7 @@ struct Rect {
   inline int get_width();
   inline int get_height();
   bool contains(v2i point);
-  v2i projected(v2i point, bool ui);
-  v2i projected_to_area(v2i point);
+  v2i projected(v2i point);
   int get_area();
 };
 
@@ -136,7 +135,7 @@ struct ED_Font {
 };
 
 Update_Result update_and_render(Program_Memory *, Program_State *,
-                                Pixel_Buffer *, User_Input *);
+                                User_Input *);
 
 struct ED_Perf_Counter {
   char *file;

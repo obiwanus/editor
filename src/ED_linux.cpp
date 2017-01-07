@@ -353,7 +353,7 @@ int main(int argc, char *argv[]) {
     free(g_pixel_buffer.memory);
     g_pixel_buffer.memory = (void *)g_ximage->data;
     g_pixel_buffer.width = state->kWindowWidth;
-    g_pixel_buffer.height = state->kWindowHeight - 1;
+    g_pixel_buffer.height = state->kWindowHeight;
 
     gc = XCreateGC(display, window, 0, &gcvalues);
   }
@@ -489,8 +489,7 @@ int main(int argc, char *argv[]) {
     Update_Result result;
     {
       TIMED_BLOCK();
-      result = update_and_render(&g_program_memory, state,
-                                               &g_pixel_buffer, new_input);
+      result = update_and_render(&g_program_memory, state, new_input);
     }
 
     #include "debug/ED_debug_draw.cpp"
@@ -606,6 +605,7 @@ int main(int argc, char *argv[]) {
   sb_free(state->UI->splitters);
 
   // Free general stuff
+  free(state->UI->z_buffer);
   free(state->UI);
   free(g_font.bitmap);
 #if ED_LINUX_OPENGL

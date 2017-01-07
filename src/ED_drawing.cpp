@@ -12,22 +12,27 @@ inline u32 get_rgb_u32(v3 color) {
   return result;
 }
 
-void draw_pixel(Area *area, int x, int y, u32 color) {
-  y = area->buffer->height - y;
+void draw_pixel(Pixel_Buffer *buffer, int x, int y, u32 color) {
+  // Origin in bottom left
+  y = buffer->height - y - 1;  // y should never be equal buffer->height
 
-  // Take area's origin into account
-  x += area->left;
-  y += area->top;
-
-  u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
+  u32 *pixel = (u32 *)buffer->memory + x + y * buffer->width;
   *pixel = color;
 }
 
-void draw_line(Area *area, v2i A, v2i B, u32 color, int width = 1,
-               bool top_left = false) {
-  int area_width = area->get_width();
-  int area_height = area->get_height();
+void draw_pixel(Area *area, int x, int y, u32 color) {
+  // Take area's origin into account
+  int X = x + area->left;
 
+  // Origin in bottom left.
+  // y should never be equal buffer->height
+  int Y = area->buffer->height - (y + area->bottom) - 1;
+
+  u32 *pixel = (u32 *)area->buffer->memory + X + Y * area->buffer->width;
+  *pixel = color;
+}
+
+void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1) {
   bool swapped = false;
   if (abs(B.x - A.x) < abs(B.y - A.y)) {
     swap(A.x, A.y);
@@ -50,8 +55,8 @@ void draw_line(Area *area, v2i A, v2i B, u32 color, int width = 1,
         X = y + i;
         Y = x;
       }
-      if (X >= 0 && X < area_width && Y >= 0 && Y < area_height) {
-        draw_pixel(area, X, Y, color);
+      if (X >= 0 && X < buffer->width && Y >= 0 && Y < buffer->height) {
+        draw_pixel(buffer, X, Y, color);
       }
     }
     error += error_step;
@@ -60,11 +65,6 @@ void draw_line(Area *area, v2i A, v2i B, u32 color, int width = 1,
       y += sign;
     }
   }
-}
-
-void draw_ui_line(Area *area, v2i A, v2i B, u32 color) {
-  // Draw line with the top left corner as the origin
-  draw_line(area, A, B, color, 1, true);
 }
 
 void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
@@ -110,14 +110,14 @@ void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
   }
 }
 
-void triangle_wireframe(Area *area, v3 verts[], u32 color) {
-  v2i vert0 = V2i(verts[0]);
-  v2i vert1 = V2i(verts[1]);
-  v2i vert2 = V2i(verts[2]);
-  draw_line(area, vert0, vert1, color);
-  draw_line(area, vert0, vert2, color);
-  draw_line(area, vert1, vert2, color);
-}
+// void triangle_wireframe(Area *area, v3 verts[], u32 color) {
+//   v2i vert0 = V2i(verts[0]);
+//   v2i vert1 = V2i(verts[1]);
+//   v2i vert2 = V2i(verts[2]);
+//   draw_line(area, vert0, vert1, color);
+//   draw_line(area, vert0, vert2, color);
+//   draw_line(area, vert1, vert2, color);
+// }
 
 void triangle_filled(Area *area, v3 verts[], u32 color, r32 *z_buffer) {
   int area_width = area->get_width();
@@ -239,19 +239,37 @@ void triangle_shaded(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
   // clang-format on
 }
 
-void draw_rect(Area *area, Rect rect, u32 color, bool top_left = true) {
+void draw_rect(Area *area, Rect rect, u32 color) {
+  // Draw rect in area
+
   int area_width = area->get_width();
   int area_height = area->get_height();
 
   if (rect.left < 0) rect.left = 0;
-  if (rect.top < 0) rect.top = 0;
+  if (rect.bottom < 0) rect.bottom = 0;
   if (rect.right > area_width) rect.right = area_width;
-  if (rect.bottom > area_height) rect.bottom = area_height;
+  if (rect.top > area_height) rect.top = area_height;
 
-  for (int x = rect.left; x < rect.right; x++) {
-    for (int y = rect.top; y < rect.bottom; y++) {
+  for (int y = rect.bottom; y < rect.top; y++) {
+    for (int x = rect.left; x < rect.right; x++) {
       // Don't care about performance (yet)
       draw_pixel(area, x, y, color);
+    }
+  }
+}
+
+void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
+  // Draw rect in buffer directly
+
+  if (rect.left < 0) rect.left = 0;
+  if (rect.bottom < 0) rect.bottom = 0;
+  if (rect.right > buffer->width) rect.right = buffer->width;
+  if (rect.top > buffer->width) rect.top = buffer->width;
+
+  for (int y = rect.bottom; y < rect.top; y++) {
+    for (int x = rect.left; x < rect.right; x++) {
+      // Don't care about performance (yet)
+      draw_pixel(buffer, x, y, color);
     }
   }
 }

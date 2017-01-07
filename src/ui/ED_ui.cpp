@@ -1,30 +1,36 @@
 
 Rect Area::get_split_handle(int num) {
-  Rect rect = this->get_rect();
+  Rect rect = {};
   assert(num == 0 || num == 1);
   const int kSquareSize = 15;
   if (num == 0) {
-    rect.top = rect.bottom - kSquareSize;
-    rect.right = rect.left + kSquareSize;
+    rect.top = kSquareSize;
+    rect.right = kSquareSize;
   } else {
-    rect.left = rect.right - kSquareSize;
-    rect.bottom = rect.top + kSquareSize;
+    int area_width = this->get_width();
+    int area_height = this->get_height();
+    rect.left = area_width - kSquareSize;
+    rect.right = area_width;
+    rect.top = area_height;
+    rect.bottom = area_height - kSquareSize;
   }
   return rect;
 }
 
 Rect Area::get_delete_button() {
-  Rect rect = this->get_rect();
+  Rect rect;
   const int kSquareSize = 10;
-  rect.right = rect.left + kSquareSize;
-  rect.bottom = rect.top + kSquareSize;
+  rect.left = 0;
+  rect.top = this->get_height();
+  rect.right = kSquareSize;
+  rect.bottom = rect.top - kSquareSize;
 
   return rect;
 }
 
 inline int Area::get_width() { return this->right - this->left; }
 
-inline int Area::get_height() { return this->bottom - this->top; }
+inline int Area::get_height() { return this->top - this->bottom; }
 
 inline Rect Area::get_client_rect() {
   Rect result;
@@ -113,8 +119,13 @@ void Area::reposition_splitter(r32 width_ratio, r32 height_ratio) {
 }
 
 bool Area::mouse_over_split_handle(v2i mouse) {
+  mouse = this->get_rect().projected(mouse);
   return this->get_split_handle(0).contains(mouse) ||
          this->get_split_handle(1).contains(mouse);
+}
+
+bool Area::mouse_over_delete_button(v2i mouse) {
+  return this->get_delete_button().contains(this->get_rect().projected(mouse));
 }
 
 bool Area::is_visible() { return this->splitter == NULL; }
@@ -130,8 +141,8 @@ Rect Area_Splitter::get_rect() {
     result.top = area->top + kSensitivity;
     result.bottom = area->bottom - kSensitivity;
   } else {
-    result.top = this->position - kSensitivity;
-    result.bottom = this->position + kSensitivity;
+    result.top = this->position + kSensitivity;
+    result.bottom = this->position - kSensitivity;
     result.left = area->left + kSensitivity;
     result.right = area->right - kSensitivity;
   }
@@ -158,8 +169,8 @@ void Area_Splitter::move(v2i mouse) {
     area1->set_right(new_position - 1);
     area2->set_left(new_position + 2);
   } else {
-    area1->set_bottom(new_position - 1);
-    area2->set_top(new_position + 1);
+    area1->set_bottom(new_position + 1);
+    area2->set_top(new_position - 1);
   }
 }
 
@@ -176,25 +187,25 @@ Rect UI_Select::get_rect() {
   // Strange that I was aiming at generalisation but made
   // this function extremely specific to type selects
   assert(this->parent_area != NULL);
-  Rect rect;
-  Rect bounds = {0, 0, this->parent_area->get_width(),
-                 this->parent_area->get_height()};
+  Rect rect = {};
+  int area_width = this->parent_area->get_width();
+  int area_height = this->parent_area->get_height();
 
   const int kSelectWidth = 100;
   const int kSelectHeight = 18;
 
   if (this->align_bottom) {
-    rect.bottom = bounds.bottom - this->y;
-    rect.top = rect.bottom - kSelectHeight;
+    rect.top = this->y + kSelectHeight;
+    rect.bottom = this->y;
   } else {
-    rect.top = bounds.top + this->y;
-    rect.bottom = rect.top + kSelectHeight;
+    rect.top = area_height - this->y;
+    rect.bottom = rect.top - kSelectHeight;
   }
   if (this->align_right) {
-    rect.right = bounds.right - this->x;
+    rect.right = area_width - this->x;
     rect.left = rect.right - kSelectWidth;
   } else {
-    rect.left = bounds.left + this->x;
+    rect.left = this->x;
     rect.right = rect.left + kSelectWidth;
   }
 
@@ -219,20 +230,19 @@ void UI_Select::update_and_draw(User_Input *input) {
     return;
   }
 
+  const int kMargin = 1;
   Rect all_options_rect;
-  int kMargin = 1;
   all_options_rect.left = select_rect.left - kMargin;
   all_options_rect.right = select_rect.right + 30 + kMargin;
-  all_options_rect.bottom = select_rect.bottom + kMargin;
-  all_options_rect.top = select_rect.top -
-                         select->option_count * (select->option_height + 1) -
-                         kMargin + 1;
+  all_options_rect.bottom = select_rect.bottom - kMargin;
+  all_options_rect.top = select_rect.top +
+                         select->option_count * (select->option_height + 1) +
+                         kMargin - 1;
 
   // Update
-  bool mouse_over_select =
-      select_rect.contains(area_rect.projected(input->mouse));
-  bool mouse_over_options =
-      all_options_rect.contains(area_rect.projected(input->mouse));
+  v2i mouse = area_rect.projected(input->mouse);
+  bool mouse_over_select = select_rect.contains(mouse);
+  bool mouse_over_options = all_options_rect.contains(mouse);
 
   if (mouse_over_select && input->button_went_down(IB_mouse_left)) {
     select->open = true;
@@ -260,16 +270,14 @@ void UI_Select::update_and_draw(User_Input *input) {
       option.bottom = bottom;
       option.left = select_rect.left;
       option.right = select_rect.right + 30;
-      option.top = option.bottom - select->option_height;
-      bool mouse_over_option =
-          mouse_over_options &&
-          option.contains(area_rect.projected(input->mouse));
+      option.top = option.bottom + select->option_height;
+      bool mouse_over_option = mouse_over_options && option.contains(mouse);
       u32 color = colors[opt];
       if (mouse_over_option) {
         color += 0x00121212;  // highlight
       }
       draw_rect(area, option, color);
-      bottom -= select->option_height + 1;
+      bottom += select->option_height + 1;
 
       // Select the option on click
       if (mouse_over_option && input->button_went_down(IB_mouse_left)) {
@@ -316,7 +324,7 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
     *select = {};
     select->align_bottom = true;
     select->x = 20;
-    select->y = 3;
+    select->y = 4;
     select->option_count = Area_Editor_Type__COUNT;
     select->option_height = 20;
     select->parent_area = area;
@@ -394,6 +402,9 @@ void User_Interface::remove_area(Area *area) {
         sister_area_id = i;
       }
     }
+
+    free(area);
+    free(sister_area);
 
     assert(0 <= area_id && area_id < this->num_areas);
     assert(0 <= sister_area_id && sister_area_id < this->num_areas);
@@ -473,8 +484,8 @@ void User_Interface::set_movement_boundaries(Area_Splitter *splitter) {
     position_min = splitter->parent_area->left;
     position_max = splitter->parent_area->right;
   } else {
-    position_min = splitter->parent_area->top;
-    position_max = splitter->parent_area->bottom;
+    position_min = splitter->parent_area->bottom;
+    position_max = splitter->parent_area->top;
   }
 
   // Look at all splitters which are under our parent area
@@ -535,7 +546,7 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     if (input->button_went_down(IB_mouse_left)) {
       if (area->mouse_over_split_handle(input->mouse)) {
         ui->area_being_split = area;
-      } else if (area->get_delete_button().contains(input->mouse)) {
+      } else if (area->mouse_over_delete_button(input->mouse)) {
         ui->area_being_deleted = area;
       }
     }
@@ -543,7 +554,7 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     // Deleting?
     if (input->button_went_up(IB_mouse_left)) {
       if (ui->area_being_deleted == area &&
-          area->get_delete_button().contains(input->mouse) && i > 0) {
+          area->mouse_over_delete_button(input->mouse) && i > 0) {
         // Note we're not deleting area 0
         ui->remove_area(area);
         if (ui->active_area == area) {
@@ -657,17 +668,13 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     }
 
     // Draw panels
-    Rect panel_rect = area->get_rect();
-    panel_rect.top = panel_rect.bottom - Area::kPanelHeight;
+    Rect panel_rect = {};
+    panel_rect.top = Area::kPanelHeight;
+    panel_rect.right = area->get_width();
     draw_rect(area, panel_rect, 0x00686868);
 
     // Draw type select
     area->type_select.update_and_draw(input);
-
-    // Any actions within area
-    Rect area_rect = area->get_rect();
-    if (area_rect.contains(input->mouse)) {
-    }
   }
 
 // Copy area buffers into the main buffer
@@ -706,15 +713,15 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
       left = splitter->position;
       top = area->top;
       bottom = area->bottom;
-      draw_ui_line(area, V2i(left - 1, top), V2i(left - 1, bottom), 0x00323232);
-      draw_ui_line(area, V2i(left, top), V2i(left, bottom), 0x00000000);
-      draw_ui_line(area, V2i(left + 1, top), V2i(left + 1, bottom), 0x00505050);
+      draw_line(buffer, V2i(left - 1, top), V2i(left - 1, bottom), 0x00323232);
+      draw_line(buffer, V2i(left, top), V2i(left, bottom), 0x00000000);
+      draw_line(buffer, V2i(left + 1, top), V2i(left + 1, bottom), 0x00505050);
     } else {
       top = splitter->position;
       left = area->left;
       right = area->right;
-      draw_ui_line(area, V2i(left, top - 1), V2i(right, top - 1), 0x00000000);
-      draw_ui_line(area, V2i(left, top), V2i(right, top), 0x00505050);
+      draw_line(buffer, V2i(left, top - 1), V2i(right, top - 1), 0x00000000);
+      draw_line(buffer, V2i(left, top), V2i(right, top), 0x00505050);
     }
   }
 

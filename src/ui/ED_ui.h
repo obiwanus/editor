@@ -56,6 +56,7 @@ struct Area {
   Rect get_split_handle(int);
   Rect get_delete_button();
   bool mouse_over_split_handle(v2i);
+  bool mouse_over_delete_button(v2i);
 
   bool is_visible();
 

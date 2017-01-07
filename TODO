@@ -1,5 +1,6 @@
 NOW:
 
+- if hit count > 1, accumulate ticks
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
@@ -9,7 +10,6 @@ NOW:
 - [optimise] maybe pre-render strings and store them if rendering on the fly is too slow
 - [linux] fix window performance problems for opengl
 - when selecting models, take the closest one
-- try not to overallocate pixel buffers (maybe even use only one and avoid copying?)
 - properly outline triangles
 - when moving the pivot don't do it too slow when the camera is close
 - try to update before drawing to remove the lag between different areas
@@ -23,6 +23,7 @@ NOW:
 - clipping
 - scene graph - research
 - scene graph - implementation
+- be able to read scene info
 - [bug] cursor moves when trying to split an area
 
 
@@ -53,7 +54,11 @@ idea: try to look at the objects in clip space from different angles
 ==============================================================================
 DONE:
 
+[08/01/2017]
+- draw everything from bottom left
+
 [07/01/2017]
+- try not to overallocate pixel buffers (maybe even use only one and avoid copying?)
 - basic frustum culling using AABB
 - display performance counters
 
