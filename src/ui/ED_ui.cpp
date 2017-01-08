@@ -517,7 +517,7 @@ void User_Interface::resize_window(int new_width, int new_height) {
   int old_height = main_area->get_height();
 
   main_area->right = new_width;
-  main_area->bottom = new_height;
+  main_area->top = new_height;
   r32 width_ratio = (r32)new_width / (r32)old_width;
   r32 height_ratio = (r32)new_height / (r32)old_height;
 
@@ -647,9 +647,9 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     this->z_buffer =
         (r32 *)malloc(buffer->max_width * buffer->max_height * sizeof(r32));
   }
-  TIMED_BEGIN(memset);
+  TIME_BEGIN(memset);
   memset(this->z_buffer, 0, buffer->width * buffer->height * sizeof(r32));
-  TIMED_END(memset);
+  TIME_END(memset);
 
   // for (int i = 0; i < buffer->width * buffer->height; ++i) {
   //   this->z_buffer[i] = -INFINITY;

@@ -397,7 +397,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     }
 
     Update_Result result =
-        update_and_render(&g_program_memory, state, &g_pixel_buffer, new_input);
+        update_and_render(&g_program_memory, state, new_input);
 
     // #include "debug/ED_debug_draw.cpp"
 
