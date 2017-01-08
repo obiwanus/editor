@@ -140,9 +140,9 @@ void triangle_dumb(Area *area, v3 verts[], u32 color) {
   const int sub_step = 256;
   const int sub_mask = sub_step - 1;
 
-  v2i vert0 = V2i(verts[0]) * sub_step;
-  v2i vert1 = V2i(verts[1]) * sub_step;
-  v2i vert2 = V2i(verts[2]) * sub_step;
+  v2i vert0 = V2i(verts[0] * sub_step);
+  v2i vert1 = V2i(verts[1] * sub_step);
+  v2i vert2 = V2i(verts[2] * sub_step);
 
   // Compute BB
   int min_x = min3(vert0.x, vert1.x, vert2.x);
