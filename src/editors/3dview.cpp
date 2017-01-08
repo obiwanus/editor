@@ -192,24 +192,26 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 
       v3 light_dir = -this->camera.direction;
 
-      bool outline = (model == state->selected_model);
-      triangle_shaded(area, screen_verts, vns, z_buffer, light_dir, outline);
+      // bool outline = (model == state->selected_model);
+      // triangle_shaded(area, screen_verts, vns, z_buffer, light_dir, outline);
 
       // triangle_wireframe(buffer, screen_verts, 0x00FFAA40);
 
-      // {
-      //   // Draw single color grey facets
-      //   v3 vert1 = scene_verts[0];
-      //   v3 vert2 = scene_verts[1];
-      //   v3 vert3 = scene_verts[2];
-      //   v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
-      //   r32 intensity = n * light_dir;
-      //   if (intensity < 0) { intensity = 0; }
-      //   intensity = lerp(0.2f, 1.0f, intensity);
-      //   const r32 grey = 0.7f;
-      //   u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
-      //   triangle_filled(buffer, screen_verts, color, z_buffer);
-      // }
+      {
+        // Draw single color grey facets
+        v3 vert1 = scene_verts[0];
+        v3 vert2 = scene_verts[1];
+        v3 vert3 = scene_verts[2];
+        v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
+        r32 intensity = n * light_dir;
+        if (intensity < 0) { intensity = 0; }
+        intensity = lerp(0.2f, 1.0f, intensity);
+        const r32 grey = 0.7f;
+        u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
+        // triangle_filled(area, screen_verts, color, z_buffer);
+
+        triangle_dumb(area, screen_verts, color);
+      }
 
       // // Debug draw normals
       // for (int j = 0; j < 3; ++j) {

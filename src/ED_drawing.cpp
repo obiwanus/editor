@@ -119,6 +119,55 @@ void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
 //   draw_line(area, vert1, vert2, color);
 // }
 
+int min3(int a, int b, int c) {
+  if (a <= b && a <= c) return a;
+  if (b <= a && b <= c) return b;
+  return c;
+}
+
+int max3(int a, int b, int c) {
+  if (a >= b && a >= c) return a;
+  if (b >= a && b >= c) return b;
+  return c;
+}
+
+int orient2d(v2i p, v2i a, v2i b) {
+  return (a.x - p.x) * (b.y - p.y) - (a.y - p.y) * (b.x - p.x);
+}
+
+void triangle_dumb(Area *area, v3 verts[], u32 color) {
+  v2i vert0 = V2i(verts[0]);
+  v2i vert1 = V2i(verts[1]);
+  v2i vert2 = V2i(verts[2]);
+
+  // Compute BB
+  int min_x = min3(vert0.x, vert1.x, vert2.x);
+  int min_y = min3(vert0.y, vert1.y, vert2.y);
+  int max_x = max3(vert0.x, vert1.x, vert2.x);
+  int max_y = max3(vert0.y, vert1.y, vert2.y);
+
+  // Clip against area bounds
+  min_x = max(min_x, 0);
+  min_y = max(min_y, 0);
+  max_x = min(max_x, area->get_width() - 1);
+  max_y = min(max_y, area->get_height() - 1);
+
+  // Rasterize
+  v2i p;
+  for (p.y = min_y; p.y <= max_y; ++p.y) {
+    for (p.x = min_x; p.x <= max_x; ++p.x) {
+      // Get barycentric coords
+      int w0 = orient2d(p, vert1, vert2);
+      int w1 = orient2d(p, vert2, vert0);
+      int w2 = orient2d(p, vert0, vert1);
+
+      if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+        draw_pixel(area, p.x, p.y, color);
+      }
+    }
+  }
+}
+
 void triangle_filled(Area *area, v3 verts[], u32 color, r32 *z_buffer) {
   int area_width = area->get_width();
   int area_height = area->get_height();
