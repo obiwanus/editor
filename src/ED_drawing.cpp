@@ -136,9 +136,13 @@ int orient2d(v2i p, v2i a, v2i b) {
 }
 
 void triangle_dumb(Area *area, v3 verts[], u32 color) {
-  v2i vert0 = V2i(verts[0]);
-  v2i vert1 = V2i(verts[1]);
-  v2i vert2 = V2i(verts[2]);
+  // Sub-pixel precision (8 bits)
+  const int sub_step = 256;
+  const int sub_mask = sub_step - 1;
+
+  v2i vert0 = V2i(verts[0]) * sub_step;
+  v2i vert1 = V2i(verts[1]) * sub_step;
+  v2i vert2 = V2i(verts[2]) * sub_step;
 
   // Compute BB
   int min_x = min3(vert0.x, vert1.x, vert2.x);
@@ -146,23 +150,27 @@ void triangle_dumb(Area *area, v3 verts[], u32 color) {
   int max_x = max3(vert0.x, vert1.x, vert2.x);
   int max_y = max3(vert0.y, vert1.y, vert2.y);
 
+  // Round start position
+  min_x = (min_x + sub_mask) & ~sub_mask;
+  min_y = (min_y + sub_mask) & ~sub_mask;
+
   // Clip against area bounds
   min_x = max(min_x, 0);
   min_y = max(min_y, 0);
-  max_x = min(max_x, area->get_width() - 1);
-  max_y = min(max_y, area->get_height() - 1);
+  max_x = min(max_x, (area->get_width() - 1) * sub_step);
+  max_y = min(max_y, (area->get_height() - 1) * sub_step);
 
   // Rasterize
   v2i p;
-  for (p.y = min_y; p.y <= max_y; ++p.y) {
-    for (p.x = min_x; p.x <= max_x; ++p.x) {
+  for (p.y = min_y; p.y <= max_y; p.y += sub_step) {
+    for (p.x = min_x; p.x <= max_x; p.x += sub_step) {
       // Get barycentric coords
       int w0 = orient2d(p, vert1, vert2);
       int w1 = orient2d(p, vert2, vert0);
       int w2 = orient2d(p, vert0, vert1);
 
       if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
-        draw_pixel(area, p.x, p.y, color);
+        draw_pixel(area, p.x / sub_step, p.y / sub_step, color);
       }
     }
   }
