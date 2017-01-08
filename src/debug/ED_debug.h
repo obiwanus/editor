@@ -30,9 +30,6 @@ struct Timed_Block {
     perf_counter->function = function;
     perf_counter->line = line;
     this->last_timestamp = __rdtsc();
-    if (!perf_counter->hits) {
-      perf_counter->ticks = 0;
-    }
   }
 
   void end_timed_block(bool destroy = false) {

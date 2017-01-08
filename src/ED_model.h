@@ -60,7 +60,7 @@ struct Model : Entity {
 struct Camera : Entity {
   // View frustum
   r32 near = -1.0f;
-  r32 far = -20.0f;
+  r32 far = -100.0f;
   r32 top;
   r32 right;
   v2i viewport;

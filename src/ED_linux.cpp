@@ -494,10 +494,10 @@ int main(int argc, char *argv[]) {
 
     #include "debug/ED_debug_draw.cpp"
 
-    // usleep(100000);
-
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
+
+TIME_BEGIN(putting_image);
 
 #if ED_LINUX_OPENGL
     {
@@ -552,8 +552,10 @@ int main(int argc, char *argv[]) {
 #else
     XPutImage(display, window, gc, g_ximage, 0, 0, 0, 0, state->kWindowWidth,
               state->kWindowHeight);
-    usleep(30000);
 #endif  // ED_LINUX_OPENGL
+
+    // usleep(30000);
+TIME_END(putting_image);
 
     u64 ns_elapsed = linux_time_elapsed();
     g_FPS.x = (int)(1.0e9 / ns_elapsed);

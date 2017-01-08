@@ -21,6 +21,7 @@
   char perf_counters[200];
   for (int i = 0; i < g_num_perf_counters; ++i) {
     ED_Perf_Counter *counter = g_performance_counters + i;
+    if (counter->hits == 0) continue;
     u64 ticks = counter->ticks / counter->hits;
     sprintf(perf_counters, "%s:%d (%s): %'u | %'lu", counter->file,
             counter->line, counter->function, counter->hits, ticks);
@@ -29,6 +30,7 @@
 
     // Reset the hits number
     counter->hits = 0;
+    counter->ticks = 0;
   }
 #endif
 }
