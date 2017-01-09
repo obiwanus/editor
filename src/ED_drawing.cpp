@@ -135,14 +135,21 @@ int orient2d(v2i p, v2i a, v2i b) {
   return (a.x - p.x) * (b.y - p.y) - (a.y - p.y) * (b.x - p.x);
 }
 
+bool is_top_left(v2i vert0, v2i vert1) {
+  v2i edge = vert1 - vert0;
+  if (edge.y < 0) return true;  // edge goes down => it's left
+  if (edge.y == 0 && edge.x < 0) return true;  // edge is top
+  return false;
+}
+
 void triangle(Area *area, v3 verts[], u32 color) {
   // Sub-pixel precision
   const int sub_step = 1;
   const int sub_mask = sub_step - 1;
 
-  v2i vert0 = V2i(verts[0] * sub_step);
-  v2i vert1 = V2i(verts[1] * sub_step);
-  v2i vert2 = V2i(verts[2] * sub_step);
+  v2i vert0 = V2i(verts[0] * (r32)sub_step);
+  v2i vert1 = V2i(verts[1] * (r32)sub_step);
+  v2i vert2 = V2i(verts[2] * (r32)sub_step);
 
   // Compute BB
   int min_x = min3(vert0.x, vert1.x, vert2.x);
@@ -166,10 +173,14 @@ void triangle(Area *area, v3 verts[], u32 color) {
   int A20 = vert2.y - vert0.y, B20 = vert0.x - vert2.x;
 
   // Barycentric coordinates at min_x/min_y corner
+  int bias0 = is_top_left(vert1, vert2);
+  int bias1 = is_top_left(vert2, vert0);
+  int bias2 = is_top_left(vert0, vert1);
+
   v2i p = V2i(min_x, min_y);
-  int w0_row = orient2d(p, vert1, vert2);
-  int w1_row = orient2d(p, vert2, vert0);
-  int w2_row = orient2d(p, vert0, vert1);
+  int w0_row = orient2d(p, vert1, vert2) + bias0;
+  int w1_row = orient2d(p, vert2, vert0) + bias1;
+  int w2_row = orient2d(p, vert0, vert1) + bias2;
 
   // Rasterize
   for (p.y = min_y; p.y <= max_y; p.y += sub_step) {

@@ -1,5 +1,6 @@
 NOW:
 
+- fix the fonts on windows
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
