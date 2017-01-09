@@ -4,16 +4,25 @@
   Area *main_area = state->UI->areas[0];
 
   // Display FPS
-  if (g_FPS.x < g_FPS.y) {
-    g_FPS.y = g_FPS.x;  // min
+  if (g_FPS.value < g_FPS.min) {
+    g_FPS.min = g_FPS.value;
   }
-  if (g_FPS.x > g_FPS.z) {
-    g_FPS.z = g_FPS.x;  // max
+  if (g_FPS.value > g_FPS.max) {
+    g_FPS.max = g_FPS.value;  // max
   }
   char fps_string[100];
-  sprintf(fps_string, "FPS: %d, min: %d, max: %d", g_FPS.x, g_FPS.y, g_FPS.z);
+  sprintf(fps_string, "FPS: %d, min: %d, max: %d", g_FPS.value, g_FPS.min,
+          g_FPS.max);
   // char *fps_string = "60";
   draw_string(main_area, 10, 10, fps_string, 0x00FFFFFF);
+
+  // Reset FPS min and max values
+  g_FPS.frame_count--;
+  if (g_FPS.frame_count < 0) {
+    g_FPS.frame_count = 60;
+    g_FPS.min = 1000;
+    g_FPS.max = 0;
+  }
 
 #if 1  // Display performance counters
   int line_start = 50;

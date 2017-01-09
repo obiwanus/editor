@@ -558,7 +558,7 @@ TIME_BEGIN(putting_image);
 TIME_END(putting_image);
 
     u64 ns_elapsed = linux_time_elapsed();
-    g_FPS.x = (int)(1.0e9 / ns_elapsed);
+    g_FPS.value = (int)(1.0e9 / ns_elapsed);
 
     // printf("fps: %d, ns: %lu\n", g_FPS, ns_elapsed);
 

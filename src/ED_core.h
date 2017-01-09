@@ -146,6 +146,13 @@ struct ED_Perf_Counter {
   u64 ticks;
 };
 
+struct ED_FPS_Counter {
+  int value;
+  int min;
+  int max;
+  int frame_count;
+};
+
 // ============================== Globals =====================================
 
 global bool g_running;
@@ -153,7 +160,7 @@ global Pixel_Buffer g_pixel_buffer;
 global Program_Memory g_program_memory;
 global ED_Font g_font;
 
-global v3i g_FPS;
+global ED_FPS_Counter g_FPS;
 extern int g_num_perf_counters;
 extern ED_Perf_Counter g_performance_counters[];
 

@@ -13,9 +13,10 @@ void *Program_Memory::allocate(size_t size) {
 void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   Program_State *state = this;
 
-  g_FPS.x = 0;
-  g_FPS.y = 100;
-  g_FPS.z = 0;
+  g_FPS.value = 0;
+  g_FPS.min = 100;
+  g_FPS.max = 0;
+  g_FPS.frame_count = 10;
 
   state->kWindowWidth = 1500;
   state->kWindowHeight = 1000;
