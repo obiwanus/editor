@@ -173,9 +173,9 @@ void triangle(Area *area, v3 verts[], u32 color) {
   int A20 = vert2.y - vert0.y, B20 = vert0.x - vert2.x;
 
   // Barycentric coordinates at min_x/min_y corner
-  int bias0 = is_top_left(vert1, vert2);
-  int bias1 = is_top_left(vert2, vert0);
-  int bias2 = is_top_left(vert0, vert1);
+  int bias0 = is_top_left(vert1, vert2) ? 0 : -1;
+  int bias1 = is_top_left(vert2, vert0) ? 0 : -1;
+  int bias2 = is_top_left(vert0, vert1) ? 0 : -1;
 
   v2i p = V2i(min_x, min_y);
   int w0_row = orient2d(p, vert1, vert2) + bias0;
