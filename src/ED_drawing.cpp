@@ -418,7 +418,6 @@ void draw_string(Area *area, int string_x, int string_y, const char *string,
           g_font.codepoints + (*string - g_font.first_char);
       int advance, kern_advance;
       stbtt_GetGlyphHMetrics(&g_font.info, codepoint->glyph, &advance, 0);
-      stbtt_GetCodepointHMetrics(&g_font.info, '6', &advance, 0);
       kern_advance = stbtt_GetGlyphKernAdvance(&g_font.info, codepoint->glyph,
                                                next_codepoint->glyph);
       start.x += (int)((advance + kern_advance) * g_font.scale);

@@ -78,12 +78,10 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   // model.read_from_obj_file("../models/capsule/capsule.wobj");
   // model.read_texture("../models/capsule/capsule0.jpg");
   // sb_push(Model *, state->models, model);
-
 }
 
 void ED_Font::load_from_file(char *filename, int char_height) {
   // Load font into buffer
-  u8 *buffer = NULL;
   {
     FILE *file = fopen(filename, "rb");
     if (file == NULL) {
@@ -95,15 +93,16 @@ void ED_Font::load_from_file(char *filename, int char_height) {
     size_t size = ftell(file);
     rewind(file);
 
-    buffer = (u8 *)malloc(size * sizeof(*buffer));
-    assert(buffer != NULL);
-    size_t result = fread(buffer, 1, size, file);
+    this->ttf_raw_data = (u8 *)malloc(size * sizeof(*this->ttf_raw_data));
+    assert(this->ttf_raw_data != NULL);
+    size_t result = fread(this->ttf_raw_data, 1, size, file);
 
     fclose(file);
   }
 
-  int result = stbtt_InitFont(&this->info, buffer,
-                              stbtt_GetFontOffsetForIndex(buffer, 0));
+  int result =
+      stbtt_InitFont(&this->info, this->ttf_raw_data,
+                     stbtt_GetFontOffsetForIndex(this->ttf_raw_data, 0));
   if (!result) {
     printf("Can't init font\n");
     exit(1);
@@ -121,8 +120,7 @@ void ED_Font::load_from_file(char *filename, int char_height) {
   int buffer_size = 0;
   for (int i = 0; i < alphabet_size; ++i) {
     ED_Font_Codepoint *codepoint = this->codepoints + i;
-    codepoint->glyph =
-        stbtt_FindGlyphIndex(&this->info, this->first_char + i);
+    codepoint->glyph = stbtt_FindGlyphIndex(&this->info, this->first_char + i);
     int x0, y0, x1, y1;
     stbtt_GetGlyphBitmapBox(&this->info, codepoint->glyph, this->scale,
                             this->scale, &x0, &y0, &x1, &y1);
@@ -143,8 +141,6 @@ void ED_Font::load_from_file(char *filename, int char_height) {
     // Advance to the next char
     char_bitmap += codepoint->width * codepoint->height;
   }
-
-  free(buffer);
 }
 
 Update_Result update_and_render(Program_Memory *program_memory,

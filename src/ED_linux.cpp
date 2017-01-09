@@ -609,6 +609,7 @@ TIME_END(putting_image);
   // Free general stuff
   free(state->UI->z_buffer);
   free(state->UI);
+  free(g_font.ttf_raw_data);
   free(g_font.bitmap);
 #if ED_LINUX_OPENGL
   free(g_pixel_buffer.memory);

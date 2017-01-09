@@ -399,7 +399,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     Update_Result result =
         update_and_render(&g_program_memory, state, new_input);
 
-    // #include "debug/ED_debug_draw.cpp"
+    #include "debug/ED_debug_draw.cpp"
 
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     SetCursor(win_cursors[result.cursor]);

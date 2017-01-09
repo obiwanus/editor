@@ -1,6 +1,6 @@
 NOW:
 
-- fix the fonts on windows
+- recalculate min and max fps once per several frames
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
@@ -55,7 +55,7 @@ idea: try to look at the objects in clip space from different angles
 ==============================================================================
 DONE:
 [10/01/2017]
-
+- fix the fonts on windows
 
 [09/01/2017]
 - [wip] new rasterizer
