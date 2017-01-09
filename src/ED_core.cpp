@@ -54,6 +54,16 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   // model.display = false;
   sb_push(state->models, model);
 
+  // Model model = {};
+  // model.read_from_obj_file("../../models/geometricCuldesac.obj");
+  // // model.read_texture("../models/african_head/african_head_diffuse.jpg");
+  // model.scale = 0.5f;
+  // model.position = V3(-1.0f, 0.5f, 0.0f);
+  // model.direction = V3(-1, 1, 1);
+  // // model.debug = true;
+  // // model.display = false;
+  // sb_push(state->models, model);
+
   model = {};
   model.read_from_obj_file("../models/cube/cube.wobj");
   // model.read_texture("../models/cube/cube.png");

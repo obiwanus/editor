@@ -53,6 +53,11 @@ idea: try to look at the objects in clip space from different angles
 
 ==============================================================================
 DONE:
+[10/01/2017]
+
+
+[09/01/2017]
+- [wip] new rasterizer
 
 [08/01/2017]
 - if hit count > 1, accumulate ticks

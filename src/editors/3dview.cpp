@@ -210,7 +210,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
         // triangle_filled(area, screen_verts, color, z_buffer);
 
-        triangle_dumb(area, screen_verts, color);
+        triangle(area, screen_verts, color);
       }
 
       // // Debug draw normals

@@ -135,9 +135,9 @@ int orient2d(v2i p, v2i a, v2i b) {
   return (a.x - p.x) * (b.y - p.y) - (a.y - p.y) * (b.x - p.x);
 }
 
-void triangle_dumb(Area *area, v3 verts[], u32 color) {
-  // Sub-pixel precision (8 bits)
-  const int sub_step = 256;
+void triangle(Area *area, v3 verts[], u32 color) {
+  // Sub-pixel precision
+  const int sub_step = 1;
   const int sub_mask = sub_step - 1;
 
   v2i vert0 = V2i(verts[0] * sub_step);
@@ -160,19 +160,37 @@ void triangle_dumb(Area *area, v3 verts[], u32 color) {
   max_x = min(max_x, (area->get_width() - 1) * sub_step);
   max_y = min(max_y, (area->get_height() - 1) * sub_step);
 
-  // Rasterize
-  v2i p;
-  for (p.y = min_y; p.y <= max_y; p.y += sub_step) {
-    for (p.x = min_x; p.x <= max_x; p.x += sub_step) {
-      // Get barycentric coords
-      int w0 = orient2d(p, vert1, vert2);
-      int w1 = orient2d(p, vert2, vert0);
-      int w2 = orient2d(p, vert0, vert1);
+  // Triangle setup
+  int A01 = vert0.y - vert1.y, B01 = vert1.x - vert0.x;
+  int A12 = vert1.y - vert2.y, B12 = vert2.x - vert1.x;
+  int A20 = vert2.y - vert0.y, B20 = vert0.x - vert2.x;
 
-      if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+  // Barycentric coordinates at min_x/min_y corner
+  v2i p = V2i(min_x, min_y);
+  int w0_row = orient2d(p, vert1, vert2);
+  int w1_row = orient2d(p, vert2, vert0);
+  int w2_row = orient2d(p, vert0, vert1);
+
+  // Rasterize
+  for (p.y = min_y; p.y <= max_y; p.y += sub_step) {
+    // Barycentric coords at start of row
+    int w0 = w0_row;
+    int w1 = w1_row;
+    int w2 = w2_row;
+
+    for (p.x = min_x; p.x <= max_x; p.x += sub_step) {
+      if ((w0 | w1 | w2) >= 0) {  // Looking at the sign bit here only
         draw_pixel(area, p.x / sub_step, p.y / sub_step, color);
       }
+      // Step to the right
+      w0 += A12;
+      w1 += A20;
+      w2 += A01;
     }
+    // Step one row up
+    w0_row += B12;
+    w1_row += B20;
+    w2_row += B01;
   }
 }
 
