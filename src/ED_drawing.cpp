@@ -142,7 +142,7 @@ bool is_top_left(v2i vert0, v2i vert1) {
   return false;
 }
 
-void triangle(Area *area, v3 verts[], u32 color) {
+void triangle_rasterize(Area *area, v3 verts[], u32 color) {
   // Sub-pixel precision
   const int sub_step = 1;
   const int sub_mask = sub_step - 1;
@@ -203,56 +203,6 @@ void triangle(Area *area, v3 verts[], u32 color) {
     w1_row += B20;
     w2_row += B01;
   }
-}
-
-void triangle_filled(Area *area, v3 verts[], u32 color, r32 *z_buffer) {
-  int area_width = area->get_width();
-  int area_height = area->get_height();
-
-  // clang-format off
-  v2i t0 = V2i(verts[0]); r32 z0 = verts[0].z;
-  v2i t1 = V2i(verts[1]); r32 z1 = verts[1].z;
-  v2i t2 = V2i(verts[2]); r32 z2 = verts[2].z;
-
-  if (t0.y == t1.y && t1.y == t2.y) return;
-  if (t0.x == t1.x && t1.x == t2.x) return;
-
-  if (t0.y > t1.y) { swap(t0, t1); swap(z0, z1); }
-  if (t0.y > t2.y) { swap(t0, t2); swap(z0, z2); }
-  if (t1.y > t2.y) { swap(t1, t2); swap(z1, z2); }
-
-  int total_height = t2.y - t0.y;
-  for (int y = t0.y; y <= t2.y; y++) {
-    if (y < 0 || y >= area_height) continue;
-    bool second_half = y > t1.y || t1.y == t0.y;
-    int segment_height = second_half ? (t2.y - t1.y) : (t1.y - t0.y);
-    r32 dy_total = (r32)(y - t0.y) / total_height;
-    r32 dy_segment =
-        (r32)(second_half ? (y - t1.y) : (y - t0.y)) / segment_height;
-    v2i A = lerp(t0, t2, dy_total);
-    r32 A_z = lerp(z0, z2, dy_total);
-    v2i B;
-    r32 B_z;
-    if (!second_half) {
-      B = lerp(t0, t1, dy_segment);
-      B_z = lerp(z0, z1, dy_segment);
-    } else {
-      B = lerp(t1, t2, dy_segment);
-      B_z = lerp(z1, z2, dy_segment);
-    }
-    if (A.x > B.x) { swap(A, B); swap(A_z, B_z); };
-    for (int x = A.x; x <= B.x; x++) {
-      if (x < 0 || x >= area_width) continue;
-      r32 t = (A.x == B.x) ? 1.0f : (r32)(x - A.x) / (B.x - A.x);
-      r32 z = lerp(A_z, B_z, t);
-      int index = area->buffer->width * (y + area->bottom) + (x + area->left);
-      if (z_buffer[index] < z) {
-        z_buffer[index] = z;
-        draw_pixel(area, x, y, color);
-      }
-    }
-  }
-  // clang-format on
 }
 
 void triangle_shaded(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,

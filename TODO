@@ -53,7 +53,9 @@ idea: try to look at the objects in clip space from different angles
 
 ==============================================================================
 DONE:
+
 [10/01/2017]
+- display min and max for performance counters
 - recalculate min and max fps once per several frames
 - fix the fonts on windows
 

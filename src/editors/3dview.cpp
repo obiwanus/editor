@@ -161,7 +161,6 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     v3 min = model->position;
     v3 max = model->position;
 
-    // #pragma omp parallel for
     for (int f = 0; f < sb_count(model->faces); ++f) {
       Face face = model->faces[f];
       v3 scene_verts[3];
@@ -195,8 +194,6 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       // bool outline = (model == state->selected_model);
       // triangle_shaded(area, screen_verts, vns, z_buffer, light_dir, outline);
 
-      // triangle_wireframe(buffer, screen_verts, 0x00FFAA40);
-
       {
         // Draw single color grey facets
         v3 vert1 = scene_verts[0];
@@ -208,9 +205,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         intensity = lerp(0.2f, 1.0f, intensity);
         const r32 grey = 0.7f;
         u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
-        // triangle_filled(area, screen_verts, color, z_buffer);
 
-        triangle(area, screen_verts, color);
+        triangle_rasterize(area, screen_verts, color);
       }
 
       // // Debug draw normals
