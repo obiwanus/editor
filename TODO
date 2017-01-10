@@ -5,8 +5,8 @@ NOW:
 - avoid random heap allocations everywhere
 - put things we're not going to free in the permanent memory
 - render strings on the fly using subpixel positioning
-- thread-safe performance counters
 - [optimise] maybe pre-render strings and store them if rendering on the fly is too slow
+- thread-safe performance counters
 - when selecting models, take the closest one
 - properly outline triangles
 - when moving the pivot don't do it too slow when the camera is close

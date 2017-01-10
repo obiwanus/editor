@@ -144,6 +144,8 @@ struct ED_Perf_Counter {
   int line;
   u32 hits;
   u64 ticks;
+  u64 min;
+  u64 max;
 };
 
 struct ED_FPS_Counter {
