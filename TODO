@@ -1,3 +1,15 @@
+MINIMUM WHAT NEEDS TO BE DONE:
+
+- Drawing should be fast
+- Load and display simple scenes in OBJ
+- Camera as an object
+- Raytrace render from the camera (chalky)
+- Split scenes into pieces by vertex connectivity on load
+- Move models with or without manipulator
+- Read mtl files
+- Render from the camera (using mtl)
+
+
 NOW:
 
 - find a faster way to rasterize triangles
@@ -23,9 +35,6 @@ NOW:
 - scene graph - implementation
 - be able to read scene info
 - [bug] cursor moves when trying to split an area
-
-
-SOMEDAY:
 - [linux] fix window performance problems for opengl
 - find out exactly why zeroing the z-buffer seems to work
 - procedural surface generation
