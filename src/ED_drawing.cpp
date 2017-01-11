@@ -137,19 +137,19 @@ int orient2d(v2i p, v2i a, v2i b) {
 
 bool is_top_left(v2i vert0, v2i vert1) {
   v2i edge = vert1 - vert0;
-  if (edge.y < 0) return true;  // edge goes down => it's left
+  if (edge.y < 0) return true;                 // edge goes down => it's left
   if (edge.y == 0 && edge.x < 0) return true;  // edge is top
   return false;
 }
 
 void triangle_rasterize(Area *area, v3 verts[], u32 color) {
-  // Sub-pixel precision (8 bits)
+  // Sub-pixel precision
   const int sub_step = 16;
   const int sub_mask = sub_step - 1;
 
-  v2i vert0 = V2i(verts[0] * sub_step);
-  v2i vert1 = V2i(verts[1] * sub_step);
-  v2i vert2 = V2i(verts[2] * sub_step);
+  v2i vert0 = V2i(verts[0] * (r32)sub_step);
+  v2i vert1 = V2i(verts[1] * (r32)sub_step);
+  v2i vert2 = V2i(verts[2] * (r32)sub_step);
 
   // Compute BB
   int min_x = min3(vert0.x, vert1.x, vert2.x);
@@ -157,95 +157,55 @@ void triangle_rasterize(Area *area, v3 verts[], u32 color) {
   int max_x = max3(vert0.x, vert1.x, vert2.x);
   int max_y = max3(vert0.y, vert1.y, vert2.y);
 
-  // Round start position
-  min_x = (min_x + sub_mask) & ~sub_mask;
-  min_y = (min_y + sub_mask) & ~sub_mask;
-
   // Clip against area bounds
   min_x = max(min_x, 0);
   min_y = max(min_y, 0);
   max_x = min(max_x, (area->get_width() - 1) * sub_step);
   max_y = min(max_y, (area->get_height() - 1) * sub_step);
 
-  // Rasterize
-  v2i p;
-  for (p.y = min_y; p.y <= max_y; p.y += sub_step) {
-    for (p.x = min_x; p.x <= max_x; p.x += sub_step) {
-      // Get barycentric coords
-      int w0 = orient2d(p, vert1, vert2);
-      int w1 = orient2d(p, vert2, vert0);
-      int w2 = orient2d(p, vert0, vert1);
+  // Round start position
+  min_x = (min_x + sub_mask) & ~sub_mask;
+  min_y = (min_y + sub_mask) & ~sub_mask;
 
-      if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+  // Triangle setup
+  int A01 = (vert0.y - vert1.y) * sub_step,
+      B01 = (vert1.x - vert0.x) * sub_step;
+  int A12 = (vert1.y - vert2.y) * sub_step,
+      B12 = (vert2.x - vert1.x) * sub_step;
+  int A20 = (vert2.y - vert0.y) * sub_step,
+      B20 = (vert0.x - vert2.x) * sub_step;
+
+  // Barycentric coordinates at min_x/min_y corner
+  int bias0 = is_top_left(vert1, vert2) ? 0 : -1;
+  int bias1 = is_top_left(vert2, vert0) ? 0 : -1;
+  int bias2 = is_top_left(vert0, vert1) ? 0 : -1;
+
+  v2i p = V2i(min_x, min_y);
+  int w0_row = orient2d(p, vert1, vert2) + bias0;
+  int w1_row = orient2d(p, vert2, vert0) + bias1;
+  int w2_row = orient2d(p, vert0, vert1) + bias2;
+
+  // Rasterize
+  for (p.y = min_y; p.y <= max_y; p.y += sub_step) {
+    // Barycentric coords at start of row
+    int w0 = w0_row;
+    int w1 = w1_row;
+    int w2 = w2_row;
+
+    for (p.x = min_x; p.x <= max_x; p.x += sub_step) {
+      if ((w0 | w1 | w2) >= 0) {  // Looking at the sign bit here only
         draw_pixel(area, p.x / sub_step, p.y / sub_step, color);
       }
+      // Step to the right
+      w0 += A12;
+      w1 += A20;
+      w2 += A01;
     }
+    // Step one row up
+    w0_row += B12;
+    w1_row += B20;
+    w2_row += B01;
   }
-
-  // // Sub-pixel precision
-  // const int sub_step = 16;
-  // const int sub_mask = sub_step - 1;
-
-  // v2i vert0 = V2i(verts[0] * (r32)sub_step);
-  // v2i vert1 = V2i(verts[1] * (r32)sub_step);
-  // v2i vert2 = V2i(verts[2] * (r32)sub_step);
-
-  // // Compute BB
-  // int min_x = min3(vert0.x, vert1.x, vert2.x);
-  // int min_y = min3(vert0.y, vert1.y, vert2.y);
-  // int max_x = max3(vert0.x, vert1.x, vert2.x);
-  // int max_y = max3(vert0.y, vert1.y, vert2.y);
-
-  // // Clip against area bounds
-  // min_x = max(min_x, 0);
-  // min_y = max(min_y, 0);
-  // max_x = min(max_x, (area->get_width() - 1) * sub_step);
-  // max_y = min(max_y, (area->get_height() - 1) * sub_step);
-
-  // // Round start position
-  // min_x = (min_x + sub_mask) & ~sub_mask;
-  // min_y = (min_y + sub_mask) & ~sub_mask;
-
-  // // Triangle setup
-  // int A01 = vert0.y - vert1.y, B01 = vert1.x - vert0.x;
-  // int A12 = vert1.y - vert2.y, B12 = vert2.x - vert1.x;
-  // int A20 = vert2.y - vert0.y, B20 = vert0.x - vert2.x;
-
-  // // Barycentric coordinates at min_x/min_y corner
-  // int bias0 = 0; // is_top_left(vert1, vert2) ? 0 : -1;
-  // int bias1 = 0; // is_top_left(vert2, vert0) ? 0 : -1;
-  // int bias2 = 0; // is_top_left(vert0, vert1) ? 0 : -1;
-
-  // v2i p = V2i(min_x, min_y);
-  // int w0_row = orient2d(p, vert1, vert2) + bias0;
-  // int w1_row = orient2d(p, vert2, vert0) + bias1;
-  // int w2_row = orient2d(p, vert0, vert1) + bias2;
-
-  // // Rasterize
-  // for (p.y = min_y; p.y <= max_y; p.y += sub_step) {
-  //   // Barycentric coords at start of row
-  //   int w0 = w0_row;
-  //   int w1 = w1_row;
-  //   int w2 = w2_row;
-
-  //   for (p.x = min_x; p.x <= max_x; p.x += sub_step) {
-  //     int w0_debug = orient2d(p, vert1, vert2) + bias0;
-  //     int w1_debug = orient2d(p, vert2, vert0) + bias1;
-  //     int w2_debug = orient2d(p, vert0, vert1) + bias2;
-
-  //     if (w0_debug >= 0 && w1_debug >= 0 && w2_debug >= 0) {  // Looking at the sign bit here only
-  //       draw_pixel(area, p.x / sub_step, p.y / sub_step, color);
-  //     }
-  //     // Step to the right
-  //     w0 += A12;
-  //     w1 += A20;
-  //     w2 += A01;
-  //   }
-  //   // Step one row up
-  //   w0_row += B12;
-  //   w1_row += B20;
-  //   w2_row += B01;
-  // }
 }
 
 void triangle_shaded(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
