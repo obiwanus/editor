@@ -208,6 +208,161 @@ void triangle_rasterize(Area *area, v3 verts[], u32 color) {
   }
 }
 
+struct sse_v4i {
+  i32 E[4];  // no simd yet
+
+  bool any_gte(i32 value) {
+    for (int i = 0; i < 4; ++i) {
+      if (this->E[i] >= value) return true;
+    }
+    return false;
+  }
+};
+
+sse_v4i sse_V4i(i32 value) {
+  sse_v4i result;
+  for (int i = 0; i < 4; ++i) {
+    result.E[i] = value;
+  }
+  return result;
+}
+
+sse_v4i sse_V4i(i32 value0, i32 value1, i32 value2, i32 value3) {
+  sse_v4i result;
+  result.E[0] = value0;
+  result.E[1] = value1;
+  result.E[2] = value2;
+  result.E[3] = value3;
+  return result;
+}
+
+inline sse_v4i operator|(sse_v4i A, sse_v4i B) {
+  sse_v4i result;
+  for (int i = 0; i < 4; ++i) {
+    result.E[i] = A.E[i] | B.E[i];
+  }
+  return result;
+}
+
+inline sse_v4i operator+(sse_v4i A, i32 integer) {
+  sse_v4i result;
+  for (int i = 0; i < 4; ++i) {
+    result.E[i] = A.E[i] + integer;
+  }
+  return result;
+}
+
+inline sse_v4i &operator+=(sse_v4i &A, i32 integer) {
+  A = A + integer;
+  return A;
+}
+
+inline sse_v4i operator+(sse_v4i A, sse_v4i B) {
+  sse_v4i result;
+  for (int i = 0; i < 4; ++i) {
+    result.E[i] = A.E[i] + B.E[i];
+  }
+  return result;
+}
+
+inline sse_v4i &operator+=(sse_v4i &A, sse_v4i B) {
+  A = A + B;
+  return A;
+}
+
+struct Triangle_Edge {
+  // Note: if we change these, we'll have to change init (x, y values)
+  static const int step_x_size = 4;
+  static const int step_y_size = 1;
+
+  sse_v4i step_x;
+  sse_v4i step_y;
+
+  sse_v4i init(v2i, v2i, v2i, int);
+};
+
+sse_v4i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step) {
+  sse_v4i result;
+
+  int A = (vert0.y - vert1.y) * sub_step;
+  int B = (vert1.x - vert0.x) * sub_step;
+  int C = vert0.x * vert1.y - vert0.y * vert1.x;
+
+  this->step_x = sse_V4i(A * this->step_x_size);
+  this->step_y = sse_V4i(B * this->step_y_size);
+
+  // x, y values for initial pixel block
+  sse_v4i x = sse_V4i(origin.x) + sse_V4i(0, 1, 2, 3);
+  sse_v4i y = sse_V4i(origin.y);
+
+  return result;
+}
+
+void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
+  // Sub-pixel precision
+  const int sub_step = 1;
+  const int sub_mask = sub_step - 1;
+
+  v2i vert0 = V2i(verts[0] * (r32)sub_step);
+  v2i vert1 = V2i(verts[1] * (r32)sub_step);
+  v2i vert2 = V2i(verts[2] * (r32)sub_step);
+
+  // Compute BB
+  int min_x = min3(vert0.x, vert1.x, vert2.x);
+  int min_y = min3(vert0.y, vert1.y, vert2.y);
+  int max_x = max3(vert0.x, vert1.x, vert2.x);
+  int max_y = max3(vert0.y, vert1.y, vert2.y);
+
+  // Clip against area bounds
+  min_x = max(min_x, 0);
+  min_y = max(min_y, 0);
+  max_x = min(max_x, (area->get_width() - 1) * sub_step);
+  max_y = min(max_y, (area->get_height() - 1) * sub_step);
+
+  // Round start position
+  min_x = (min_x + sub_mask) & ~sub_mask;
+  min_y = (min_y + sub_mask) & ~sub_mask;
+
+  // Triangle setup
+  v2i p = V2i(min_x, min_y);
+  Triangle_Edge e01, e12, e20;
+
+  sse_v4i w0_row = e12.init(vert1, vert2, p, sub_step);
+  sse_v4i w1_row = e20.init(vert2, vert0, p, sub_step);
+  sse_v4i w2_row = e01.init(vert0, vert1, p, sub_step);
+
+  // Rasterize
+  for (p.y = min_y; p.y <= max_y; p.y += Triangle_Edge::step_y_size) {
+    // Barycentric coordinates at start of row
+    sse_v4i w0 = w0_row;
+    sse_v4i w1 = w1_row;
+    sse_v4i w2 = w2_row;
+
+    for (p.x = min_x; p.x <= max_x; p.x += Triangle_Edge::step_x_size) {
+      // If p is on or inside all edges for any pixels, render those pixels
+      sse_v4i mask = w0 | w1 | w2;
+      // TODO: can we render pixels in SIMD too?
+      // Render pixels
+      for (int i = 0; i < 4; ++i) {
+        if (mask.E[i] >= 0) {
+          draw_pixel(area, (p.x + i) / sub_step, p.y / sub_step, color);
+        }
+      }
+
+      // One step to the right
+      w0 += e12.step_x_size;
+      w1 += e20.step_x_size;
+      w2 += e01.step_x_size;
+    }
+
+    // One row step up
+    w0_row += e12.step_y_size;
+    w1_row += e20.step_y_size;
+    w2_row += e01.step_y_size;
+  }
+
+}
+
 void triangle_shaded(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
                      v3 light_dir, bool outline = false) {
   int area_width = area->get_width();
