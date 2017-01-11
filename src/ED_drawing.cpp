@@ -144,7 +144,7 @@ bool is_top_left(v2i vert0, v2i vert1) {
 
 void triangle_rasterize(Area *area, v3 verts[], u32 color) {
   // Sub-pixel precision
-  const int sub_step = 16;
+  const int sub_step = 1;
   const int sub_mask = sub_step - 1;
 
   v2i vert0 = V2i(verts[0] * (r32)sub_step);

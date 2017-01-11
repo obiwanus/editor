@@ -1,6 +1,14 @@
 
 void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
                          Program_State *state, User_Input *input) {
+
+  TIMED_BLOCK();
+  v3 screen_verts[3] = {V3(200, 200, 0), V3(800, 300, 0), V3(500, 600, 0)};
+  u32 color = 0x00FFAA40;
+  triangle_rasterize_simd(area, screen_verts, color);
+  triangle_rasterize(area, screen_verts, color);
+
+#if 0
   TIMED_BLOCK();
 
   User_Interface *ui = state->UI;
@@ -321,5 +329,5 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
   //     }
   //   }
   // }
-
+#endif
 }
