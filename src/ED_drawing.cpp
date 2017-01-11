@@ -270,6 +270,14 @@ inline sse_v4i &operator+=(sse_v4i &A, sse_v4i B) {
   return A;
 }
 
+inline sse_v4i operator*(sse_v4i A, sse_v4i B) {
+  sse_v4i result;
+  for (int i = 0; i < 4; ++i) {
+    result.E[i] = A.E[i] * B.E[i];
+  }
+  return result;
+}
+
 struct Triangle_Edge {
   // Note: if we change these, we'll have to change init (x, y values)
   static const int step_x_size = 4;
@@ -282,8 +290,6 @@ struct Triangle_Edge {
 };
 
 sse_v4i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step) {
-  sse_v4i result;
-
   int A = (vert0.y - vert1.y) * sub_step;
   int B = (vert1.x - vert0.x) * sub_step;
   int C = vert0.x * vert1.y - vert0.y * vert1.x;
@@ -295,7 +301,7 @@ sse_v4i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step) {
   sse_v4i x = sse_V4i(origin.x) + sse_V4i(0, 1, 2, 3);
   sse_v4i y = sse_V4i(origin.y);
 
-  return result;
+  return sse_V4i(A) * x + sse_V4i(B) * y + sse_V4i(C);
 }
 
 void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
