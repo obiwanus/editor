@@ -338,25 +338,25 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
   sse_v4i w1_row = e20.init(vert2, vert0, p, sub_step);
   sse_v4i w2_row = e01.init(vert0, vert1, p, sub_step);
 
-  // Subpixel step size
-  int step_x_size = Triangle_Edge::step_x_size * sub_step;
-  int step_y_size = Triangle_Edge::step_y_size * sub_step;
+  // Real pixel start and end coords
+  v2i p_min = V2i(min_x / sub_step, min_y / sub_step);
+  v2i p_max = V2i(max_x / sub_step, max_y / sub_step);
 
   // Rasterize
-  for (p.y = min_y; p.y <= max_y; p.y += step_y_size) {
+  for (p.y = p_min.y; p.y <= p_max.y; p.y += Triangle_Edge::step_y_size) {
     // Barycentric coordinates at start of row
     sse_v4i w0 = w0_row;
     sse_v4i w1 = w1_row;
     sse_v4i w2 = w2_row;
 
-    for (p.x = min_x; p.x <= max_x; p.x += step_x_size) {
+    for (p.x = p_min.x; p.x <= p_max.x; p.x += Triangle_Edge::step_x_size) {
       // If p is on or inside all edges for any pixels, render those pixels
       sse_v4i mask = w0 | w1 | w2;
       // TODO: can we render pixels in SIMD too?
       // Render pixels
       for (int i = 0; i < 4; ++i) {
         if (mask.E[i] >= 0) {
-          draw_pixel(area, (p.x + i * sub_step) / sub_step, p.y / sub_step, color);
+          draw_pixel(area, p.x + i, p.y, color);
         }
       }
 
