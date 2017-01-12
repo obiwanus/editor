@@ -1,6 +1,6 @@
 // ============================ Program code ==================================
 
-// #include <x86intrin.h>  // __rdtsc()
+#include <x86intrin.h>  // __rdtsc()
 
 #include "ED_base.h"
 #include "ED_math.h"

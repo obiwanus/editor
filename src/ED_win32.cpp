@@ -1,5 +1,7 @@
 // ============================ Program code ==================================
 
+#include <intrin.h>
+
 #include "ED_base.h"
 #include "ED_math.h"
 #include "ED_core.h"

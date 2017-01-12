@@ -2,7 +2,8 @@
 
 pushd w:\editor
 
-set Optimize=%1
+rem set Optimize=%1
+set Optimize=0
 set Run=%2
 
 set CommonCompilerFlags= -openmp -DLL -MTd -nologo -Gm- -GR- -EHa- -WX -W4 -wd4127 -wd4201 -wd4100 -wd4189 -wd4505 -wd4706 -DBUILD_INTERNAL=1 -DBUILD_SLOW=1 -DBUILD_WIN32=1 -D_CRT_SECURE_NO_WARNINGS -FC -Z7 -Fm
