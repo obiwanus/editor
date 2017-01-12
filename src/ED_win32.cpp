@@ -17,7 +17,6 @@
 
 // ========================== Platform headers ================================
 
-#include <intrin.h>
 #include <windows.h>
 #include <windowsX.h>
 #include <gl/gl.h>

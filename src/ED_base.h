@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <intrin.h>  // TODO: check on linux
 
 #define STB_IMAGE_IMPLEMENTATION
 #define STBI_ONLY_JPEG
