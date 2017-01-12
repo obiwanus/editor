@@ -209,7 +209,10 @@ void triangle_rasterize(Area *area, v3 verts[], u32 color) {
 }
 
 struct sse_v4i {
-  i32 E[4];  // no simd yet
+  union {
+    __m128i V;
+    i32 E[4];
+  };
 
   bool any_gte(i32 value) {
     for (int i = 0; i < 4; ++i) {
