@@ -383,11 +383,9 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
       sse_v4i mask = w0 | w1 | w2;
       // TODO: can we render pixels in SIMD too?
       // Render pixels
-      if (mask.any_gte(0)) {
-        for (int i = 0; i < 4; ++i) {
-          if (mask.E[i] >= 0) {
-            draw_pixel(area, p.x + i, p.y, color);
-          }
+      for (int i = 0; i < 4; ++i) {
+        if (mask.E[i] >= 0) {
+          draw_pixel(area, p.x + i, p.y, color);
         }
       }
 
