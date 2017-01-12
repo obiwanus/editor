@@ -214,6 +214,12 @@ struct sse_v4i {
     i32 E[4];
   };
 
+  void operator=(i32 value) {
+    for (int i = 0; i < 4; ++i) {
+      this->E[i] = value;
+    }
+  }
+
   bool any_gte(i32 value) {
     for (int i = 0; i < 4; ++i) {
       if (this->E[i] >= value) return true;
@@ -224,60 +230,80 @@ struct sse_v4i {
 
 sse_v4i sse_V4i(i32 value) {
   sse_v4i result;
-  for (int i = 0; i < 4; ++i) {
-    result.E[i] = value;
-  }
+  result.V = _mm_set1_epi32(value);
   return result;
 }
 
 sse_v4i sse_V4i(i32 value0, i32 value1, i32 value2, i32 value3) {
   sse_v4i result;
-  result.E[0] = value0;
-  result.E[1] = value1;
-  result.E[2] = value2;
-  result.E[3] = value3;
+  result.V = _mm_set_epi32(value3, value2, value1, value0);
   return result;
 }
 
 inline sse_v4i operator|(sse_v4i A, sse_v4i B) {
   sse_v4i result;
-  for (int i = 0; i < 4; ++i) {
-    result.E[i] = A.E[i] | B.E[i];
-  }
+  result.V = _mm_or_si128(A.V, B.V);
+  // for (int i = 0; i < 4; ++i) {
+  //   result.E[i] = A.E[i] | B.E[i];
+  // }
   return result;
 }
 
-inline sse_v4i operator+(sse_v4i A, i32 integer) {
+inline sse_v4i operator+(sse_v4i A, i32 value) {
   sse_v4i result;
-  for (int i = 0; i < 4; ++i) {
-    result.E[i] = A.E[i] + integer;
-  }
+  result.V = _mm_add_epi32(A.V, _mm_set1_epi32(value));
   return result;
 }
 
-inline sse_v4i &operator+=(sse_v4i &A, i32 integer) {
-  A = A + integer;
+inline sse_v4i &operator+=(sse_v4i &A, i32 value) {
+  A.V = _mm_add_epi32(A.V, _mm_set1_epi32(value));
   return A;
 }
 
 inline sse_v4i operator+(sse_v4i A, sse_v4i B) {
   sse_v4i result;
-  for (int i = 0; i < 4; ++i) {
-    result.E[i] = A.E[i] + B.E[i];
-  }
+  result.V = _mm_add_epi32(A.V, B.V);
   return result;
 }
 
 inline sse_v4i &operator+=(sse_v4i &A, sse_v4i B) {
-  A = A + B;
+  A.V = _mm_add_epi32(A.V, B.V);
   return A;
+}
+
+inline __m128i multiply_4_i32s(const __m128i &a, const __m128i &b) {
+#ifdef __SSE4_1__  // modern CPU - use SSE 4.1
+  return _mm_mullo_epi32(a, b);
+#else  // old CPU - use SSE 2 (not too fast though)
+  __m128i tmp1 = _mm_mul_epu32(a, b); // mul 2,0
+  __m128i tmp2 =
+      _mm_mul_epu32(_mm_srli_si128(a, 4), _mm_srli_si128(b, 4)); // mul 3,1
+  return _mm_unpacklo_epi32(
+      _mm_shuffle_epi32(tmp1, _MM_SHUFFLE(0, 0, 2, 0)),
+      _mm_shuffle_epi32(
+          tmp2,
+          _MM_SHUFFLE(0, 0, 2, 0))); // shuffle results to [63..0] and pack
+#endif
 }
 
 inline sse_v4i operator*(sse_v4i A, sse_v4i B) {
   sse_v4i result;
-  for (int i = 0; i < 4; ++i) {
-    result.E[i] = A.E[i] * B.E[i];
-  }
+  // Note: overflow may happen
+  result.V = multiply_4_i32s(A.V, B.V);
+  // for (int i = 0; i < 4; ++i) {
+  //   result.E[i] = A.E[i] * B.E[i];
+  // }
+  return result;
+}
+
+inline sse_v4i operator*(sse_v4i A, i32 value) {
+  sse_v4i result;
+  // Note: overflow may happen
+  result.V = multiply_4_i32s(A.V, _mm_set1_epi32(value));
+  // Note: this code may be actually faster than the "old cpu path" above
+  // for (int i = 0; i < 4; ++i) {
+  //   result.E[i] = A.E[i] * value;
+  // }
   return result;
 }
 
@@ -357,9 +383,11 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
       sse_v4i mask = w0 | w1 | w2;
       // TODO: can we render pixels in SIMD too?
       // Render pixels
-      for (int i = 0; i < 4; ++i) {
-        if (mask.E[i] >= 0) {
-          draw_pixel(area, p.x + i, p.y, color);
+      if (mask.any_gte(0)) {
+        for (int i = 0; i < 4; ++i) {
+          if (mask.E[i] >= 0) {
+            draw_pixel(area, p.x + i, p.y, color);
+          }
         }
       }
 
