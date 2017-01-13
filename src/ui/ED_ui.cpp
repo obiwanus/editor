@@ -647,9 +647,7 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     this->z_buffer =
         (r32 *)malloc(buffer->max_width * buffer->max_height * sizeof(r32));
   }
-  TIME_BEGIN(memset);
   memset(this->z_buffer, 0, buffer->width * buffer->height * sizeof(r32));
-  TIME_END(memset);
 
   // for (int i = 0; i < buffer->width * buffer->height; ++i) {
   //   this->z_buffer[i] = -INFINITY;

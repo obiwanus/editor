@@ -143,6 +143,7 @@ bool is_top_left(v2i vert0, v2i vert1) {
 }
 
 void triangle_rasterize(Area *area, v3 verts[], u32 color) {
+  TIMED_BLOCK();
   // Sub-pixel precision
   const int sub_step = 16;
   const int sub_mask = sub_step - 1;
@@ -316,10 +317,11 @@ struct Triangle_Edge {
   __m128i step_x;
   __m128i step_y;
 
-  __m128i init(v2i, v2i, v2i, int);
+  __m128i init(v2i, v2i, v2i, int, int);
 };
 
-__m128i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step) {
+__m128i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step,
+                            int bias) {
   int A = (vert0.y - vert1.y) * sub_step;
   int B = (vert1.x - vert0.x) * sub_step;
   int C = (vert0.x * vert1.y - vert0.y * vert1.x) * sub_step;
@@ -330,99 +332,18 @@ __m128i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step) {
   // x, y values for initial pixel block
   __m128i x =
       _mm_add_epi32(_mm_set1_epi32(origin.x),
-                    _mm_set_epi32(0, 1 * sub_step, 2 * sub_step, 3 * sub_step));
+                    _mm_set_epi32(3 * sub_step, 2 * sub_step, 1 * sub_step, 0));
   __m128i y = _mm_set1_epi32(origin.y);
 
   __m128i w_row = _mm_add_epi32(multiply_4_i32s(_mm_set1_epi32(A), x),
                                 multiply_4_i32s(_mm_set1_epi32(B), y));
-  w_row = _mm_add_epi32(w_row, _mm_set1_epi32(C));
+  w_row = _mm_add_epi32(w_row, _mm_set1_epi32(C + bias));
 
   return w_row;
-
-  // int A = (vert0.y - vert1.y) * sub_step;
-  // int B = (vert1.x - vert0.x) * sub_step;
-  // int C = (vert0.x * vert1.y - vert0.y * vert1.x) * sub_step;
-
-  // this->step_x = sse_V4i(A * this->step_x_size * sub_step);
-  // this->step_y = sse_V4i(B * this->step_y_size * sub_step);
-
-  // // x, y values for initial pixel block
-  // sse_v4i x =
-  //     sse_V4i(origin.x) + sse_V4i(0, sub_step, sub_step * 2, sub_step * 3);
-  // sse_v4i y = sse_V4i(origin.y);
-
-  // return sse_V4i(A) * x + sse_V4i(B) * y + sse_V4i(C);
 }
 
-// void triangle_rasterize_bad_simd(Area *area, v3 verts[], u32 color) {
-//   // Sub-pixel precision
-//   const int sub_step = 16;
-//   const int sub_mask = sub_step - 1;
-
-//   v2i vert0 = V2i(verts[0] * (r32)sub_step);
-//   v2i vert1 = V2i(verts[1] * (r32)sub_step);
-//   v2i vert2 = V2i(verts[2] * (r32)sub_step);
-
-//   // Compute BB
-//   int min_x = min3(vert0.x, vert1.x, vert2.x);
-//   int min_y = min3(vert0.y, vert1.y, vert2.y);
-//   int max_x = max3(vert0.x, vert1.x, vert2.x);
-//   int max_y = max3(vert0.y, vert1.y, vert2.y);
-
-//   // Clip against area bounds
-//   min_x = max(min_x, 0);
-//   min_y = max(min_y, 0);
-//   max_x = min(max_x, (area->get_width() - 1) * sub_step);
-//   max_y = min(max_y, (area->get_height() - 1) * sub_step);
-
-//   // Round start position
-//   min_x = (min_x + sub_mask) & ~sub_mask;
-//   min_y = (min_y + sub_mask) & ~sub_mask;
-
-//   // Triangle setup
-//   v2i p = V2i(min_x, min_y);
-//   Triangle_Edge e01, e12, e20;
-
-//   sse_v4i w0_row = e12.init(vert1, vert2, p, sub_step);
-//   sse_v4i w1_row = e20.init(vert2, vert0, p, sub_step);
-//   sse_v4i w2_row = e01.init(vert0, vert1, p, sub_step);
-
-//   // Real pixel start and end coords
-//   v2i p_min = V2i(min_x / sub_step, min_y / sub_step);
-//   v2i p_max = V2i(max_x / sub_step, max_y / sub_step);
-
-//   // Rasterize
-//   for (p.y = p_min.y; p.y <= p_max.y; p.y += Triangle_Edge::step_y_size) {
-//     // Barycentric coordinates at start of row
-//     sse_v4i w0 = w0_row;
-//     sse_v4i w1 = w1_row;
-//     sse_v4i w2 = w2_row;
-
-//     for (p.x = p_min.x; p.x <= p_max.x; p.x += Triangle_Edge::step_x_size) {
-//       // If p is on or inside all edges for any pixels, render those pixels
-//       sse_v4i mask = w0 | w1 | w2;
-//       // TODO: can we render pixels in SIMD too?
-//       // Render pixels
-//       for (int i = 0; i < 4; ++i) {
-//         if (mask.E[i] >= 0) {
-//           draw_pixel(area, p.x + i, p.y, color);
-//         }
-//       }
-
-//       // One step to the right
-//       w0 += e12.step_x;
-//       w1 += e20.step_x;
-//       w2 += e01.step_x;
-//     }
-
-//     // One row step up
-//     w0_row += e12.step_y;
-//     w1_row += e20.step_y;
-//     w2_row += e01.step_y;
-//   }
-// }
-
 void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
+  TIMED_BLOCK();
   // Sub-pixel precision
   const int sub_step = 16;
   const int sub_mask = sub_step - 1;
@@ -450,16 +371,21 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
   // Triangle setup
   v2i origin = V2i(min_x, min_y);
   Triangle_Edge e01, e12, e20;
-  __m128i w0_row = e12.init(vert1, vert2, origin, sub_step);
-  __m128i w1_row = e20.init(vert2, vert0, origin, sub_step);
-  __m128i w2_row = e01.init(vert0, vert1, origin, sub_step);
+  int bias0 = is_top_left(vert1, vert2) ? 0 : -1;
+  int bias1 = is_top_left(vert2, vert0) ? 0 : -1;
+  int bias2 = is_top_left(vert0, vert1) ? 0 : -1;
+  __m128i w0_row = e12.init(vert1, vert2, origin, sub_step, bias0);
+  __m128i w1_row = e20.init(vert2, vert0, origin, sub_step, bias1);
+  __m128i w2_row = e01.init(vert0, vert1, origin, sub_step, bias2);
 
   // Real pixel start and end coords
-  v2i p_min = V2i(min_x / sub_step, min_y / sub_step);
-  v2i p_max = V2i(max_x / sub_step, max_y / sub_step);
+  v2i p_min = V2i(area->left + (min_x / sub_step),
+                  area->buffer->height - (max_y / sub_step) - area->bottom - 1);
+  v2i p_max = V2i(area->left + (max_x / sub_step),
+                  area->buffer->height - (min_y / sub_step) - area->bottom - 1);
 
   // Rasterize
-  for (int y = p_min.y; y <= p_max.y; y += Triangle_Edge::step_y_pixels) {
+  for (int y = p_max.y; y >= p_min.y; y -= Triangle_Edge::step_y_pixels) {
     // Barycentric coordinates at start of row
     __m128i w0 = w0_row;
     __m128i w1 = w1_row;
@@ -473,7 +399,10 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
       // Render pixels
       for (int i = 0; i < 4; ++i) {
         if (mask.E[i] >= 0) {
-          draw_pixel(area, x + i, y, color);
+          // draw_pixel(area, x + i, y, color);
+          u32 *pixel =
+              (u32 *)area->buffer->memory + (x + i) + y * area->buffer->width;
+          *pixel = color;
         }
       }
 

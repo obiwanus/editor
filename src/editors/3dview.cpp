@@ -2,13 +2,13 @@
 void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
                          Program_State *state, User_Input *input) {
 
-  // TIMED_BLOCK();
-  // v3 screen_verts[3] = {V3(200, 200, 0), V3(800, 300, 0), V3(500, 600, 0)};
-  // u32 color = 0x00FFAA40;
-  // triangle_rasterize_simd(area, screen_verts, color);
-  // triangle_rasterize(area, screen_verts, color);
+#if 0
+  TIMED_BLOCK();
+  v3 screen_verts[3] = {V3(200, 200, 0), V3(800, 300, 0), V3(500, 600, 0)};
+  triangle_rasterize(area, screen_verts, 0x0040AAFF);
+  triangle_rasterize_simd(area, screen_verts, 0x00FFAA40);
 
-#if 1
+#else
   TIMED_BLOCK();
 
   User_Interface *ui = state->UI;
@@ -214,7 +214,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         const r32 grey = 0.7f;
         u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
 
-        triangle_rasterize(area, screen_verts, color);
+        // triangle_rasterize(area, screen_verts, color);
+        triangle_rasterize_simd(area, screen_verts, color);
       }
 
       // // Debug draw normals

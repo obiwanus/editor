@@ -497,8 +497,6 @@ int main(int argc, char *argv[]) {
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
 
-TIME_BEGIN(putting_image);
-
 #if ED_LINUX_OPENGL
     {
       glViewport(0, 0, g_pixel_buffer.width, g_pixel_buffer.height);
@@ -553,9 +551,6 @@ TIME_BEGIN(putting_image);
     XPutImage(display, window, gc, g_ximage, 0, 0, 0, 0, state->kWindowWidth,
               state->kWindowHeight);
 #endif  // ED_LINUX_OPENGL
-
-    // usleep(30000);
-TIME_END(putting_image);
 
     u64 ns_elapsed = linux_time_elapsed();
     g_FPS.value = (int)(1.0e9 / ns_elapsed);
