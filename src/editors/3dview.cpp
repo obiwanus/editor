@@ -214,7 +214,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         const r32 grey = 0.7f;
         u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
 
-        triangle_rasterize_simd(area, screen_verts, color);
+        triangle_rasterize(area, screen_verts, color);
       }
 
       // // Debug draw normals
