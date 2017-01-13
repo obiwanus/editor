@@ -5,7 +5,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 #if 0
   TIMED_BLOCK();
   v3 screen_verts[3] = {V3(200, 200, 0), V3(800, 300, 0), V3(500, 600, 0)};
-  triangle_rasterize(area, screen_verts, 0x0040AAFF);
+  // triangle_rasterize(area, screen_verts, 0x0040AAFF);
   triangle_rasterize_simd(area, screen_verts, 0x00FFAA40);
 
 #else

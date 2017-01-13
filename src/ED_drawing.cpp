@@ -310,24 +310,20 @@ inline sse_v4i operator*(sse_v4i A, i32 value) {
 }
 
 struct Triangle_Edge {
-  // Note: if we change these, we'll have to change init (x, y values)
-  static const int step_x_pixels = 4;
-  static const int step_y_pixels = 1;
-
   __m128i step_x;
   __m128i step_y;
 
-  __m128i init(v2i, v2i, v2i, int, int);
+  __m128i init(v2i, v2i, v2i, int, int, v2i);
 };
 
 __m128i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step,
-                            int bias) {
+                            int bias, v2i step_pixels) {
   int A = (vert0.y - vert1.y) * sub_step;
   int B = (vert1.x - vert0.x) * sub_step;
   int C = (vert0.x * vert1.y - vert0.y * vert1.x) * sub_step;
 
-  this->step_x = _mm_set1_epi32(A * this->step_x_pixels * sub_step);
-  this->step_y = _mm_set1_epi32(B * this->step_y_pixels * sub_step);
+  this->step_x = _mm_set1_epi32(A * step_pixels.x * sub_step);
+  this->step_y = _mm_set1_epi32(B * step_pixels.y * sub_step);
 
   // x, y values for initial pixel block
   __m128i x =
@@ -370,13 +366,14 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
 
   // Triangle setup
   v2i origin = V2i(min_x, min_y);
+  v2i step_pixels = V2i(4, 1);
   Triangle_Edge e01, e12, e20;
   int bias0 = is_top_left(vert1, vert2) ? 0 : -1;
   int bias1 = is_top_left(vert2, vert0) ? 0 : -1;
   int bias2 = is_top_left(vert0, vert1) ? 0 : -1;
-  __m128i w0_row = e12.init(vert1, vert2, origin, sub_step, bias0);
-  __m128i w1_row = e20.init(vert2, vert0, origin, sub_step, bias1);
-  __m128i w2_row = e01.init(vert0, vert1, origin, sub_step, bias2);
+  __m128i w0_row = e12.init(vert1, vert2, origin, sub_step, bias0, step_pixels);
+  __m128i w1_row = e20.init(vert2, vert0, origin, sub_step, bias1, step_pixels);
+  __m128i w2_row = e01.init(vert0, vert1, origin, sub_step, bias2, step_pixels);
 
   // Real pixel start and end coords
   v2i p_min = V2i(area->left + (min_x / sub_step),
@@ -385,23 +382,23 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
                   area->buffer->height - (min_y / sub_step) - area->bottom - 1);
 
   // Rasterize
-  for (int y = p_max.y; y >= p_min.y; y -= Triangle_Edge::step_y_pixels) {
+  for (int y = p_max.y; y >= p_min.y; y -= step_pixels.y) {
     // Barycentric coordinates at start of row
     __m128i w0 = w0_row;
     __m128i w1 = w1_row;
     __m128i w2 = w2_row;
 
-    for (int x = p_min.x; x <= p_max.x; x += Triangle_Edge::step_x_pixels) {
+    for (int x = p_min.x; x <= p_max.x; x += step_pixels.x) {
       // If point is on or inside all edges for any pixels, render those pixels
       sse_v4i mask;
       mask.V = _mm_or_si128(w0, _mm_or_si128(w1, w2));
-      // TODO: can we render pixels in SIMD too?
       // Render pixels
       for (int i = 0; i < 4; ++i) {
-        if (mask.E[i] >= 0) {
-          // draw_pixel(area, x + i, y, color);
+        int X = x + i;
+        // TODO: can we render pixels in SIMD too?
+        if (mask.E[i] >= 0 && X < area->buffer->width) {
           u32 *pixel =
-              (u32 *)area->buffer->memory + (x + i) + y * area->buffer->width;
+              (u32 *)area->buffer->memory + X + y * area->buffer->width;
           *pixel = color;
         }
       }
