@@ -240,20 +240,41 @@ union m3x3 {
   m3x3 transposed();
 };
 
+// clang-format off
 union m4x4 {
-  struct {
-    v4 rows[4];
-  };
   struct {
     r32 a, b, c, d;
     r32 e, f, g, h;
     r32 i, j, k, l;
     r32 m, n, o, p;
   };
+  struct {
+    v4 row0, row1, row2, row3;
+  };
+  v4 rows[4];
   r32 E[16];
+
+  m4x4() {}
+  m4x4(const m4x4 &m) : row0(m.row0), row1(m.row1), row2(m.row2), row3(m.row3) {}
+  m4x4(r32 a, r32 b, r32 c, r32 d,  // C++ I hate you
+       r32 e, r32 f, r32 g, r32 h,
+       r32 i, r32 j, r32 k, r32 l,
+       r32 m, r32 n, r32 o, r32 p) :
+       a(a), b(b), c(c), d(d),
+       e(e), f(f), g(g), h(h),
+       i(i), j(j), k(k), l(l),
+       m(m), n(n), o(o), p(p) {}
+
+  m4x4 &operator=(const m4x4 &m) {
+    row0 = m.row0; row1 = m.row1; row2 = m.row2; row3 = m.row3;
+    return *this;
+  }
+
   v4 column(int);
   m4x4 transposed();
 };
+
+// clang-format on
 
 namespace Matrix {
 m4x4 identity();
@@ -709,7 +730,7 @@ inline r32 operator*(v4 A, v4 B) {
   return result;
 }
 
-inline v4 operator*(m4x4 M, v4 V) {
+inline v4 operator*(m4x4 &M, v4 V) {
   TIMED_BLOCK();
   v4 result;
 
@@ -744,7 +765,7 @@ inline v4 operator*(m4x4 M, v4 V) {
 }
 
 // Affine transform
-inline v3 operator*(m4x4 M, v3 V) {
+inline v3 operator*(m4x4 &M, v3 V) {
   TIMED_BLOCK();
   v3 result;
 
@@ -779,13 +800,6 @@ inline m4x4 operator*(m4x4 M1, m4x4 M2) {
                                        _mm_mul_ps(brod4, M2.rows[3].simd)));
     result.rows[i].simd = row;
   }
-
-  // for (int i = 0; i < 4 * 4; ++i) {
-  //   int row = i / 4;
-  //   int col = i % 4;
-  //   result.E[i] = M1.rows[row] * M2.column(col);
-  // }
-
   return result;
 }
 

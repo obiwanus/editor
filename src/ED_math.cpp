@@ -273,7 +273,8 @@ m4x4 Matrix::canonical_to_frame(basis3 frame, v3 origin) {
             0,         0,         0,  1,
   };
   // clang-format on
-  result = rotate_inverse * Matrix::T(-origin);
+  m4x4 Translate = Matrix::T(-origin);
+  result = rotate_inverse * Translate;
   return result;
 }
 
