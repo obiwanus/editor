@@ -138,23 +138,6 @@ struct ED_Font {
 Update_Result update_and_render(Program_Memory *, Program_State *,
                                 User_Input *);
 
-struct ED_Perf_Counter {
-  char *file;
-  char *function;
-  int line;
-  u32 hits;
-  u64 ticks;
-  u64 min;
-  u64 max;
-};
-
-struct ED_FPS_Counter {
-  int value;
-  int min;
-  int max;
-  int frame_count;
-};
-
 // ============================== Globals =====================================
 
 global bool g_running;
@@ -162,8 +145,5 @@ global Pixel_Buffer g_pixel_buffer;
 global Program_Memory g_program_memory;
 global ED_Font g_font;
 
-global ED_FPS_Counter g_FPS;
-extern int g_num_perf_counters;
-extern ED_Perf_Counter g_performance_counters[];
 
 #endif  // ED_CORE_H

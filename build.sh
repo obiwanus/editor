@@ -30,7 +30,7 @@ CFLAGS="-g -std=c++11 -fno-exceptions\
 LFLAGS="$(pkg-config --cflags --libs x11) -lGL -ldl -lpthread -lm"
 
 if $OPTIMIZE; then
-    CFLAGS="$CFLAGS -O2"
+    CFLAGS="$CFLAGS -O3"
 fi
 
 if $OPENMP; then

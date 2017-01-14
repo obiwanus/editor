@@ -19,6 +19,27 @@
 
 #endif
 
+struct ED_Perf_Counter {
+  char *file;
+  char *function;
+  int line;
+  u32 hits;
+  u64 ticks;
+  u64 min;
+  u64 max;
+};
+
+struct ED_FPS_Counter {
+  int value;
+  int min;
+  int max;
+  int frame_count;
+};
+
+global ED_FPS_Counter g_FPS;
+extern int g_num_perf_counters;
+extern ED_Perf_Counter g_performance_counters[];
+
 struct Timed_Block {
   ED_Perf_Counter *perf_counter;
   u64 last_timestamp;

@@ -96,6 +96,7 @@ union v4 {
     r32 r, g, b, a;
   };
   r32 E[4];
+  __m128 V;
 
   v4 homogenized();
 };
@@ -624,7 +625,23 @@ inline r32 operator*(v4 A, v4 B) {
 }
 
 inline v4 operator*(m4x4 M, v4 V) {
-  v4 result = {};
+  TIMED_BLOCK();
+  v4 result;
+
+  // result.V =
+  //     _mm_add_ps(_mm_add_ps(_mm_mul_ps(_mm_set1_ps(V.E[0]), M.rows[0].V),
+  //                           _mm_mul_ps(_mm_set1_ps(V.E[1]), M.rows[1].V)),
+  //                _mm_add_ps(_mm_mul_ps(_mm_set1_ps(V.E[2]), M.rows[2].V),
+  //                           _mm_mul_ps(_mm_set1_ps(V.E[3]), M.rows[3].V)));
+  // _mm_store_ps(&C[4 * i], row);
+
+  // result.x = M.rows[0] * V;
+  // result.y = M.rows[1] * V;
+  // result.z = M.rows[2] * V;
+  // result.w = M.rows[3] * V;
+
+  // result.V = _mm_mul_ps(
+  //   );
 
   result.x = M.rows[0].x * V.x + M.rows[0].y * V.y + M.rows[0].z * V.z +
              M.rows[0].w * V.w;
@@ -640,34 +657,45 @@ inline v4 operator*(m4x4 M, v4 V) {
 
 // Affine transform
 inline v3 operator*(m4x4 M, v3 V) {
-  v3 result = {};
+  TIMED_BLOCK();
+  v3 result;
 
   v4 V_ext;
-  V_ext.x = V.x;
-  V_ext.y = V.y;
-  V_ext.z = V.z;
-  V_ext.w = 1;
+  V_ext.V = _mm_set_ps(1, V.z, V.y, V.x);
 
   V_ext = M * V_ext;
 
   // Homogenize on the fly
   if (V_ext.w != 0.0f && V_ext.w != 1.0f) {
+    // V_ext.V = _mm_div_ps(V_ext.V, _mm_set_ps(V_ext.w));  -slower
     result = V3(V_ext.x / V_ext.w, V_ext.y / V_ext.w, V_ext.z / V_ext.w);
   } else {
-    result = V3(V_ext.x, V_ext.y, V_ext.z);
+    result = V3(V_ext);
   }
 
   return result;
 }
 
 inline m4x4 operator*(m4x4 M1, m4x4 M2) {
+  TIMED_BLOCK();
   m4x4 result;
-
-  for (int i = 0; i < 4 * 4; ++i) {
-    int row = i / 4;
-    int col = i % 4;
-    result.E[i] = M1.rows[row] * M2.column(col);
+  for (int i = 0; i < 4; i++) {
+    __m128 brod1 = _mm_set1_ps(M1.E[4 * i + 0]);
+    __m128 brod2 = _mm_set1_ps(M1.E[4 * i + 1]);
+    __m128 brod3 = _mm_set1_ps(M1.E[4 * i + 2]);
+    __m128 brod4 = _mm_set1_ps(M1.E[4 * i + 3]);
+    __m128 row = _mm_add_ps(_mm_add_ps(_mm_mul_ps(brod1, M2.rows[0].V),
+                                       _mm_mul_ps(brod2, M2.rows[1].V)),
+                            _mm_add_ps(_mm_mul_ps(brod3, M2.rows[2].V),
+                                       _mm_mul_ps(brod4, M2.rows[3].V)));
+    result.rows[i].V = row;
   }
+
+  // for (int i = 0; i < 4 * 4; ++i) {
+  //   int row = i / 4;
+  //   int col = i % 4;
+  //   result.E[i] = M1.rows[row] * M2.column(col);
+  // }
 
   return result;
 }
