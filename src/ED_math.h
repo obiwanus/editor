@@ -62,22 +62,6 @@ union v3 {
   struct {
     r32 r, g, b;
   };
-  // struct {
-  //   v2 xy;
-  //   r32 _ignored0;
-  // };
-  // struct {
-  //   r32 _ignored1;
-  //   v2 yz;
-  // };
-  // struct {
-  //   v2 uv;
-  //   r32 _ignored2;
-  // };
-  // struct {
-  //   r32 _ignored3;
-  //   v2 vw;
-  // };
   r32 E[3];
 
   r32 len();
@@ -85,21 +69,122 @@ union v3 {
   v3 cross(v3 Vector);
 };
 
+// NOTE: thanks @rygorous for an example of how to organise simd operations
+
+// clang-format off
+
+union v4i {
+  struct { i32 x, y, z, w; };
+  struct { i32 r, g, b, a; };
+  i32 E[4];
+  __m128i simd;
+
+  v4i() {}
+  explicit v4i(i32 x) : simd(_mm_set1_epi32(x)) {}
+  explicit v4i(const __m128i &in) : simd(in) {}
+  v4i(const v4i &v) : simd(v.simd) {}
+  v4i(i32 a, i32 b, i32 c, i32 d) : simd(_mm_setr_epi32(a, b, c, d)) {}
+
+  static v4i zero() { return v4i(_mm_setzero_si128()); }
+  static v4i load(const i32 *ptr) { return v4i(_mm_load_si128((const __m128i *)ptr)); }
+  static v4i loadu(const i32 *ptr) { return v4i(_mm_loadu_si128((const __m128i *)ptr)); }
+  void store(i32 *ptr) { _mm_store_si128((__m128i *)ptr, simd); }
+  void storeu(i32 *ptr) { _mm_storeu_si128((__m128i *)ptr, simd); }
+
+  v4i &operator =(const v4i &v) { simd = v.simd; return *this; }
+  v4i &operator+=(const v4i &v) { simd = _mm_add_epi32(simd, v.simd); return *this; }
+  v4i &operator-=(const v4i &v) { simd = _mm_sub_epi32(simd, v.simd); return *this; }
+  v4i &operator*=(const v4i &v) { simd = _mm_mullo_epi32(simd, v.simd); return *this; }
+  v4i &operator|=(const v4i &v) { simd = _mm_or_si128(simd, v.simd); return *this; }
+  v4i &operator&=(const v4i &v) { simd = _mm_and_si128(simd, v.simd); return *this; }
+
+  v4i homogenized();
+};
+
+inline v4i operator+(const v4i &a, const v4i &b) { return v4i(_mm_add_epi32(a.simd, b.simd)); }
+inline v4i operator-(const v4i &a, const v4i &b) { return v4i(_mm_sub_epi32(a.simd, b.simd)); }
+inline v4i operator*(const v4i &a, const v4i &b) { return v4i(_mm_mullo_epi32(a.simd, b.simd)); }
+inline v4i operator|(const v4i &a, const v4i &b) { return v4i(_mm_or_si128(a.simd, b.simd)); }
+inline v4i operator&(const v4i &a, const v4i &b) { return v4i(_mm_and_si128(a.simd, b.simd)); }
+
+inline v4i andnot(const v4i &a, const v4i &b) { return v4i(_mm_andnot_si128(a.simd, b.simd)); }
+inline v4i vmin(const v4i &a, const v4i &b) { return v4i(_mm_min_epi32(a.simd, b.simd)); }
+inline v4i vmax(const v4i &a, const v4i &b) { return v4i(_mm_max_epi32(a.simd, b.simd)); }
+
+// Functions not operator overloads because the semantics (returns mask)
+// are very different from scalar comparison ops.
+inline v4i cmplt(const v4i &a, const v4i &b) { return v4i(_mm_cmplt_epi32(a.simd, b.simd)); }
+inline v4i cmpgt(const v4i &a, const v4i &b) { return v4i(_mm_cmpgt_epi32(a.simd, b.simd)); }
+
+inline bool is_all_zeros(const v4i &a) { return _mm_testz_si128(a.simd, a.simd) != 0; }
+inline bool is_all_negative(const v4i &a) {
+  return _mm_testc_si128(_mm_set1_epi32(0x80000000), a.simd) != 0;
+}
+
+// can't overload << since parameter to immed. shifts must be a compile-time constant
+// and debug builds that don't inline can't deal with this
+template<int N> inline v4i shiftl(const v4i &x) { return v4i(_mm_slli_epi32(x.simd, N)); }
+
+
 union v4 {
-  struct {
-    r32 x, y, z, w;
-  };
-  // struct {
-  //   r32 u, v, w;
-  // };
-  struct {
-    r32 r, g, b, a;
-  };
+  struct { r32 x, y, z, w; };
+  struct { r32 r, g, b, a; };
   r32 E[4];
-  __m128 V;
+  __m128 simd;
+
+  v4() {}
+  explicit v4(r32 x) : simd(_mm_set1_ps(x)) {}
+  explicit v4(const __m128 &in) : simd(in) {}
+  v4(const v4 &v) : simd(v.simd) {}
+  v4(r32 a, r32 b, r32 c, r32 d) : simd(_mm_setr_ps(a, b, c, d)) {}
+
+  static v4 zero() { return v4(_mm_setzero_ps()); }
+  static v4 load(const r32 *ptr) { return v4(_mm_load_ps(ptr)); }
+  static v4 loadu(const r32 *ptr) { return v4(_mm_loadu_ps(ptr)); }
+  void store(r32 *ptr) { _mm_store_ps(ptr, simd); }
+  void storeu(r32 *ptr) { _mm_storeu_ps(ptr, simd); }
+
+  v4 &operator =(const v4 &v) { simd = v.simd; return *this; }
+  v4 &operator+=(const v4 &v) { simd = _mm_add_ps(simd, v.simd); return *this; }
+  v4 &operator-=(const v4 &v) { simd = _mm_sub_ps(simd, v.simd); return *this; }
+  v4 &operator*=(const v4 &v) { simd = _mm_mul_ps(simd, v.simd); return *this; }
+  v4 &operator/=(const v4 &v) { simd = _mm_div_ps(simd, v.simd); return *this; }
 
   v4 homogenized();
 };
+
+inline v4 operator+(const v4 &a, const v4 &b) { return v4(_mm_add_ps(a.simd, b.simd)); }
+inline v4 operator-(const v4 &a, const v4 &b) { return v4(_mm_sub_ps(a.simd, b.simd)); }
+inline v4 operator*(const v4 &a, const v4 &b) { return v4(_mm_mul_ps(a.simd, b.simd)); }
+inline v4 operator/(const v4 &a, const v4 &b) { return v4(_mm_div_ps(a.simd, b.simd)); }
+
+inline v4 vmin(const v4 &a, const v4 &b) { return v4(_mm_min_ps(a.simd, b.simd)); }
+inline v4 vmax(const v4 &a, const v4 &b) { return v4(_mm_max_ps(a.simd, b.simd)); }
+
+// Functions not operator overloads because the semantics (returns mask)
+// are very different from scalar comparison ops.
+inline v4 cmplt(const v4 &a, const v4 &b) { return v4(_mm_cmplt_ps(a.simd, b.simd)); }
+inline v4 cmple(const v4 &a, const v4 &b) { return v4(_mm_cmple_ps(a.simd, b.simd)); }
+inline v4 cmpgt(const v4 &a, const v4 &b) { return v4(_mm_cmpgt_ps(a.simd, b.simd)); }
+inline v4 cmpge(const v4 &a, const v4 &b) { return v4(_mm_cmpge_ps(a.simd, b.simd)); }
+
+inline v4i ftoi(const v4 &v) { return v4i(_mm_cvttps_epi32(v.simd)); }
+inline v4i ftoi_round(const v4 &v) { return v4i(_mm_cvtps_epi32(v.simd)); }
+inline v4 itof(const v4i &v) { return v4(_mm_cvtepi32_ps(v.simd)); }
+
+inline v4i float2bits(const v4 &v) { return v4i(_mm_castps_si128(v.simd)); }
+inline v4 bits2float(const v4i &v) { return v4(_mm_castsi128_ps(v.simd)); }
+
+// Select between a and b based on sign (MSB) of mask
+inline v4 select(const v4 &a, const v4 &b, const v4 &mask) {
+  return v4(_mm_blendv_ps(a.simd, b.simd, mask.simd));
+}
+// Select between a and b based on sign (MSB) of mask
+inline v4 select(const v4 &a, const v4 &b, const v4i &mask) {
+  return v4(_mm_blendv_ps(a.simd, b.simd, _mm_castsi128_ps(mask.simd)));
+}
+
+// clang-format on
 
 union basis3 {
   struct {
@@ -641,7 +726,7 @@ inline v4 operator*(m4x4 M, v4 V) {
   //                                    _mm_mul_ps(brod1, cols[1])),
   //                         _mm_add_ps(_mm_mul_ps(brod2, cols[2]),
   //                                    _mm_mul_ps(brod3, cols[3])));
-  // result.V = row;
+  // result.simd = row;
 
   // Straightforward approach is faster than the SIMD code above,
   // probably because of the preparation code. If we need later we can
@@ -664,14 +749,14 @@ inline v3 operator*(m4x4 M, v3 V) {
   v3 result;
 
   v4 V_ext;
-  V_ext.V = _mm_set_ps(1, V.z, V.y, V.x);
+  V_ext.simd = _mm_set_ps(1, V.z, V.y, V.x);
 
   // TODO: maybe optimize later
   V_ext = M * V_ext;
 
   // Homogenize on the fly
   if (V_ext.w != 0.0f && V_ext.w != 1.0f) {
-    // V_ext.V = _mm_div_ps(V_ext.V, _mm_set_ps(V_ext.w));  -slower
+    // V_ext.simd = _mm_div_ps(V_ext.simd, _mm_set_ps(V_ext.w));  -slower
     result = V3(V_ext.x / V_ext.w, V_ext.y / V_ext.w, V_ext.z / V_ext.w);
   } else {
     result = V3(V_ext);
@@ -688,11 +773,11 @@ inline m4x4 operator*(m4x4 M1, m4x4 M2) {
     __m128 brod2 = _mm_set1_ps(M1.E[4 * i + 1]);
     __m128 brod3 = _mm_set1_ps(M1.E[4 * i + 2]);
     __m128 brod4 = _mm_set1_ps(M1.E[4 * i + 3]);
-    __m128 row = _mm_add_ps(_mm_add_ps(_mm_mul_ps(brod1, M2.rows[0].V),
-                                       _mm_mul_ps(brod2, M2.rows[1].V)),
-                            _mm_add_ps(_mm_mul_ps(brod3, M2.rows[2].V),
-                                       _mm_mul_ps(brod4, M2.rows[3].V)));
-    result.rows[i].V = row;
+    __m128 row = _mm_add_ps(_mm_add_ps(_mm_mul_ps(brod1, M2.rows[0].simd),
+                                       _mm_mul_ps(brod2, M2.rows[1].simd)),
+                            _mm_add_ps(_mm_mul_ps(brod3, M2.rows[2].simd),
+                                       _mm_mul_ps(brod4, M2.rows[3].simd)));
+    result.rows[i].simd = row;
   }
 
   // for (int i = 0; i < 4 * 4; ++i) {

@@ -338,11 +338,14 @@ __m128i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step,
   return w_row;
 }
 
-void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
+void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
+                             v3 light_dir, bool outline) {
   TIMED_BLOCK();
   // Sub-pixel precision
   const int sub_step = 16;
   const int sub_mask = sub_step - 1;
+
+  u32 color = 0x00FFAA40;  // TMP
 
   v2i vert0 = V2i(verts[0] * (r32)sub_step);
   v2i vert1 = V2i(verts[1] * (r32)sub_step);
@@ -382,7 +385,8 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
                   area->buffer->height - (min_y / sub_step) - area->bottom - 1);
 
   __m128i color_wide = _mm_set1_epi32(color);
-  __m128i minus_one_wide = _mm_set1_epi32(-1);
+  __m128i minus_one_wide = _mm_set1_epi32(0);
+  __m128i buffer_width_wide = _mm_set1_epi32(area->buffer->width);
 
   // Rasterize
   for (int y = p_max.y; y >= p_min.y; y -= step_pixels.y) {
@@ -395,26 +399,49 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
       // If point is on or inside all edges for any pixels, render those pixels
       // sse_v4i mask;
 
-      // w0 >= 0 && w1 >= 0 && w2 >= 0
-      __m128i mask =
-          _mm_and_si128(_mm_cmpgt_epi32(w0, minus_one_wide),
-                        _mm_and_si128(_mm_cmpgt_epi32(w1, minus_one_wide),
-                                      _mm_cmpgt_epi32(w2, minus_one_wide)));
-      u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
-      _mm_maskmoveu_si128(color_wide, mask, (char *)pixel);
-
-      // Render pixels
-      // sse_v4i mask;
-      // mask.V = _mm_or_si128(w0, _mm_or_si128(w1, w2));
       // for (int i = 0; i < 4; ++i) {
-      //   int X = x + i;
-      //   // TODO: can we render pixels in SIMD too?
-      //   if (mask.E[i] >= 0 && X < area->buffer->width) {
-      //     u32 *pixel =
-      //         (u32 *)area->buffer->memory + X + y * area->buffer->width;
-      //     *pixel = color;
+      //   if ((x + i) >= area->buffer->width) {
+      //     int breakhere = 0;
       //   }
       // }
+
+      // w0 >= 0 && w1 >= 0 && w2 >= 0
+      // __m128i gt0 = _mm_cmpgt_epi32(w0, minus_one_wide);
+      // __m128i gt1 = _mm_cmpgt_epi32(w1, minus_one_wide);
+      // __m128i gt2 = _mm_cmpgt_epi32(w2, minus_one_wide);
+
+      // __m128i mask =
+      //     _mm_and_si128(gt0, _mm_and_si128(gt1, gt2));
+      // // __m128i mask =
+      // //     _mm_and_si128(_mm_cmpgt_epi32(w0, minus_one_wide),
+      // //                   _mm_and_si128(_mm_cmpgt_epi32(w1, minus_one_wide),
+      // //                                 _mm_cmpgt_epi32(w2,
+      // minus_one_wide)));
+      // __m128i x_wide = _mm_set_epi32(x, x + 1, x + 2, x + 3);
+      // __m128i overflow = _mm_cmplt_epi32(x_wide, buffer_width_wide);
+
+      // mask = _mm_and_si128(mask, overflow);
+
+      // // mask = _mm_and_si128(
+      // //     mask, _mm_cmplt_epi32(_mm_set_epi32(x, x + 1, x + 2, x + 3),
+      // //                           buffer_width_wide));
+      // u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
+      // _mm_maskmoveu_si128(color_wide, mask, (char *)pixel);
+
+      // TODO: think about the SIMD block above
+
+      // Render pixels
+      sse_v4i _mask;
+      _mask.V = _mm_or_si128(w0, _mm_or_si128(w1, w2));
+      for (int i = 0; i < 4; ++i) {
+        int X = x + i;
+        // TODO: can we render pixels in SIMD too?
+        if (_mask.E[i] >= 0 && X < area->buffer->width) {
+          u32 *pixel =
+              (u32 *)area->buffer->memory + X + y * area->buffer->width;
+          *pixel = color;
+        }
+      }
 
       // One step to the right
       w0 = _mm_add_epi32(w0, e12.step_x);

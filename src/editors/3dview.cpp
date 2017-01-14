@@ -1,7 +1,6 @@
 
 void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
                          Program_State *state, User_Input *input) {
-
 #if 0
   TIMED_BLOCK();
   v3 screen_verts[3] = {V3(200, 200, 0), V3(800, 300, 0), V3(500, 600, 0)};
@@ -199,24 +198,24 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 
       v3 light_dir = -this->camera.direction;
 
-      // bool outline = (model == state->selected_model);
+      bool outline = (model == state->selected_model);
       // triangle_shaded(area, screen_verts, vns, z_buffer, light_dir, outline);
+      triangle_rasterize_simd(area, screen_verts, vns, z_buffer, light_dir,
+                              outline);
 
-      {
-        // Draw single color grey facets
-        v3 vert1 = scene_verts[0];
-        v3 vert2 = scene_verts[1];
-        v3 vert3 = scene_verts[2];
-        v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
-        r32 intensity = n * light_dir;
-        if (intensity < 0) { intensity = 0; }
-        intensity = lerp(0.2f, 1.0f, intensity);
-        const r32 grey = 0.7f;
-        u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
-
-        // triangle_rasterize(area, screen_verts, color);
-        triangle_rasterize_simd(area, screen_verts, color);
-      }
+      // {
+      //   // Draw single color grey facets
+      //   v3 vert1 = scene_verts[0];
+      //   v3 vert2 = scene_verts[1];
+      //   v3 vert3 = scene_verts[2];
+      //   v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
+      //   r32 intensity = n * light_dir;
+      //   if (intensity < 0) { intensity = 0; }
+      //   intensity = lerp(0.2f, 1.0f, intensity);
+      //   const r32 grey = 0.7f;
+      //   u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
+      //   triangle_rasterize(area, screen_verts, color);
+      // }
 
       // // Debug draw normals
       // for (int j = 0; j < 3; ++j) {
@@ -318,17 +317,5 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     draw_line(buffer, origin, Y, kYColor, 2);
   }
 
-  // test dragging
-  // if (ui->active_area == this->area) {
-  //   Rect area_rect = this->area->get_rect();
-  //   const u32 colors[] = {0x0000FF00, 0x00FF0000, 0x000000FF};
-  //   v2i to = area_rect.projected_to_area(input->mouse);
-  //   for (int i = 0; i < 3; ++i) {
-  //     if (input->button_is_down((Input_Button)i)) {
-  //       v2i from = area_rect.projected_to_area(input->mouse_positions[i]);
-  //       draw_line(area, from, to, colors[i], 4);
-  //     }
-  //   }
-  // }
 #endif
 }
