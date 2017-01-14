@@ -381,6 +381,9 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
   v2i p_max = V2i(area->left + (max_x / sub_step),
                   area->buffer->height - (min_y / sub_step) - area->bottom - 1);
 
+  __m128i color_wide = _mm_set1_epi32(color);
+  __m128i minus_one_wide = _mm_set1_epi32(-1);
+
   // Rasterize
   for (int y = p_max.y; y >= p_min.y; y -= step_pixels.y) {
     // Barycentric coordinates at start of row
@@ -390,18 +393,28 @@ void triangle_rasterize_simd(Area *area, v3 verts[], u32 color) {
 
     for (int x = p_min.x; x <= p_max.x; x += step_pixels.x) {
       // If point is on or inside all edges for any pixels, render those pixels
-      sse_v4i mask;
-      mask.V = _mm_or_si128(w0, _mm_or_si128(w1, w2));
+      // sse_v4i mask;
+
+      // w0 >= 0 && w1 >= 0 && w2 >= 0
+      __m128i mask =
+          _mm_and_si128(_mm_cmpgt_epi32(w0, minus_one_wide),
+                        _mm_and_si128(_mm_cmpgt_epi32(w1, minus_one_wide),
+                                      _mm_cmpgt_epi32(w2, minus_one_wide)));
+      u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
+      _mm_maskmoveu_si128(color_wide, mask, (char *)pixel);
+
       // Render pixels
-      for (int i = 0; i < 4; ++i) {
-        int X = x + i;
-        // TODO: can we render pixels in SIMD too?
-        if (mask.E[i] >= 0 && X < area->buffer->width) {
-          u32 *pixel =
-              (u32 *)area->buffer->memory + X + y * area->buffer->width;
-          *pixel = color;
-        }
-      }
+      // sse_v4i mask;
+      // mask.V = _mm_or_si128(w0, _mm_or_si128(w1, w2));
+      // for (int i = 0; i < 4; ++i) {
+      //   int X = x + i;
+      //   // TODO: can we render pixels in SIMD too?
+      //   if (mask.E[i] >= 0 && X < area->buffer->width) {
+      //     u32 *pixel =
+      //         (u32 *)area->buffer->memory + X + y * area->buffer->width;
+      //     *pixel = color;
+      //   }
+      // }
 
       // One step to the right
       w0 = _mm_add_epi32(w0, e12.step_x);
