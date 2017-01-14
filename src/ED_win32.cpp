@@ -3,12 +3,12 @@
 #include <intrin.h>
 
 #include "ED_base.h"
+#include "debug/ED_debug.h"
 #include "ED_math.h"
 #include "ED_core.h"
 #include "ED_model.h"
 #include "editors/editors.h"
 #include "ui/ED_ui.h"
-#include "debug/ED_debug.h"
 
 #include "ED_core.cpp"
 #include "ED_math.cpp"
