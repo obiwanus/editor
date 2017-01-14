@@ -628,29 +628,29 @@ inline v4 operator*(m4x4 M, v4 V) {
   TIMED_BLOCK();
   v4 result;
 
-  // result.V =
-  //     _mm_add_ps(_mm_add_ps(_mm_mul_ps(_mm_set1_ps(V.E[0]), M.rows[0].V),
-  //                           _mm_mul_ps(_mm_set1_ps(V.E[1]), M.rows[1].V)),
-  //                _mm_add_ps(_mm_mul_ps(_mm_set1_ps(V.E[2]), M.rows[2].V),
-  //                           _mm_mul_ps(_mm_set1_ps(V.E[3]), M.rows[3].V)));
-  // _mm_store_ps(&C[4 * i], row);
+  __m128 brod0 = _mm_set1_ps(V.E[0]);
+  __m128 brod1 = _mm_set1_ps(V.E[1]);
+  __m128 brod2 = _mm_set1_ps(V.E[2]);
+  __m128 brod3 = _mm_set1_ps(V.E[3]);
 
-  // result.x = M.rows[0] * V;
-  // result.y = M.rows[1] * V;
-  // result.z = M.rows[2] * V;
-  // result.w = M.rows[3] * V;
+  __m128 cols[4];
+  for (int i = 0; i < 4; ++i) {
+    cols[i] = _mm_set_ps(M.E[0 + i], M.E[4 + i], M.E[8 + i], M.E[12 + i]);
+  }
+  __m128 row = _mm_add_ps(_mm_add_ps(_mm_mul_ps(brod0, cols[0]),
+                                     _mm_mul_ps(brod1, cols[1])),
+                          _mm_add_ps(_mm_mul_ps(brod2, cols[2]),
+                                     _mm_mul_ps(brod3, cols[3])));
+  result.V = row;
 
-  // result.V = _mm_mul_ps(
-  //   );
-
-  result.x = M.rows[0].x * V.x + M.rows[0].y * V.y + M.rows[0].z * V.z +
-             M.rows[0].w * V.w;
-  result.y = M.rows[1].x * V.x + M.rows[1].y * V.y + M.rows[1].z * V.z +
-             M.rows[1].w * V.w;
-  result.z = M.rows[2].x * V.x + M.rows[2].y * V.y + M.rows[2].z * V.z +
-             M.rows[2].w * V.w;
-  result.w = M.rows[3].x * V.x + M.rows[3].y * V.y + M.rows[3].z * V.z +
-             M.rows[3].w * V.w;
+  // result.x = M.rows[0].x * V.x + M.rows[0].y * V.y + M.rows[0].z * V.z +
+  //            M.rows[0].w * V.w;
+  // result.y = M.rows[1].x * V.x + M.rows[1].y * V.y + M.rows[1].z * V.z +
+  //            M.rows[1].w * V.w;
+  // result.z = M.rows[2].x * V.x + M.rows[2].y * V.y + M.rows[2].z * V.z +
+  //            M.rows[2].w * V.w;
+  // result.w = M.rows[3].x * V.x + M.rows[3].y * V.y + M.rows[3].z * V.z +
+  //            M.rows[3].w * V.w;
 
   return result;
 }
