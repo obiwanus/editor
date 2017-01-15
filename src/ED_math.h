@@ -22,6 +22,34 @@ inline i32 round_i32(r32 value) {
   return result;
 }
 
+inline r32 floor_r32(r32 value) {
+  return (r32)((int)value);
+}
+
+int min3(int a, int b, int c) {
+  if (a <= b && a <= c) return a;
+  if (b <= a && b <= c) return b;
+  return c;
+}
+
+int max3(int a, int b, int c) {
+  if (a >= b && a >= c) return a;
+  if (b >= a && b >= c) return b;
+  return c;
+}
+
+r32 min3(r32 a, r32 b, r32 c) {
+  if (a <= b && a <= c) return a;
+  if (b <= a && b <= c) return b;
+  return c;
+}
+
+r32 max3(r32 a, r32 b, r32 c) {
+  if (a >= b && a >= c) return a;
+  if (b >= a && b >= c) return b;
+  return c;
+}
+
 // ================ Vectors ======================
 
 struct v2i {

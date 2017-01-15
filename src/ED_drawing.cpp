@@ -119,18 +119,6 @@ void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
 //   draw_line(area, vert1, vert2, color);
 // }
 
-int min3(int a, int b, int c) {
-  if (a <= b && a <= c) return a;
-  if (b <= a && b <= c) return b;
-  return c;
-}
-
-int max3(int a, int b, int c) {
-  if (a >= b && a >= c) return a;
-  if (b >= a && b >= c) return b;
-  return c;
-}
-
 int orient2d(v2i p, v2i a, v2i b) {
   return (a.x - p.x) * (b.y - p.y) - (a.y - p.y) * (b.x - p.x);
 }
@@ -318,12 +306,95 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
   }
 }
 
+struct Triangle_Edge_F {
+  r32 step_x;
+  r32 step_y;
+
+  r32 init(v2, v2, v2, v2i);
+};
+
+r32 Triangle_Edge_F::init(v2 vert0, v2 vert1, v2 origin, v2i step_pixels) {
+  r32 A = vert0.y - vert1.y;
+  r32 B = vert1.x - vert0.x;
+  r32 C = vert0.x * vert1.y - vert0.y * vert1.x;
+
+  this->step_x = A * step_pixels.x;
+  this->step_y = B * step_pixels.y;
+
+  r32 w_row = A * origin.x + B * origin.y + C;
+  return w_row;
+}
+
 void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
                                    r32 *z_buffer, v3 light_dir,
                                    bool outline = false) {
+  TIMED_BLOCK();
+
   u32 color = 0x0040AAFF;
 
+  v2 vert0 = V2(verts[0]);
+  v2 vert1 = V2(verts[1]);
+  v2 vert2 = V2(verts[2]);
 
+  // Compute BB and align to integer grid
+  r32 min_x = floor_r32(min3(vert0.x, vert1.x, vert2.x));
+  r32 min_y = floor_r32(min3(vert0.x, vert1.x, vert2.x));
+  r32 max_x = floor_r32(max3(vert0.x, vert1.x, vert2.x));
+  r32 max_y = floor_r32(max3(vert0.x, vert1.x, vert2.x));
+
+  const v2i step_pixels = {1, 1};
+
+  // Triangle setup
+  v2 origin = V2(min_x, min_y);
+  Triangle_Edge_F e01, e12, e20;
+  r32 w0_row = e12.init(vert1, vert2, origin, step_pixels);
+  r32 w1_row = e20.init(vert2, vert0, origin, step_pixels);
+  r32 w2_row = e01.init(vert0, vert1, origin, step_pixels);
+
+  // Real pixel start and end coords
+  v2i p_min = V2i(area->left + (int)min_x,
+                  area->buffer->height - (int)max_y - area->bottom - 1);
+  v2i p_max = V2i(area->left + (int)max_x,
+                  area->buffer->height - (int)min_y - area->bottom - 1);
+
+  // Rasterize
+  for (int y = p_max.y; y >= p_min.y; y -= step_pixels.y) {
+    // Barycentric coordinates at start of row
+    r32 w0 = w0_row;
+    r32 w1 = w1_row;
+    r32 w2 = w2_row;
+
+    for (int x = p_min.x; x <= p_max.x; x += step_pixels.x) {
+      // If point is on or inside all edges for any pixels, render those pixels
+
+      // Render pixels
+      if (w0 >= 0 && w1 >= 0 && w2 >= 0) {
+        u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
+        *pixel = color;
+      }
+      // v4i mask = w0 | w1 | w2;
+      // for (int i = 0; i < 4; ++i) {
+      //   int X = x + i;
+      //   // TODO: do this in SIMD too
+      //   if (mask.E[i] >= 0 && X < area->buffer->width) {
+      //     u32 *pixel =
+      //         (u32 *)area->buffer->memory + X + y * area->buffer->width;
+      //     u32 original_color = *pixel;
+      //     *pixel = color;
+      //   }
+      // }
+
+      // One step to the right
+      w0 += e12.step_x;
+      w1 += e20.step_x;
+      w2 += e01.step_x;
+    }
+
+    // One row step up
+    w0_row += e12.step_y;
+    w1_row += e20.step_y;
+    w2_row += e01.step_y;
+  }
 }
 
 void triangle_shaded(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,

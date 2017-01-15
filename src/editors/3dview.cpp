@@ -1,11 +1,12 @@
 
 void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
                          Program_State *state, User_Input *input) {
-#if 0
+#if 1
   TIMED_BLOCK();
-  v3 screen_verts[3] = {V3(200, 200, 0), V3(800, 300, 0), V3(500, 600, 0)};
+  v3 screen_verts[3] = {V3(200.5f, 199.23f, 0.0f), V3(800.3f, 300.2f, 0.0f),
+                        V3(500.0f, 599.234f, 0.0f)};
   // triangle_rasterize(area, screen_verts, 0x0040AAFF);
-  triangle_rasterize_simd(area, screen_verts, 0x00FFAA40);
+  triangle_rasterize_simd_float(area, screen_verts, {}, NULL, {}, false);
 
 #else
   TIMED_BLOCK();
