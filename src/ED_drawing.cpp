@@ -209,131 +209,27 @@ void triangle_rasterize(Area *area, v3 verts[], u32 color) {
   }
 }
 
-struct sse_v4i {
-  union {
-    __m128i V;
-    i32 E[4];
-  };
-
-  void operator=(i32 value) {
-    for (int i = 0; i < 4; ++i) {
-      this->E[i] = value;
-    }
-  }
-
-  bool any_gte(i32 value) {
-    for (int i = 0; i < 4; ++i) {
-      if (this->E[i] >= value) return true;
-    }
-    return false;
-  }
-};
-
-sse_v4i sse_V4i(i32 value) {
-  sse_v4i result;
-  result.V = _mm_set1_epi32(value);
-  return result;
-}
-
-sse_v4i sse_V4i(i32 value0, i32 value1, i32 value2, i32 value3) {
-  sse_v4i result;
-  result.V = _mm_set_epi32(value3, value2, value1, value0);
-  return result;
-}
-
-inline sse_v4i operator|(sse_v4i A, sse_v4i B) {
-  sse_v4i result;
-  result.V = _mm_or_si128(A.V, B.V);
-  // for (int i = 0; i < 4; ++i) {
-  //   result.E[i] = A.E[i] | B.E[i];
-  // }
-  return result;
-}
-
-inline sse_v4i operator+(sse_v4i A, i32 value) {
-  sse_v4i result;
-  result.V = _mm_add_epi32(A.V, _mm_set1_epi32(value));
-  return result;
-}
-
-inline sse_v4i &operator+=(sse_v4i &A, i32 value) {
-  A.V = _mm_add_epi32(A.V, _mm_set1_epi32(value));
-  return A;
-}
-
-inline sse_v4i operator+(sse_v4i A, sse_v4i B) {
-  sse_v4i result;
-  result.V = _mm_add_epi32(A.V, B.V);
-  return result;
-}
-
-inline sse_v4i &operator+=(sse_v4i &A, sse_v4i B) {
-  A.V = _mm_add_epi32(A.V, B.V);
-  return A;
-}
-
-inline __m128i multiply_4_i32s(const __m128i &a, const __m128i &b) {
-// TODO: this ifdef doesn't seem to work
-#ifdef __SSE4_1__  // modern CPU - use SSE 4.1
-  return _mm_mullo_epi32(a, b);
-#else  // old CPU - use SSE 2 (not too fast though)
-  __m128i tmp1 = _mm_mul_epu32(a, b);  // mul 2,0
-  __m128i tmp2 =
-      _mm_mul_epu32(_mm_srli_si128(a, 4), _mm_srli_si128(b, 4));  // mul 3,1
-  return _mm_unpacklo_epi32(
-      _mm_shuffle_epi32(tmp1, _MM_SHUFFLE(0, 0, 2, 0)),
-      _mm_shuffle_epi32(
-          tmp2,
-          _MM_SHUFFLE(0, 0, 2, 0)));  // shuffle results to [63..0] and pack
-#endif
-}
-
-inline sse_v4i operator*(sse_v4i A, sse_v4i B) {
-  sse_v4i result;
-  // Note: overflow may happen
-  result.V = multiply_4_i32s(A.V, B.V);
-  // for (int i = 0; i < 4; ++i) {
-  //   result.E[i] = A.E[i] * B.E[i];
-  // }
-  return result;
-}
-
-inline sse_v4i operator*(sse_v4i A, i32 value) {
-  sse_v4i result;
-  // Note: overflow may happen
-  result.V = multiply_4_i32s(A.V, _mm_set1_epi32(value));
-  // Note: this code may be actually faster than the "old cpu path" above
-  // for (int i = 0; i < 4; ++i) {
-  //   result.E[i] = A.E[i] * value;
-  // }
-  return result;
-}
-
 struct Triangle_Edge {
-  __m128i step_x;
-  __m128i step_y;
+  v4i step_x;
+  v4i step_y;
 
-  __m128i init(v2i, v2i, v2i, int, int, v2i);
+  v4i init(v2i, v2i, v2i, int, int, v2i);
 };
 
-__m128i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step,
+v4i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step,
                             int bias, v2i step_pixels) {
   int A = (vert0.y - vert1.y) * sub_step;
   int B = (vert1.x - vert0.x) * sub_step;
   int C = (vert0.x * vert1.y - vert0.y * vert1.x) * sub_step;
 
-  this->step_x = _mm_set1_epi32(A * step_pixels.x * sub_step);
-  this->step_y = _mm_set1_epi32(B * step_pixels.y * sub_step);
+  this->step_x = v4i(A * step_pixels.x * sub_step);
+  this->step_y = v4i(B * step_pixels.y * sub_step);
 
   // x, y values for initial pixel block
-  __m128i x =
-      _mm_add_epi32(_mm_set1_epi32(origin.x),
-                    _mm_set_epi32(3 * sub_step, 2 * sub_step, 1 * sub_step, 0));
-  __m128i y = _mm_set1_epi32(origin.y);
+  v4i x = v4i(origin.x) + v4i(0, 1 * sub_step, 2 * sub_step, 3 * sub_step);
+  v4i y = v4i(origin.y);
 
-  __m128i w_row = _mm_add_epi32(multiply_4_i32s(_mm_set1_epi32(A), x),
-                                multiply_4_i32s(_mm_set1_epi32(B), y));
-  w_row = _mm_add_epi32(w_row, _mm_set1_epi32(C + bias));
+  v4i w_row = v4i(A) * x + v4i(B) * y + v4i(C + bias);
 
   return w_row;
 }
@@ -374,9 +270,9 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
   int bias0 = is_top_left(vert1, vert2) ? 0 : -1;
   int bias1 = is_top_left(vert2, vert0) ? 0 : -1;
   int bias2 = is_top_left(vert0, vert1) ? 0 : -1;
-  __m128i w0_row = e12.init(vert1, vert2, origin, sub_step, bias0, step_pixels);
-  __m128i w1_row = e20.init(vert2, vert0, origin, sub_step, bias1, step_pixels);
-  __m128i w2_row = e01.init(vert0, vert1, origin, sub_step, bias2, step_pixels);
+  v4i w0_row = e12.init(vert1, vert2, origin, sub_step, bias0, step_pixels);
+  v4i w1_row = e20.init(vert2, vert0, origin, sub_step, bias1, step_pixels);
+  v4i w2_row = e01.init(vert0, vert1, origin, sub_step, bias2, step_pixels);
 
   // Real pixel start and end coords
   v2i p_min = V2i(area->left + (min_x / sub_step),
@@ -384,75 +280,41 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
   v2i p_max = V2i(area->left + (max_x / sub_step),
                   area->buffer->height - (min_y / sub_step) - area->bottom - 1);
 
-  __m128i color_wide = _mm_set1_epi32(color);
-  __m128i minus_one_wide = _mm_set1_epi32(0);
-  __m128i buffer_width_wide = _mm_set1_epi32(area->buffer->width);
+  v4i color_wide = v4i(color);
 
   // Rasterize
   for (int y = p_max.y; y >= p_min.y; y -= step_pixels.y) {
     // Barycentric coordinates at start of row
-    __m128i w0 = w0_row;
-    __m128i w1 = w1_row;
-    __m128i w2 = w2_row;
+    v4i w0 = w0_row;
+    v4i w1 = w1_row;
+    v4i w2 = w2_row;
 
     for (int x = p_min.x; x <= p_max.x; x += step_pixels.x) {
       // If point is on or inside all edges for any pixels, render those pixels
-      // sse_v4i mask;
-
-      // for (int i = 0; i < 4; ++i) {
-      //   if ((x + i) >= area->buffer->width) {
-      //     int breakhere = 0;
-      //   }
-      // }
-
-      // w0 >= 0 && w1 >= 0 && w2 >= 0
-      // __m128i gt0 = _mm_cmpgt_epi32(w0, minus_one_wide);
-      // __m128i gt1 = _mm_cmpgt_epi32(w1, minus_one_wide);
-      // __m128i gt2 = _mm_cmpgt_epi32(w2, minus_one_wide);
-
-      // __m128i mask =
-      //     _mm_and_si128(gt0, _mm_and_si128(gt1, gt2));
-      // // __m128i mask =
-      // //     _mm_and_si128(_mm_cmpgt_epi32(w0, minus_one_wide),
-      // //                   _mm_and_si128(_mm_cmpgt_epi32(w1, minus_one_wide),
-      // //                                 _mm_cmpgt_epi32(w2,
-      // minus_one_wide)));
-      // __m128i x_wide = _mm_set_epi32(x, x + 1, x + 2, x + 3);
-      // __m128i overflow = _mm_cmplt_epi32(x_wide, buffer_width_wide);
-
-      // mask = _mm_and_si128(mask, overflow);
-
-      // // mask = _mm_and_si128(
-      // //     mask, _mm_cmplt_epi32(_mm_set_epi32(x, x + 1, x + 2, x + 3),
-      // //                           buffer_width_wide));
-      // u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
-      // _mm_maskmoveu_si128(color_wide, mask, (char *)pixel);
-
-      // TODO: think about the SIMD block above
 
       // Render pixels
-      sse_v4i _mask;
-      _mask.V = _mm_or_si128(w0, _mm_or_si128(w1, w2));
+      v4i mask = w0 | w1 | w2;
       for (int i = 0; i < 4; ++i) {
         int X = x + i;
-        // TODO: can we render pixels in SIMD too?
-        if (_mask.E[i] >= 0 && X < area->buffer->width) {
+        // TODO: do this in SIMD too
+        if (mask.E[i] >= 0 && X < area->buffer->width) {
           u32 *pixel =
               (u32 *)area->buffer->memory + X + y * area->buffer->width;
+          u32 original_color = *pixel;
           *pixel = color;
         }
       }
 
       // One step to the right
-      w0 = _mm_add_epi32(w0, e12.step_x);
-      w1 = _mm_add_epi32(w1, e20.step_x);
-      w2 = _mm_add_epi32(w2, e01.step_x);
+      w0 += e12.step_x;
+      w1 += e20.step_x;
+      w2 += e01.step_x;
     }
 
     // One row step up
-    w0_row = _mm_add_epi32(w0_row, e12.step_y);
-    w1_row = _mm_add_epi32(w1_row, e20.step_y);
-    w2_row = _mm_add_epi32(w2_row, e01.step_y);
+    w0_row += e12.step_y;
+    w1_row += e20.step_y;
+    w2_row += e01.step_y;
   }
 }
 

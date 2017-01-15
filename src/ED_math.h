@@ -88,8 +88,8 @@ union v4i {
   static v4i zero() { return v4i(_mm_setzero_si128()); }
   static v4i load(const i32 *ptr) { return v4i(_mm_load_si128((const __m128i *)ptr)); }
   static v4i loadu(const i32 *ptr) { return v4i(_mm_loadu_si128((const __m128i *)ptr)); }
-  void store(i32 *ptr) { _mm_store_si128((__m128i *)ptr, simd); }
-  void storeu(i32 *ptr) { _mm_storeu_si128((__m128i *)ptr, simd); }
+  void store(u32 *ptr) { _mm_store_si128((__m128i *)ptr, simd); }
+  void storeu(u32 *ptr) { _mm_storeu_si128((__m128i *)ptr, simd); }
 
   v4i &operator =(const v4i &v) { simd = v.simd; return *this; }
   v4i &operator+=(const v4i &v) { simd = _mm_add_epi32(simd, v.simd); return *this; }
@@ -103,7 +103,11 @@ union v4i {
 
 inline v4i operator+(const v4i &a, const v4i &b) { return v4i(_mm_add_epi32(a.simd, b.simd)); }
 inline v4i operator-(const v4i &a, const v4i &b) { return v4i(_mm_sub_epi32(a.simd, b.simd)); }
-inline v4i operator*(const v4i &a, const v4i &b) { return v4i(_mm_mullo_epi32(a.simd, b.simd)); }
+inline v4i operator*(const v4i &a, const v4i &b) {
+  // TODO: check for SSE4.1 support and use this:
+  // return v4i(_mm_mullo_epi32(a.simd, b.simd));
+  return v4i(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
+}
 inline v4i operator|(const v4i &a, const v4i &b) { return v4i(_mm_or_si128(a.simd, b.simd)); }
 inline v4i operator&(const v4i &a, const v4i &b) { return v4i(_mm_and_si128(a.simd, b.simd)); }
 
@@ -724,11 +728,11 @@ inline bool operator!=(v3 A, v3 B) {
 
 // ================= v4 and m4x4 ====================
 
-inline r32 operator*(v4 A, v4 B) {
-  r32 result = A.x * B.x + A.y * B.y + A.z * B.z + A.w * B.w;
+// inline r32 operator*(v4 A, v4 B) {
+//   r32 result = A.x * B.x + A.y * B.y + A.z * B.z + A.w * B.w;
 
-  return result;
-}
+//   return result;
+// }
 
 inline v4 operator*(m4x4 &M, v4 V) {
   TIMED_BLOCK();

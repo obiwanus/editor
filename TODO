@@ -63,8 +63,11 @@ idea: try to look at the objects in clip space from different angles
 ==============================================================================
 DONE:
 
-[12/01/2017]
+[16/01/2017]
+- completely wrap the simd code to not be confused by the direct use of intrinsics
 
+[12/01/2017 - 15/01/2017]
+- experimented with simd
 
 [11/01/2017]
 - fixed the subpixel precision in rasterizer
