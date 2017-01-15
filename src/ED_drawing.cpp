@@ -217,7 +217,7 @@ struct Triangle_Edge {
 };
 
 v4i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step,
-                            int bias, v2i step_pixels) {
+                        int bias, v2i step_pixels) {
   int A = (vert0.y - vert1.y) * sub_step;
   int B = (vert1.x - vert0.x) * sub_step;
   int C = (vert0.x * vert1.y - vert0.y * vert1.x) * sub_step;
@@ -318,8 +318,17 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
   }
 }
 
+void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
+                                   r32 *z_buffer, v3 light_dir,
+                                   bool outline = false) {
+  u32 color = 0x0040AAFF;
+
+
+}
+
 void triangle_shaded(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
                      v3 light_dir, bool outline = false) {
+  TIMED_BLOCK();
   int area_width = area->get_width();
   int area_height = area->get_height();
 
