@@ -247,10 +247,10 @@ union m3x3 {
 // clang-format off
 union m4x4 {
   struct {
-    r32 a, b, c, d;
-    r32 e, f, g, h;
-    r32 i, j, k, l;
-    r32 m, n, o, p;
+    r32 m11, m12, m13, m14;
+    r32 m21, m22, m23, m24;
+    r32 m31, m32, m33, m34;
+    r32 m41, m42, m43, m44;
   };
   struct {
     v4 row0, row1, row2, row3;
@@ -260,14 +260,14 @@ union m4x4 {
 
   m4x4() {}
   m4x4(const m4x4 &m) : row0(m.row0), row1(m.row1), row2(m.row2), row3(m.row3) {}
-  m4x4(r32 a, r32 b, r32 c, r32 d,  // C++ I hate you
-       r32 e, r32 f, r32 g, r32 h,
-       r32 i, r32 j, r32 k, r32 l,
-       r32 m, r32 n, r32 o, r32 p) :
-       a(a), b(b), c(c), d(d),
-       e(e), f(f), g(g), h(h),
-       i(i), j(j), k(k), l(l),
-       m(m), n(n), o(o), p(p) {}
+  m4x4(r32 m11, r32 m12, r32 m13, r32 m14,  // C++ I hate you
+       r32 m21, r32 m22, r32 m23, r32 m24,
+       r32 m31, r32 m32, r32 m33, r32 m34,
+       r32 m41, r32 m42, r32 m43, r32 m44) :
+       m11(m11), m12(m12), m13(m13), m14(m14),
+       m21(m21), m22(m22), m23(m23), m24(m24),
+       m31(m31), m32(m32), m33(m33), m34(m34),
+       m41(m41), m42(m42), m43(m43), m44(m44) {}
 
   m4x4 &operator=(const m4x4 &m) {
     row0 = m.row0; row1 = m.row1; row2 = m.row2; row3 = m.row3;

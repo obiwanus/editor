@@ -90,10 +90,10 @@ v4 m4x4::column(int number) {
 m4x4 m4x4::transposed() {
   // clang-format off
   m4x4 result = {
-    a, e, i, m,
-    b, f, j, n,
-    c, g, k, o,
-    d, h, l, p,
+    m11, m21, m31, m41,
+    m12, m22, m32, m42,
+    m13, m23, m33, m43,
+    m14, m24, m34, m44,
   };
   // clang-format on
   return result;
