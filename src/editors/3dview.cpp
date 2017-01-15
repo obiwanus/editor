@@ -6,6 +6,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
   v3 screen_verts[3] = {V3(200.5f, 199.23f, 0.0f), V3(800.3f, 300.2f, 0.0f),
                         V3(500.0f, 599.234f, 0.0f)};
   // triangle_rasterize(area, screen_verts, 0x0040AAFF);
+  triangle_rasterize_simd(area, screen_verts, {}, NULL, {}, false);
   triangle_rasterize_simd_float(area, screen_verts, {}, NULL, {}, false);
 
 #else
@@ -201,8 +202,10 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 
       bool outline = (model == state->selected_model);
       // triangle_shaded(area, screen_verts, vns, z_buffer, light_dir, outline);
-      triangle_rasterize_simd(area, screen_verts, vns, z_buffer, light_dir,
-                              outline);
+      // triangle_rasterize_simd(area, screen_verts, vns, z_buffer, light_dir,
+      //                         outline);
+      triangle_rasterize_simd_float(area, screen_verts, vns, z_buffer,
+                                    light_dir, outline);
 
       // {
       //   // Draw single color grey facets
