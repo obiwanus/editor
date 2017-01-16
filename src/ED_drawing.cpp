@@ -338,9 +338,9 @@ void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
 
   // Compute BB and align to integer grid
   r32 min_x = floor_r32(min3(vert0.x, vert1.x, vert2.x));
-  r32 min_y = floor_r32(min3(vert0.x, vert1.x, vert2.x));
+  r32 min_y = floor_r32(min3(vert0.y, vert1.y, vert2.y));
   r32 max_x = floor_r32(max3(vert0.x, vert1.x, vert2.x));
-  r32 max_y = floor_r32(max3(vert0.x, vert1.x, vert2.x));
+  r32 max_y = floor_r32(max3(vert0.y, vert1.y, vert2.y));
 
   const v2i step_pixels = {1, 1};
 

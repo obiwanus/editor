@@ -64,6 +64,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [16/01/2017]
+- testing another rasterizer that uses floats
 - completely wrap the simd code to not be confused by the direct use of intrinsics
 
 [12/01/2017 - 15/01/2017]
