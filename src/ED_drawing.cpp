@@ -325,7 +325,7 @@ v4 Triangle_Edge_F::init(v2 vert0, v2 vert1, v2 origin, v2i step_pixels) {
   v4 x = v4(origin.x) + v4(0, 1, 2, 3);
   v4 y = v4(origin.y);
 
-  v4 w_row = v4(A) * x + v4(B) * y  + v4(C);
+  v4 w_row = v4(A) * x + v4(B) * y + v4(C);
   return w_row;
 }
 
@@ -352,7 +352,7 @@ void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
   max_x = min(max_x, (r32)(area->get_width() - 1));
   max_y = min(max_y, (r32)(area->get_height() - 1));
 
-  const v2i step_pixels = {1, 1};
+  const v2i step_pixels = {4, 1};
 
   // Triangle setup
   v2 origin = V2(min_x, min_y);
@@ -369,6 +369,8 @@ void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
 
   v4 zero = v4::zero();
 
+  v4i new_color = v4i(color);
+
   // Rasterize
   for (int y = p_max.y; y >= p_min.y; y -= step_pixels.y) {
     // Barycentric coordinates at start of row
@@ -378,12 +380,24 @@ void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
 
     for (int x = p_min.x; x <= p_max.x; x += step_pixels.x) {
       // If point is on or inside all edges for any pixels, render those pixels
-      v4 mask = cmpge(w0, zero) & cmpge(w1, zero) & cmpge(w2, zero);
+      u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
+
+      v4i mask = v4i(_mm_castps_si128(
+          v4_and(cmpge(w0, zero), v4_and(cmpge(w1, zero), cmpge(w2, zero)))
+              .simd));
+      v4i original_color;
+      original_color.simd = *(__m128i *)pixel;
+      // original_color.loadu(pixel);
+      // _mm_maskmoveu_si128(new_color.simd, mask.simd, (char *)pixel);
+
+      v4i masked_out = (mask & new_color) | andnot(mask, original_color);
+      masked_out.storeu(pixel);
 
       // Render pixels
 
       // if () {
-      //   u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
+      //   u32 *pixel = (u32 *)area->buffer->memory + x + y *
+      //   area->buffer->width;
       //   *pixel = color;
       // }
       // v4i mask = w0 | w1 | w2;
