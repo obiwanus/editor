@@ -114,8 +114,8 @@ union v4i {
   v4i(i32 a, i32 b, i32 c, i32 d) : simd(_mm_setr_epi32(a, b, c, d)) {}
 
   static v4i zero() { return v4i(_mm_setzero_si128()); }
-  static v4i load(const u32 *ptr) { return v4i(_mm_load_si128((const __m128i *)ptr)); }
-  static v4i loadu(const u32 *ptr) { return v4i(_mm_loadu_si128((const __m128i *)ptr)); }
+  static v4i load(const u32 *ptr) { return v4i(_mm_load_si128((__m128i *)ptr)); }
+  static v4i loadu(const u32 *ptr) { return v4i(_mm_loadu_si128((__m128i *)ptr)); }
   void store(u32 *ptr) { _mm_store_si128((__m128i *)ptr, simd); }
   void storeu(u32 *ptr) { _mm_storeu_si128((__m128i *)ptr, simd); }
 
@@ -193,6 +193,12 @@ inline v4 operator/(const v4 &a, const v4 &b) { return v4(_mm_div_ps(a.simd, b.s
 // Functions not operator overloads because bitwise ops on floats should be explicit
 inline v4 v4_or(const v4 &a, const v4 &b) { return v4(_mm_or_ps(a.simd, b.simd)); }
 inline v4 v4_and(const v4 &a, const v4 &b) { return v4(_mm_and_ps(a.simd, b.simd)); }
+inline v4 v4_and(const v4 &a, const v4 &b, const v4 &c) {
+  return v4(_mm_and_ps(a.simd, _mm_and_ps(b.simd, c.simd)));
+}
+inline v4 v4_and(const v4 &a, const v4 &b, const v4 &c, const v4 &d) {
+  return v4(_mm_and_ps(_mm_and_ps(a.simd, b.simd), _mm_and_ps(c.simd, d.simd)));
+}
 
 inline v4 vmin(const v4 &a, const v4 &b) { return v4(_mm_min_ps(a.simd, b.simd)); }
 inline v4 vmax(const v4 &a, const v4 &b) { return v4(_mm_max_ps(a.simd, b.simd)); }

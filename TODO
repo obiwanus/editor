@@ -8,10 +8,12 @@ MINIMUM WHAT NEEDS TO BE DONE:
 - Move models with or without manipulator
 - Read mtl files
 - Render from the camera (using mtl)
+- nice icons for splitting and removing
 
 
 NOW:
 
+- don't calculate pixel address every time
 - fill rules for the float rasterizer if applicable
 - find a faster way to rasterize triangles
 - find a faster way to draw
@@ -49,7 +51,7 @@ NOW:
 - a panel with buttons to add primitives
 - use quaternions for model orientation
 - save scenes (and models)
-- nice icons for splitting and removing
+- align buffer width to 4 pixels and use aligned writes
 
 - Warp cursor pointer when rotating
 - Fix the blue axis in the corner

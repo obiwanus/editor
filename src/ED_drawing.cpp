@@ -370,6 +370,8 @@ void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
   v4 zero = v4::zero();
 
   v4i new_color = v4i(color);
+  v4i buffer_width_wide = v4i(area->buffer->width);
+  v4i x_step_wide = v4i(step_pixels.x);
 
   // Rasterize
   for (int y = p_max.y; y >= p_min.y; y -= step_pixels.y) {
@@ -377,19 +379,17 @@ void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
     v4 w0 = w0_row;
     v4 w1 = w1_row;
     v4 w2 = w2_row;
+    v4i x_wide = v4i(p_min.x) + v4i(0, 1, 2, 3);
 
     for (int x = p_min.x; x <= p_max.x; x += step_pixels.x) {
       // If point is on or inside all edges for any pixels, render those pixels
       u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
 
-      v4i mask = v4i(_mm_castps_si128(
-          v4_and(cmpge(w0, zero), v4_and(cmpge(w1, zero), cmpge(w2, zero)))
-              .simd));
-      v4i original_color;
-      original_color.simd = *(__m128i *)pixel;
-      // original_color.loadu(pixel);
-      // _mm_maskmoveu_si128(new_color.simd, mask.simd, (char *)pixel);
+      v4i mask =
+          float2bits(v4_and(cmpge(w0, zero), cmpge(w1, zero), cmpge(w2, zero)));
+      mask &= cmplt(x_wide, buffer_width_wide);
 
+      v4i original_color = v4i::loadu(pixel);
       v4i masked_out = (mask & new_color) | andnot(mask, original_color);
       masked_out.storeu(pixel);
 
@@ -416,6 +416,7 @@ void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
       w0 += e12.step_x;
       w1 += e20.step_x;
       w2 += e01.step_x;
+      x_wide += x_step_wide;
     }
 
     // One row step up
