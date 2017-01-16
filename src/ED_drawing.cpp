@@ -342,7 +342,7 @@ void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
   r32 max_x = floor_r32(max3(vert0.x, vert1.x, vert2.x));
   r32 max_y = floor_r32(max3(vert0.y, vert1.y, vert2.y));
 
-  const v2i step_pixels = {1, 1};
+  const v2i step_pixels = {4, 1};
 
   // Triangle setup
   v2 origin = V2(min_x, min_y);

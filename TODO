@@ -12,6 +12,7 @@ MINIMUM WHAT NEEDS TO BE DONE:
 
 NOW:
 
+- fill rules for the float rasterizer if applicable
 - find a faster way to rasterize triangles
 - find a faster way to draw
 - avoid random heap allocations everywhere
