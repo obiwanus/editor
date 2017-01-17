@@ -11,7 +11,7 @@
 
 #define TIME_BEGIN(name) \
   Timed_Block timed_block##name((char *)__FILE__, #name, __LINE__, __COUNTER__);
-#define TIME_END(name) timed_block##name.end_timed_block(true)
+#define TIME_END(name, count) timed_block##name.end_timed_block(count, true)
 
 #else  // not BUILD_INTERNAL
 
@@ -53,10 +53,9 @@ struct Timed_Block {
     this->last_timestamp = __rdtsc();
   }
 
-  void end_timed_block(bool destroy = false) {
+  void end_timed_block(int count, bool destroy = false) {
     perf_counter->ticks += __rdtsc() - this->last_timestamp;
-    // printf("%s: %lu\n", perf_counter->function, perf_counter->ticks);
-    perf_counter->hits++;
+    perf_counter->hits += count;
     if (destroy) {
       destroyed = true;
     }
@@ -64,7 +63,7 @@ struct Timed_Block {
 
   ~Timed_Block() {
     if (destroyed) return;
-    end_timed_block();
+    end_timed_block(1);
   }
 };
 

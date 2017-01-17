@@ -228,7 +228,6 @@ void Triangle_Edge::adjust_step(v4 inv_denom) {
 
 void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
                              v3 light_dir, bool outline = false) {
-  TIMED_BLOCK();
 
   u32 color = 0x0040AAFF;
 
@@ -281,6 +280,7 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
   v4i buffer_width_wide = v4i(area->buffer->width);
   v4i x_step_wide = v4i(4);
 
+  TIME_BEGIN(rasterization);
   // Rasterize
   for (int y = p_max.y; y >= p_min.y; y -= 1) {
     // Barycentric coordinates at start of row
@@ -321,6 +321,7 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
     w1_row += e20.step_y;
     w2_row += e01.step_y;
   }
+  TIME_END(rasterization, (p_max.x - p_min.x + 1) * (p_max.y - p_min.y + 1));
 }
 
 void triangle_shaded(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
