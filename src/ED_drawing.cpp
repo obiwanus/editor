@@ -232,8 +232,6 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
 
   Pixel_Buffer *buffer = area->buffer;
 
-  u32 color = 0x0040AAFF;
-
   v2 vert0 = V2(verts[0]);
   v2 vert1 = V2(verts[1]);
   v2 vert2 = V2(verts[2]);
@@ -284,7 +282,6 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
 
   v4 zero = v4::zero();
 
-  v4i new_color = v4i(color);
   v4i buffer_width_wide = v4i(buffer->width);
   v4i x_step_wide = v4i(4);
   v4 wide255 = v4(255.0f);
@@ -311,7 +308,10 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
       if (mask_not_zero(mask)) {
         v4 intensity = w0 * in[0] + w1 * in[1] + w2 * in[2];
         intensity = v4_and(intensity, cmpge(intensity, zero));
-        v4i grey = ftoi(intensity * wide255);
+        v4i grey_single = ftoi(intensity * wide255);
+        v4i grey = (shiftl<24>(grey_single) | shiftl<16>(grey_single) |
+                    shiftl<8>(grey_single) | grey_single);
+
         v4 z_values = w0 * z0 + w1 * z1 + w2 * z2;
         r32 *z_ptr = z_buffer + y * pitch + x;
         v4 z_buffer_values = v4::loadu(z_ptr);
