@@ -200,6 +200,7 @@ inline v4 v4_and(const v4 &a, const v4 &b, const v4 &c) {
 inline v4 v4_and(const v4 &a, const v4 &b, const v4 &c, const v4 &d) {
   return v4(_mm_and_ps(_mm_and_ps(a.simd, b.simd), _mm_and_ps(c.simd, d.simd)));
 }
+inline v4 v4_andnot(const v4 &a, const v4 &b) { return v4(_mm_andnot_ps(a.simd, b.simd)); }
 
 inline v4 vmin(const v4 &a, const v4 &b) { return v4(_mm_min_ps(a.simd, b.simd)); }
 inline v4 vmax(const v4 &a, const v4 &b) { return v4(_mm_max_ps(a.simd, b.simd)); }

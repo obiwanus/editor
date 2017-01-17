@@ -228,6 +228,9 @@ void Triangle_Edge::adjust_step(v4 inv_denom) {
 
 void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
                              v3 light_dir, bool outline = false) {
+  TIMED_BLOCK();
+
+  Pixel_Buffer *buffer = area->buffer;
 
   u32 color = 0x0040AAFF;
 
@@ -275,19 +278,19 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
 
   // Real pixel start and end coords
   v2i p_min = V2i(area->left + (int)min_x,
-                  area->buffer->height - (int)max_y - area->bottom - 1);
+                  buffer->height - (int)max_y - area->bottom - 1);
   v2i p_max = V2i(area->left + (int)max_x,
-                  area->buffer->height - (int)min_y - area->bottom - 1);
+                  buffer->height - (int)min_y - area->bottom - 1);
 
   v4 zero = v4::zero();
 
   v4i new_color = v4i(color);
-  v4i buffer_width_wide = v4i(area->buffer->width);
+  v4i buffer_width_wide = v4i(buffer->width);
   v4i x_step_wide = v4i(4);
   v4 wide255 = v4(255.0f);
 
-  int pitch = area->buffer->width;
-  u32 *pixel_row = (u32 *)area->buffer->memory + p_max.y * pitch;
+  int pitch = buffer->width;
+  u32 *pixel_row = (u32 *)buffer->memory + p_max.y * pitch;
   r32 *z_buffer_row = z_buffer + p_max.y * pitch;
 
   TIME_BEGIN(rasterization);
@@ -310,10 +313,13 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
         intensity = v4_and(intensity, cmpge(intensity, zero));
         v4i grey = ftoi(intensity * wide255);
         v4 z_values = w0 * z0 + w1 * z1 + w2 * z2;
-
-
-        v4 z_pixels = v4::loadu(z_buffer_row + x);
-
+        r32 *z_ptr = z_buffer + y * pitch + x;
+        v4 z_buffer_values = v4::loadu(z_ptr);
+        v4 z_mask = cmpge(z_values, z_buffer_values);
+        v4 new_z_values =
+            v4_or(v4_and(z_mask, z_values), v4_andnot(z_mask, z_buffer_values));
+        new_z_values.storeu(z_ptr);
+        mask &= float2bits(z_mask);
 
         // inline u32 get_rgb_u32(v4 color) {
         //   assert(color.r >= 0 && color.r <= 1);
@@ -328,7 +334,6 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
         //   result = A << 24 | R << 16 | G << 8 | B;
         //   return result;
         // }
-
 
         // !!
         // int index = pitch * (y + area->bottom) + (x +

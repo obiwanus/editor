@@ -1,15 +1,25 @@
 
 void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
                          Program_State *state, User_Input *input) {
-#if 0
+#if 1
   TIMED_BLOCK();
   // v3 screen_verts[3] = {V3(200.5f, 199.23f, 0.0f), V3(800.3f, 300.2f, 0.0f),
   //                       V3(500.0f, 599.234f, 0.0f)};
-  v3 screen_verts[3] = {V3(599.5f, 585.23f, 0.0f), V3(610.3f, 580.2f, 0.0f),
-                        V3(605.0f, 599.234f, 0.0f)};
-  // triangle_rasterize(area, screen_verts, 0x0040AAFF);
-  // triangle_rasterize_simd(area, screen_verts, {}, NULL, {}, false);
-  triangle_rasterize_simd_float(area, screen_verts, {}, NULL, {}, false);
+  v3 light_dir = V3(1, 1, -1);
+  v3 screen_verts[3] = {V3(300, 300, 100), V3(710, 500, 150),
+                        V3(505, 709, 130)};
+  v3 vns[3] = {V3(0, 0, 1), V3(0, 0, 1), V3(1, 0, 1)};
+
+  triangle_rasterize_simd(area, screen_verts, vns, z_buffer, light_dir, false);
+
+  v3 screen_verts2[3] = {V3(300, 709, 100), V3(710, 400, 150),
+                         V3(505, 300, 130)};
+
+  v3 screen_verts3[3] = {V3(900, 109, 20), V3(710, 400, 150),
+                         V3(505, 300, 130)};
+
+  triangle_rasterize_simd(area, screen_verts2, vns, z_buffer, light_dir, false);
+  triangle_rasterize_simd(area, screen_verts3, vns, z_buffer, light_dir, false);
 
 #else
   TIMED_BLOCK();
