@@ -68,6 +68,13 @@ idea: try to look at the objects in clip space from different angles
 ==============================================================================
 DONE:
 
+[18/01/2017]
+- Count cycles per pixel
+
+[17/01/2017]
+- Normalised barycentric coordinates
+- Proper masking for the float rasterizer
+
 [16/01/2017]
 - testing another rasterizer that uses floats
 - completely wrap the simd code to not be confused by the direct use of intrinsics

@@ -148,6 +148,7 @@ inline v4i vmax(const v4i &a, const v4i &b) { return v4i(_mm_max_epi32(a.simd, b
 inline v4i cmplt(const v4i &a, const v4i &b) { return v4i(_mm_cmplt_epi32(a.simd, b.simd)); }
 inline v4i cmpgt(const v4i &a, const v4i &b) { return v4i(_mm_cmpgt_epi32(a.simd, b.simd)); }
 
+inline bool mask_not_zero(const v4i &a) { return _mm_movemask_epi8(a.simd) != 0; }
 inline bool is_all_zeros(const v4i &a) { return _mm_testz_si128(a.simd, a.simd) != 0; }
 inline bool is_all_negative(const v4i &a) {
   return _mm_testc_si128(_mm_set1_epi32(0x80000000), a.simd) != 0;

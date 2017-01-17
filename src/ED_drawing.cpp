@@ -253,6 +253,11 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
   v4 w0_row = e12.init(vert1, vert2, origin);
   v4 w1_row = e20.init(vert2, vert0, origin);
   v4 w2_row = e01.init(vert0, vert1, origin);
+  v4 z0 = v4(verts[0].z);
+  v4 z1 = v4(verts[1].z);
+  v4 z2 = v4(verts[2].z);
+
+  // Normalise barycentric coordinates
   v4 inv_denom = v4(1.0f) / (w0_row + w1_row + w2_row);
   w0_row *= inv_denom;
   w1_row *= inv_denom;
@@ -263,9 +268,9 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
 
   // Calculate intensity at vertices for Gouraud shading
   light_dir = light_dir.normalized();
-  r32 in[3];
+  v4 in[3];
   for (int i = 0; i < 3; ++i) {
-    in[i] = -vns[i].normalized() * light_dir;
+    in[i] = v4(-vns[i].normalized() * light_dir);
   }
 
   // Real pixel start and end coords
@@ -279,6 +284,11 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
   v4i new_color = v4i(color);
   v4i buffer_width_wide = v4i(area->buffer->width);
   v4i x_step_wide = v4i(4);
+  v4 wide255 = v4(255.0f);
+
+  int pitch = area->buffer->width;
+  u32 *pixel_row = (u32 *)area->buffer->memory + p_max.y * pitch;
+  r32 *z_buffer_row = z_buffer + p_max.y * pitch;
 
   TIME_BEGIN(rasterization);
   // Rasterize
@@ -288,26 +298,49 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
     v4 w1 = w1_row;
     v4 w2 = w2_row;
     v4i x_wide = v4i(p_min.x) + v4i(0, 1, 2, 3);
-    u32 *pixel_row = (u32 *)area->buffer->memory + y * area->buffer->width;
 
     for (int x = p_min.x; x <= p_max.x; x += 4) {
       // If point is on or inside all edges for any pixels, render those pixels
-      // u32 *pixel_row = (u32 *)area->buffer->memory + x + y *
-      // area->buffer->width;
-      u32 *pixel = pixel_row + x;
       v4i mask =
           float2bits(v4_and(cmpge(w0, zero), cmpge(w1, zero), cmpge(w2, zero)));
       mask &= cmplt(x_wide, buffer_width_wide);
 
-      // !!
-      // int index = area->buffer->width * (y + area->bottom) + (x +
-      // area->left);
-      // if (z_buffer[index] < z) {
-      //   z_buffer[index] = z;
+      if (mask_not_zero(mask)) {
+        v4 intensity = w0 * in[0] + w1 * in[1] + w2 * in[2];
+        intensity = v4_and(intensity, cmpge(intensity, zero));
+        v4i grey = ftoi(intensity * wide255);
+        v4 z_values = w0 * z0 + w1 * z1 + w2 * z2;
 
-      v4i original_color = v4i::loadu(pixel);
-      v4i masked_out = (mask & new_color) | andnot(mask, original_color);
-      masked_out.storeu(pixel);
+
+        v4 z_pixels = v4::loadu(z_buffer_row + x);
+
+
+        // inline u32 get_rgb_u32(v4 color) {
+        //   assert(color.r >= 0 && color.r <= 1);
+        //   assert(color.g >= 0 && color.g <= 1);
+        //   assert(color.b >= 0 && color.b <= 1);
+
+        //   u32 result = 0x00000000;
+        //   u8 R = (u8)(color.r * 255);
+        //   u8 G = (u8)(color.g * 255);
+        //   u8 B = (u8)(color.b * 255);
+        //   u8 A = (u8)(color.a * 255);
+        //   result = A << 24 | R << 16 | G << 8 | B;
+        //   return result;
+        // }
+
+
+        // !!
+        // int index = pitch * (y + area->bottom) + (x +
+        // area->left);
+        // if (z_buffer[index] < z) {
+        //   z_buffer[index] = z;
+
+        u32 *pixel = pixel_row + x;
+        v4i original_color = v4i::loadu(pixel);
+        v4i masked_out = (mask & grey) | andnot(mask, original_color);
+        masked_out.storeu(pixel);
+      }
 
       // One step to the right
       w0 += e12.step_x;
@@ -320,6 +353,8 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
     w0_row += e12.step_y;
     w1_row += e20.step_y;
     w2_row += e01.step_y;
+    pixel_row -= pitch;
+    z_buffer_row -= pitch;
   }
   TIME_END(rasterization, (p_max.x - p_min.x + 1) * (p_max.y - p_min.y + 1));
 }
