@@ -1,6 +1,8 @@
 MINIMUM WHAT NEEDS TO BE DONE:
 
 - Drawing should be fast
+- Proper fonts
+- shortcuts for positioning and projection
 - Load and display simple scenes in OBJ
 - Camera as an object
 - Raytrace render from the camera (chalky)

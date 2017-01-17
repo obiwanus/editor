@@ -198,122 +198,14 @@ void triangle_rasterize(Area *area, v3 verts[], u32 color) {
 }
 
 struct Triangle_Edge {
-  v4i step_x;
-  v4i step_y;
-
-  v4i init(v2i, v2i, v2i, int, int, v2i);
-};
-
-v4i Triangle_Edge::init(v2i vert0, v2i vert1, v2i origin, int sub_step,
-                        int bias, v2i step_pixels) {
-  int A = (vert0.y - vert1.y) * sub_step;
-  int B = (vert1.x - vert0.x) * sub_step;
-  int C = (vert0.x * vert1.y - vert0.y * vert1.x) * sub_step;
-
-  this->step_x = v4i(A * step_pixels.x * sub_step);
-  this->step_y = v4i(B * step_pixels.y * sub_step);
-
-  // x, y values for initial pixel block
-  v4i x = v4i(origin.x) + v4i(0, 1 * sub_step, 2 * sub_step, 3 * sub_step);
-  v4i y = v4i(origin.y);
-
-  v4i w_row = v4i(A) * x + v4i(B) * y + v4i(C + bias);
-
-  return w_row;
-}
-
-void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
-                             v3 light_dir, bool outline) {
-  TIMED_BLOCK();
-  // Sub-pixel precision
-  const int sub_step = 16;
-  const int sub_mask = sub_step - 1;
-
-  u32 color = 0x00FFAA40;  // TMP
-
-  v2i vert0 = V2i(verts[0] * (r32)sub_step);
-  v2i vert1 = V2i(verts[1] * (r32)sub_step);
-  v2i vert2 = V2i(verts[2] * (r32)sub_step);
-
-  // Compute BB
-  int min_x = min3(vert0.x, vert1.x, vert2.x);
-  int min_y = min3(vert0.y, vert1.y, vert2.y);
-  int max_x = max3(vert0.x, vert1.x, vert2.x);
-  int max_y = max3(vert0.y, vert1.y, vert2.y);
-
-  // Clip against area bounds
-  min_x = max(min_x, 0);
-  min_y = max(min_y, 0);
-  max_x = min(max_x, (area->get_width() - 1) * sub_step);
-  max_y = min(max_y, (area->get_height() - 1) * sub_step);
-
-  // Round start position
-  min_x = (min_x + sub_mask) & ~sub_mask;
-  min_y = (min_y + sub_mask) & ~sub_mask;
-
-  // Triangle setup
-  v2i origin = V2i(min_x, min_y);
-  v2i step_pixels = V2i(4, 1);
-  Triangle_Edge e01, e12, e20;
-  int bias0 = is_top_left(vert1, vert2) ? 0 : -1;
-  int bias1 = is_top_left(vert2, vert0) ? 0 : -1;
-  int bias2 = is_top_left(vert0, vert1) ? 0 : -1;
-  v4i w0_row = e12.init(vert1, vert2, origin, sub_step, bias0, step_pixels);
-  v4i w1_row = e20.init(vert2, vert0, origin, sub_step, bias1, step_pixels);
-  v4i w2_row = e01.init(vert0, vert1, origin, sub_step, bias2, step_pixels);
-
-  // Real pixel start and end coords
-  v2i p_min = V2i(area->left + (min_x / sub_step),
-                  area->buffer->height - (max_y / sub_step) - area->bottom - 1);
-  v2i p_max = V2i(area->left + (max_x / sub_step),
-                  area->buffer->height - (min_y / sub_step) - area->bottom - 1);
-
-  v4i color_wide = v4i(color);
-
-  // Rasterize
-  for (int y = p_max.y; y >= p_min.y; y -= step_pixels.y) {
-    // Barycentric coordinates at start of row
-    v4i w0 = w0_row;
-    v4i w1 = w1_row;
-    v4i w2 = w2_row;
-
-    for (int x = p_min.x; x <= p_max.x; x += step_pixels.x) {
-      // If point is on or inside all edges for any pixels, render those pixels
-
-      // Render pixels
-      v4i mask = w0 | w1 | w2;
-      for (int i = 0; i < 4; ++i) {
-        int X = x + i;
-        // TODO: do this in SIMD too
-        if (mask.E[i] >= 0 && X < area->buffer->width) {
-          u32 *pixel =
-              (u32 *)area->buffer->memory + X + y * area->buffer->width;
-          u32 original_color = *pixel;
-          *pixel = color;
-        }
-      }
-
-      // One step to the right
-      w0 += e12.step_x;
-      w1 += e20.step_x;
-      w2 += e01.step_x;
-    }
-
-    // One row step up
-    w0_row += e12.step_y;
-    w1_row += e20.step_y;
-    w2_row += e01.step_y;
-  }
-}
-
-struct Triangle_Edge_F {
   v4 step_x;
   v4 step_y;
 
   v4 init(v2, v2, v2, v2i);
+  void adjust_step(v4);
 };
 
-v4 Triangle_Edge_F::init(v2 vert0, v2 vert1, v2 origin, v2i step_pixels) {
+v4 Triangle_Edge::init(v2 vert0, v2 vert1, v2 origin, v2i step_pixels) {
   r32 A = vert0.y - vert1.y;
   r32 B = vert1.x - vert0.x;
   r32 C = vert0.x * vert1.y - vert0.y * vert1.x;
@@ -329,9 +221,13 @@ v4 Triangle_Edge_F::init(v2 vert0, v2 vert1, v2 origin, v2i step_pixels) {
   return w_row;
 }
 
-void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
-                                   r32 *z_buffer, v3 light_dir,
-                                   bool outline = false) {
+void Triangle_Edge::adjust_step(v4 inv_denom) {
+  this->step_x *= inv_denom;
+  this->step_y *= inv_denom;
+}
+
+void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
+                             v3 light_dir, bool outline = false) {
   TIMED_BLOCK();
 
   u32 color = 0x0040AAFF;
@@ -356,10 +252,24 @@ void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
 
   // Triangle setup
   v2 origin = V2(min_x, min_y);
-  Triangle_Edge_F e01, e12, e20;
+  Triangle_Edge e01, e12, e20;
   v4 w0_row = e12.init(vert1, vert2, origin, step_pixels);
   v4 w1_row = e20.init(vert2, vert0, origin, step_pixels);
   v4 w2_row = e01.init(vert0, vert1, origin, step_pixels);
+  v4 inv_denom = v4(1.0f) / (w0_row + w1_row + w2_row);
+  w0_row *= inv_denom;
+  w1_row *= inv_denom;
+  w2_row *= inv_denom;
+  e01.adjust_step(inv_denom);
+  e12.adjust_step(inv_denom);
+  e20.adjust_step(inv_denom);
+
+  // Calculate intensity at vertices for Gouraud shading
+  light_dir = light_dir.normalized();
+  r32 in[3];
+  for (int i = 0; i < 3; ++i) {
+    in[i] = -vns[i].normalized() * light_dir;
+  }
 
   // Real pixel start and end coords
   v2i p_min = V2i(area->left + (int)min_x,
@@ -389,28 +299,15 @@ void triangle_rasterize_simd_float(Area *area, v3 verts[], v3 vns[],
           float2bits(v4_and(cmpge(w0, zero), cmpge(w1, zero), cmpge(w2, zero)));
       mask &= cmplt(x_wide, buffer_width_wide);
 
+      // !!
+      // int index = area->buffer->width * (y + area->bottom) + (x +
+      // area->left);
+      // if (z_buffer[index] < z) {
+      //   z_buffer[index] = z;
+
       v4i original_color = v4i::loadu(pixel);
       v4i masked_out = (mask & new_color) | andnot(mask, original_color);
       masked_out.storeu(pixel);
-
-      // Render pixels
-
-      // if () {
-      //   u32 *pixel = (u32 *)area->buffer->memory + x + y *
-      //   area->buffer->width;
-      //   *pixel = color;
-      // }
-      // v4i mask = w0 | w1 | w2;
-      // for (int i = 0; i < 4; ++i) {
-      //   int X = x + i;
-      //   // TODO: do this in SIMD too
-      //   if (mask.E[i] >= 0 && X < area->buffer->width) {
-      //     u32 *pixel =
-      //         (u32 *)area->buffer->memory + X + y * area->buffer->width;
-      //     u32 original_color = *pixel;
-      //     *pixel = color;
-      //   }
-      // }
 
       // One step to the right
       w0 += e12.step_x;
