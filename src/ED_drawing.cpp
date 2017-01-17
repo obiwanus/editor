@@ -315,7 +315,7 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
         v4 z_values = w0 * z0 + w1 * z1 + w2 * z2;
         r32 *z_ptr = z_buffer + y * pitch + x;
         v4 z_buffer_values = v4::loadu(z_ptr);
-        v4 z_mask = cmpge(z_values, z_buffer_values);
+        v4 z_mask = v4_and(bits2float(mask), cmpge(z_values, z_buffer_values));
         v4 new_z_values =
             v4_or(v4_and(z_mask, z_values), v4_andnot(z_mask, z_buffer_values));
         new_z_values.storeu(z_ptr);

@@ -69,6 +69,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [18/01/2017]
+- z-buffer for new rasterizer
 - Count cycles per pixel
 
 [17/01/2017]
