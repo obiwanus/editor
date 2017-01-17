@@ -201,17 +201,17 @@ struct Triangle_Edge {
   v4 step_x;
   v4 step_y;
 
-  v4 init(v2, v2, v2, v2i);
+  v4 init(v2, v2, v2);
   void adjust_step(v4);
 };
 
-v4 Triangle_Edge::init(v2 vert0, v2 vert1, v2 origin, v2i step_pixels) {
+v4 Triangle_Edge::init(v2 vert0, v2 vert1, v2 origin) {
   r32 A = vert0.y - vert1.y;
   r32 B = vert1.x - vert0.x;
   r32 C = vert0.x * vert1.y - vert0.y * vert1.x;
 
-  this->step_x = v4(A * step_pixels.x);
-  this->step_y = v4(B * step_pixels.y);
+  this->step_x = v4(A * 4);
+  this->step_y = v4(B * 1);
 
   // x, y values for initial pixel block
   v4 x = v4(origin.x) + v4(0, 1, 2, 3);
@@ -248,14 +248,12 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
   max_x = min(max_x, (r32)(area->get_width() - 1));
   max_y = min(max_y, (r32)(area->get_height() - 1));
 
-  const v2i step_pixels = {4, 1};
-
   // Triangle setup
   v2 origin = V2(min_x, min_y);
   Triangle_Edge e01, e12, e20;
-  v4 w0_row = e12.init(vert1, vert2, origin, step_pixels);
-  v4 w1_row = e20.init(vert2, vert0, origin, step_pixels);
-  v4 w2_row = e01.init(vert0, vert1, origin, step_pixels);
+  v4 w0_row = e12.init(vert1, vert2, origin);
+  v4 w1_row = e20.init(vert2, vert0, origin);
+  v4 w2_row = e01.init(vert0, vert1, origin);
   v4 inv_denom = v4(1.0f) / (w0_row + w1_row + w2_row);
   w0_row *= inv_denom;
   w1_row *= inv_denom;
@@ -281,20 +279,22 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
 
   v4i new_color = v4i(color);
   v4i buffer_width_wide = v4i(area->buffer->width);
-  v4i x_step_wide = v4i(step_pixels.x);
+  v4i x_step_wide = v4i(4);
 
   // Rasterize
-  for (int y = p_max.y; y >= p_min.y; y -= step_pixels.y) {
+  for (int y = p_max.y; y >= p_min.y; y -= 1) {
     // Barycentric coordinates at start of row
     v4 w0 = w0_row;
     v4 w1 = w1_row;
     v4 w2 = w2_row;
     v4i x_wide = v4i(p_min.x) + v4i(0, 1, 2, 3);
+    u32 *pixel_row = (u32 *)area->buffer->memory + y * area->buffer->width;
 
-    for (int x = p_min.x; x <= p_max.x; x += step_pixels.x) {
+    for (int x = p_min.x; x <= p_max.x; x += 4) {
       // If point is on or inside all edges for any pixels, render those pixels
-      u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
-
+      // u32 *pixel_row = (u32 *)area->buffer->memory + x + y *
+      // area->buffer->width;
+      u32 *pixel = pixel_row + x;
       v4i mask =
           float2bits(v4_and(cmpge(w0, zero), cmpge(w1, zero), cmpge(w2, zero)));
       mask &= cmplt(x_wide, buffer_width_wide);
