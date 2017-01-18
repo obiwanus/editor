@@ -67,6 +67,20 @@ void draw_line(Pixel_Buffer *buffer, v2i A, v2i B, u32 color, int width = 1) {
   }
 }
 
+void draw_line(Area *area, v2i A, v2i B, u32 color, int width = 1) {
+  int area_width = area->get_width();
+  int area_height = area->get_height();
+
+  // Put into the area
+  v2i offset = V2i(area->left, area->bottom);
+  A += offset;
+  B += offset;
+
+  // TODO: clip against area bounds
+
+  draw_line(area->buffer, A, B, color, width);
+}
+
 void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
   int area_width = area->get_width();
   int area_height = area->get_height();
@@ -455,10 +469,18 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
   }
 }
 
-void draw_nice_string(Area *area, int string_x, int string_y,
-                      const char *string, u32 text_color) {
+void draw_nice_string(Area *area, v2i position,
+                      const char *string, u32 text_color,
+                      bool top_left = true) {
   int area_width = area->get_width();
   int area_height = area->get_height();
+
+  position += V2i(area->left, area->bottom);
+
+  if (!top_left) {
+    // Convert position to top-left
+    position.y = area->buffer->height - position.y - 1;
+  }
 
   stbtt_fontinfo *font = &g_font.info;
   r32 scale = g_font.scale;
@@ -467,7 +489,7 @@ void draw_nice_string(Area *area, int string_x, int string_y,
   stbtt_GetFontVMetrics(font, &ascent, 0, 0);
   r32 baseline = (ascent * scale);
 
-  v2 start = V2((r32)string_x + 1.0f, (r32)string_y + baseline);
+  v2 start = V2((r32)position.x + 1.0f, (r32)position.y + baseline);
 
   int ch = 0;
   while (string[ch]) {
@@ -488,11 +510,11 @@ void draw_nice_string(Area *area, int string_x, int string_y,
     // TODO: this can be optimized significantly
     assert(width < 100 && height < 100);
     for (int y = 0; y < height; ++y) {
-      int Y = start.y + y - height;
+      int Y = (int)start.y + y - height;
       if (Y < 0 || Y > area_height) continue;
 
       for (int x = 0; x < width; ++x) {
-        int X = start.x + x;
+        int X = (int)start.x + x;
         if (X < 0 || X > area_width) continue;
         u8 alpha_src = g_font.tmp_bitmap[x + y * width];
         u32 *pixel = (u32 *)area->buffer->memory + X + Y * area->buffer->width;

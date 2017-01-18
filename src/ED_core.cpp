@@ -31,7 +31,7 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   buffer->width = state->kWindowWidth;
   buffer->height = state->kWindowHeight;
 
-  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 17);
+  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 15);
 
   // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers

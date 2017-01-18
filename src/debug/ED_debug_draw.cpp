@@ -11,7 +11,7 @@
   sprintf(fps_string, "FPS: %d, min: %d, max: %d", g_FPS.value, g_FPS.min,
           g_FPS.max);
   // char *fps_string = "60";
-  draw_nice_string(main_area, 10, 10, fps_string, 0x00FFFFFF);
+  draw_nice_string(main_area, V2i(10, 10), fps_string, 0x00FFFFFF);
 
   g_FPS.frame_count--;
 
@@ -29,7 +29,7 @@
     sprintf(perf_counters, "%s:%d (%s): %'u | min: %'lu, max: %'lu | %'lu",
             counter->file, counter->line, counter->function, counter->hits,
             counter->min, counter->max, ticks);
-    draw_nice_string(main_area, 10, line_start, perf_counters, 0x00FFFFFF);
+    draw_nice_string(main_area, V2i(10, line_start), perf_counters, 0x00FFFFFF);
     line_start += line_height;
 
     // Reset the hits number

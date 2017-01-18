@@ -541,6 +541,12 @@ inline v2i operator+(v2i A, v2i B) {
   return result;
 }
 
+inline v2i &operator+=(v2i &A, v2i B) {
+  A = A + B;
+
+  return A;
+}
+
 inline v2i operator-(v2i A, v2i B) {
   v2i result;
 

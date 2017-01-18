@@ -293,7 +293,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     for (int i = 0; i < kLineCount; ++i) {
       u32 color = kGridColor;
       v3 vert1, vert2;
-      r32 step = -1.0f + i * 2.0f / (kLineCount - 1);
+      r32 step =  -1.0f + i * 2.0f / (kLineCount - 1);
       // Along the x axis
       {
         vert1 = WorldTransform * V3(-1.0f, 0.0f, step);
@@ -329,15 +329,19 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     v3 y = V3(CameraSpaceTransform * V4(0, 1, 0, 0));
     v3 z = V3(CameraSpaceTransform * V4(0, 0, 1, 0));
 
-    v2i offset = V2i(area->left, area->bottom);
-    v2i origin = V2i(IconViewport * V3(0, 0, 0)) + offset;
-    v2i X = V2i(IconViewport * x) + offset;
-    v2i Y = V2i(IconViewport * y) + offset;
-    v2i Z = V2i(IconViewport * z) + offset;
+    v2i origin = V2i(IconViewport * V3(0, 0, 0));
+    v2i X = V2i(IconViewport * x);
+    v2i Y = V2i(IconViewport * y);
+    v2i Z = V2i(IconViewport * z);
 
-    draw_line(buffer, origin, X, kXColor, 2);
-    draw_line(buffer, origin, Z, kZColor, 2);
-    draw_line(buffer, origin, Y, kYColor, 2);
+    draw_line(area, origin, X, kXColor, 2);
+    draw_line(area, origin, Z, kZColor, 2);
+    draw_line(area, origin, Y, kYColor, 2);
+
+    v2i letter_adjust = V2i(-3, 15);
+    draw_nice_string(area, X + letter_adjust, "x", kXColor, false);
+    draw_nice_string(area, Y + letter_adjust, "y", kYColor, false);
+    draw_nice_string(area, Z + letter_adjust, "z", kZColor, false);
   }
 
 #endif
