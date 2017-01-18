@@ -1,6 +1,5 @@
 MINIMUM WHAT NEEDS TO BE DONE:
 
-- Proper fonts
 - shortcuts for positioning and projection
 - Load and display simple scenes in OBJ
 - Camera as an object
@@ -16,16 +15,12 @@ MINIMUM WHAT NEEDS TO BE DONE:
 NOW:
 
 - fill rules for the float rasterizer if applicable
-- find a faster way to rasterize triangles
-- find a faster way to draw
 - avoid random heap allocations everywhere
 - put things we're not going to free in the permanent memory
-- render strings on the fly using subpixel positioning
 - [optimise] maybe pre-render strings and store them if rendering on the fly is too slow
 - thread-safe performance counters
 - when selecting models, take the closest one
 - properly outline triangles
-- when moving the pivot don't do it too slow when the camera is close
 - try to update before drawing to remove the lag between different areas
 - use 2 light sources (maybe even point ones)
 - drawing a silhouette of the selected model
@@ -66,6 +61,9 @@ idea: try to look at the objects in clip space from different angles
 
 ==============================================================================
 DONE:
+
+[19/01/2017]
+- draw nicer and more expensive strings
 
 [18/01/2017]
 - z-buffer for new rasterizer

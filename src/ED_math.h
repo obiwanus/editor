@@ -219,6 +219,10 @@ inline v4 itof(const v4i &v) { return v4(_mm_cvtepi32_ps(v.simd)); }
 inline v4i float2bits(const v4 &v) { return v4i(_mm_castps_si128(v.simd)); }
 inline v4 bits2float(const v4i &v) { return v4(_mm_castsi128_ps(v.simd)); }
 
+inline v4 v4_lerp(const v4 &t, const v4 &a, const v4 &b) {
+  return b * t + a * (v4(1.0f) - t);
+}
+
 // // Select between a and b based on sign (MSB) of mask
 // inline v4 select(const v4 &a, const v4 &b, const v4 &mask) {
 //   return v4(_mm_blendv_ps(a.simd, b.simd, mask.simd));
