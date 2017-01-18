@@ -454,6 +454,85 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
   }
 }
 
+void draw_nice_string(Area *area, int string_x, int string_y,
+                      const char *string, u32 text_color) {
+  int area_width = area->get_width();
+  int area_height = area->get_height();
+
+  stbtt_fontinfo *font = &g_font.info;
+  r32 scale = g_font.scale;
+
+  int ascent;
+  stbtt_GetFontVMetrics(font, &ascent, 0, 0);
+  r32 baseline = (ascent * scale);
+
+  v2 start = V2((r32)string_x + 1.0f, (r32)string_y + baseline);
+
+  int ch = 0;
+  while (string[ch]) {
+    int advance, lsb, x0, y0, x1, y1;
+    // Subpixel precision
+    float x_shift = start.x - (float)floor(start.x);
+    float y_shift = start.y - (float)floor(start.y);
+
+    stbtt_GetCodepointHMetrics(font, string[ch], &advance, &lsb);
+    stbtt_GetCodepointBitmapBoxSubpixel(font, string[ch], scale, scale, x_shift,
+                                        y_shift, &x0, &y0, &x1, &y1);
+    int width = x1 - x0;
+    int height = y1 - y0;
+    stbtt_MakeCodepointBitmapSubpixel(font, g_font.tmp_bitmap, width, height,
+                                      width, scale, scale, x_shift, y_shift,
+                                      string[ch]);
+    // Blend the tmp bitmap onto the target bitmap
+    // TODO: this can be optimized significantly
+    assert(width < 100 && height < 100);
+    for (int y = 0; y < height; ++y) {
+      int Y = start.y + y - height;
+      if (Y < 0 || Y > area_height) continue;
+
+      for (int x = 0; x < width; ++x) {
+        int X = start.x + x;
+        if (X < 0 || X > area_width) continue;
+        u8 alpha_src = g_font.tmp_bitmap[x + y * width];
+        u32 *pixel = (u32 *)area->buffer->memory + X + Y * area->buffer->width;
+        if (alpha_src == 0xFF) {
+          // Just draw foreground
+          *pixel = text_color;
+        } else if (alpha_src == 0) {
+          // Don't draw
+        } else {
+          // Blend and draw
+          int alpha = alpha_src + 1;
+          int alpha_inv = 256 - alpha_src;
+          // Background
+          u32 bg = *pixel;
+          u8 R_bg = (u8)((bg & 0x00FF0000) >> 16);
+          u8 G_bg = (u8)((bg & 0x0000FF00) >> 8);
+          u8 B_bg = (u8)((bg & 0x000000FF) >> 0);
+          // Foreground
+          u8 R_fg = (u8)((text_color & 0x00FF0000) >> 16);
+          u8 G_fg = (u8)((text_color & 0x0000FF00) >> 8);
+          u8 B_fg = (u8)((text_color & 0x000000FF) >> 0);
+          // Blend
+          u8 R = (u8)((alpha * R_fg + alpha_inv * R_bg) >> 8);
+          u8 G = (u8)((alpha * G_fg + alpha_inv * G_bg) >> 8);
+          u8 B = (u8)((alpha * B_fg + alpha_inv * B_bg) >> 8);
+          *pixel = R << 16 | G << 8 | B << 0;
+        }
+      }
+    }
+    if (string[ch + 1] != '\0') {
+      int kern_advance;
+      kern_advance =
+          stbtt_GetCodepointKernAdvance(font, string[ch], string[ch + 1]);
+      start.x += (advance + 10 + kern_advance) * scale;
+    }
+    ch++;
+  }
+}
+
+// TODO: optimize the drawing of nice strings above and delete the code below
+#if 0
 void draw_string(Area *area, int string_x, int string_y, const char *string,
                  u32 text_color) {
   int area_width = area->get_width();
@@ -517,3 +596,4 @@ void draw_string(Area *area, int string_x, int string_y, const char *string,
     }
   }
 }
+#endif

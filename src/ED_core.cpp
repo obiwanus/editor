@@ -31,7 +31,7 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   buffer->width = state->kWindowWidth;
   buffer->height = state->kWindowHeight;
 
-  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 16);
+  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 17);
 
   // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
@@ -107,6 +107,10 @@ void ED_Font::load_from_file(char *filename, int char_height) {
   if (!result) {
     printf("Can't init font\n");
     exit(1);
+  }
+
+  if (this->tmp_bitmap == NULL) {
+    this->tmp_bitmap = (u8 *)malloc(100 * 100 * sizeof(*this->tmp_bitmap));
   }
 
   this->scale = stbtt_ScaleForPixelHeight(&this->info, (r32)char_height);

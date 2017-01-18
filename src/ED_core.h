@@ -122,6 +122,7 @@ struct ED_Font_Codepoint {
 };
 
 struct ED_Font {
+  u8 *tmp_bitmap;
   u8 *ttf_raw_data;
   stbtt_fontinfo info;
   static const char first_char = '!';

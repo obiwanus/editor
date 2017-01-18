@@ -604,6 +604,7 @@ int main(int argc, char *argv[]) {
   // Free general stuff
   free(state->UI->z_buffer);
   free(state->UI);
+  free(g_font.tmp_bitmap);
   free(g_font.ttf_raw_data);
   free(g_font.bitmap);
 #if ED_LINUX_OPENGL
