@@ -143,6 +143,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 
   m4x4 WorldTransform = ViewportTransform * ClipSpaceTransform;
 
+  // #pragma omp parallel for num_threads(2)
   for (int m = 0; m < sb_count(state->models); ++m) {
     Model *model = state->models + m;
     if (!model->display) continue;

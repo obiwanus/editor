@@ -90,8 +90,6 @@ void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
   int error_step = sign * dy;
   int y = A.y;
 
-  int pitch = area->buffer->width;
-
   for (int x = A.x; x <= B.x; ++x) {
     int X = x, Y = y;
     if (swapped) swap(X, Y);  // unswap for drawing
@@ -102,7 +100,7 @@ void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
       X = X + area->left;
       Y = area->buffer->height - (Y + area->bottom) - 1;
 
-      int index = pitch * Y + X;
+      int index = area->buffer->width * Y + X;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
         ((u32 *)area->buffer->memory)[index] = color;

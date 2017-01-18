@@ -122,7 +122,7 @@ union v4i {
   v4i &operator =(const v4i &v) { simd = v.simd; return *this; }
   v4i &operator+=(const v4i &v) { simd = _mm_add_epi32(simd, v.simd); return *this; }
   v4i &operator-=(const v4i &v) { simd = _mm_sub_epi32(simd, v.simd); return *this; }
-  v4i &operator*=(const v4i &v) { simd = _mm_mullo_epi32(simd, v.simd); return *this; }
+  // v4i &operator*=(const v4i &v) { simd = _mm_mullo_epi32(simd, v.simd); return *this; }
   v4i &operator|=(const v4i &v) { simd = _mm_or_si128(simd, v.simd); return *this; }
   v4i &operator&=(const v4i &v) { simd = _mm_and_si128(simd, v.simd); return *this; }
 
@@ -140,8 +140,8 @@ inline v4i operator|(const v4i &a, const v4i &b) { return v4i(_mm_or_si128(a.sim
 inline v4i operator&(const v4i &a, const v4i &b) { return v4i(_mm_and_si128(a.simd, b.simd)); }
 
 inline v4i andnot(const v4i &a, const v4i &b) { return v4i(_mm_andnot_si128(a.simd, b.simd)); }
-inline v4i vmin(const v4i &a, const v4i &b) { return v4i(_mm_min_epi32(a.simd, b.simd)); }
-inline v4i vmax(const v4i &a, const v4i &b) { return v4i(_mm_max_epi32(a.simd, b.simd)); }
+// inline v4i vmin(const v4i &a, const v4i &b) { return v4i(_mm_min_epi32(a.simd, b.simd)); }
+// inline v4i vmax(const v4i &a, const v4i &b) { return v4i(_mm_max_epi32(a.simd, b.simd)); }
 
 // Functions not operator overloads because the semantics (returns mask)
 // are very different from scalar comparison ops.
@@ -149,10 +149,10 @@ inline v4i cmplt(const v4i &a, const v4i &b) { return v4i(_mm_cmplt_epi32(a.simd
 inline v4i cmpgt(const v4i &a, const v4i &b) { return v4i(_mm_cmpgt_epi32(a.simd, b.simd)); }
 
 inline bool mask_not_zero(const v4i &a) { return _mm_movemask_epi8(a.simd) != 0; }
-inline bool is_all_zeros(const v4i &a) { return _mm_testz_si128(a.simd, a.simd) != 0; }
-inline bool is_all_negative(const v4i &a) {
-  return _mm_testc_si128(_mm_set1_epi32(0x80000000), a.simd) != 0;
-}
+// inline bool is_all_zeros(const v4i &a) { return _mm_testz_si128(a.simd, a.simd) != 0; }
+// inline bool is_all_negative(const v4i &a) {
+//   return _mm_testc_si128(_mm_set1_epi32(0x80000000), a.simd) != 0;
+// }
 
 // can't overload << since parameter to immed. shifts must be a compile-time constant
 // and debug builds that don't inline can't deal with this
@@ -219,14 +219,14 @@ inline v4 itof(const v4i &v) { return v4(_mm_cvtepi32_ps(v.simd)); }
 inline v4i float2bits(const v4 &v) { return v4i(_mm_castps_si128(v.simd)); }
 inline v4 bits2float(const v4i &v) { return v4(_mm_castsi128_ps(v.simd)); }
 
-// Select between a and b based on sign (MSB) of mask
-inline v4 select(const v4 &a, const v4 &b, const v4 &mask) {
-  return v4(_mm_blendv_ps(a.simd, b.simd, mask.simd));
-}
-// Select between a and b based on sign (MSB) of mask
-inline v4 select(const v4 &a, const v4 &b, const v4i &mask) {
-  return v4(_mm_blendv_ps(a.simd, b.simd, _mm_castsi128_ps(mask.simd)));
-}
+// // Select between a and b based on sign (MSB) of mask
+// inline v4 select(const v4 &a, const v4 &b, const v4 &mask) {
+//   return v4(_mm_blendv_ps(a.simd, b.simd, mask.simd));
+// }
+// // Select between a and b based on sign (MSB) of mask
+// inline v4 select(const v4 &a, const v4 &b, const v4i &mask) {
+//   return v4(_mm_blendv_ps(a.simd, b.simd, _mm_castsi128_ps(mask.simd)));
+// }
 
 // clang-format on
 

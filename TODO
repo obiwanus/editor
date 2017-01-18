@@ -1,6 +1,5 @@
 MINIMUM WHAT NEEDS TO BE DONE:
 
-- Drawing should be fast
 - Proper fonts
 - shortcuts for positioning and projection
 - Load and display simple scenes in OBJ
@@ -11,11 +10,11 @@ MINIMUM WHAT NEEDS TO BE DONE:
 - Read mtl files
 - Render from the camera (using mtl)
 - nice icons for splitting and removing
+- Drawing should be fast
 
 
 NOW:
 
-- don't calculate pixel address every time
 - fill rules for the float rasterizer if applicable
 - find a faster way to rasterize triangles
 - find a faster way to draw
