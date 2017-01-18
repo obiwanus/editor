@@ -90,16 +90,22 @@ void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
   int error_step = sign * dy;
   int y = A.y;
 
+  int pitch = area->buffer->width;
+
   for (int x = A.x; x <= B.x; ++x) {
     int X = x, Y = y;
     if (swapped) swap(X, Y);  // unswap for drawing
     if (X >= 0 && X < area_width && Y >= 0 && Y < area_height) {
       r32 t = (r32)(x - A.x) / dx;
       r32 z = (1.0f - t) * Af.z + t * Bf.z;
-      int index = area->buffer->width * (Y + area->bottom) + (X + area->left);
+
+      X = X + area->left;
+      Y = area->buffer->height - (Y + area->bottom) - 1;
+
+      int index = pitch * Y + X;
       if (z_buffer[index] < z) {
         z_buffer[index] = z;
-        draw_pixel(area, X, Y, color);
+        ((u32 *)area->buffer->memory)[index] = color;
       }
     }
     error += error_step;
@@ -284,7 +290,7 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
 
   v4i buffer_width_wide = v4i(buffer->width);
   v4i x_step_wide = v4i(4);
-  v4 wide255 = v4(255.0f);
+  v4 max_intensity = v4(200.0f);
 
   int pitch = buffer->width;
   u32 *pixel_row = (u32 *)buffer->memory + p_max.y * pitch;
@@ -308,38 +314,17 @@ void triangle_rasterize_simd(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
       if (mask_not_zero(mask)) {
         v4 intensity = w0 * in[0] + w1 * in[1] + w2 * in[2];
         intensity = v4_and(intensity, cmpge(intensity, zero));
-        v4i grey_single = ftoi(intensity * wide255);
+        v4i grey_single = ftoi(intensity * max_intensity);
         v4i grey = (shiftl<24>(grey_single) | shiftl<16>(grey_single) |
                     shiftl<8>(grey_single) | grey_single);
 
         v4 z_values = w0 * z0 + w1 * z1 + w2 * z2;
-        r32 *z_ptr = z_buffer + y * pitch + x;
-        v4 z_buffer_values = v4::loadu(z_ptr);
+        v4 z_buffer_values = v4::loadu(z_buffer_row + x);
         v4 z_mask = v4_and(bits2float(mask), cmpge(z_values, z_buffer_values));
         v4 new_z_values =
             v4_or(v4_and(z_mask, z_values), v4_andnot(z_mask, z_buffer_values));
-        new_z_values.storeu(z_ptr);
+        new_z_values.storeu(z_buffer_row + x);
         mask &= float2bits(z_mask);
-
-        // inline u32 get_rgb_u32(v4 color) {
-        //   assert(color.r >= 0 && color.r <= 1);
-        //   assert(color.g >= 0 && color.g <= 1);
-        //   assert(color.b >= 0 && color.b <= 1);
-
-        //   u32 result = 0x00000000;
-        //   u8 R = (u8)(color.r * 255);
-        //   u8 G = (u8)(color.g * 255);
-        //   u8 B = (u8)(color.b * 255);
-        //   u8 A = (u8)(color.a * 255);
-        //   result = A << 24 | R << 16 | G << 8 | B;
-        //   return result;
-        // }
-
-        // !!
-        // int index = pitch * (y + area->bottom) + (x +
-        // area->left);
-        // if (z_buffer[index] < z) {
-        //   z_buffer[index] = z;
 
         u32 *pixel = pixel_row + x;
         v4i original_color = v4i::loadu(pixel);
