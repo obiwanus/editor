@@ -469,11 +469,8 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
   }
 }
 
-void draw_nice_string(Area *area, v2i position, const char *string,
-                      u32 text_color, bool top_left = true) {
-  int area_width = area->get_width();
-  int area_height = area->get_height();
-
+void draw_string(Area *area, v2i position, const char *string, u32 text_color,
+                 bool top_left = true) {
   position += V2i(area->left, area->bottom);
 
   if (!top_left) {
@@ -481,106 +478,25 @@ void draw_nice_string(Area *area, v2i position, const char *string,
     position.y = area->buffer->height - position.y - 1;
   }
 
-  stbtt_fontinfo *font = &g_font.info;
-  r32 scale = g_font.scale;
-
-  v2 start = V2((r32)position.x + 1.0f, (r32)position.y);
-
+  v2i start = V2i(position.x + 2, position.y + g_font.baseline);
   int ch = 0;
-  while (string[ch]) {
-    int advance, lsb, x0, y0, x1, y1;
-    // Subpixel precision
-    float x_shift = start.x - (float)floor(start.x);
-    float y_shift = start.y - (float)floor(start.y);
-
-    stbtt_GetCodepointHMetrics(font, string[ch], &advance, &lsb);
-    stbtt_GetCodepointBitmapBoxSubpixel(font, string[ch], scale, scale, x_shift,
-                                        y_shift, &x0, &y0, &x1, &y1);
-    int width = x1 - x0;
-    int height = y1 - y0;
-    assert(width < g_font.tmp_bitmap_size);
-    memset(g_font.tmp_bitmap, 0, g_font.tmp_bitmap_size *
-                                     g_font.tmp_bitmap_size *
-                                     sizeof(*g_font.tmp_bitmap));
-    stbtt_MakeCodepointBitmapSubpixel(font, g_font.tmp_bitmap, width, height,
-                                      width, scale, scale, x_shift, y_shift,
-                                      string[ch]);
-    // TODO: simd
-    // Blend the tmp bitmap onto the target bitmap
-    // TODO: clip against the area bounds
-    int min_y = max(0, (int)start.y + y0);
-    int max_y = min(area->buffer->height - 1, (int)start.y + y1);
-    int min_x = max(0, (int)start.x + x0);
-    int max_x = min(area->buffer->width - 1, (int)start.x + x1);
-    for (int y = min_y; y <= max_y; ++y) {
-      for (int x = min_x; x <= max_x; ++x) {
-        u8 alpha_src = g_font.tmp_bitmap[(x - min_x) + (y - min_y) * width];
-        u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
-        if (alpha_src == 0xFF) {
-          // Just draw foreground
-          *pixel = text_color;
-        } else if (alpha_src == 0) {
-          // Don't draw
-        } else {
-          // Blend and draw
-          int alpha = alpha_src + 1;
-          int alpha_inv = 256 - alpha_src;
-          // Background
-          u32 bg = *pixel;
-          u8 R_bg = (u8)((bg & 0x00FF0000) >> 16);
-          u8 G_bg = (u8)((bg & 0x0000FF00) >> 8);
-          u8 B_bg = (u8)((bg & 0x000000FF) >> 0);
-          // Foreground
-          u8 R_fg = (u8)((text_color & 0x00FF0000) >> 16);
-          u8 G_fg = (u8)((text_color & 0x0000FF00) >> 8);
-          u8 B_fg = (u8)((text_color & 0x000000FF) >> 0);
-          // Blend
-          u8 R = (u8)((alpha * R_fg + alpha_inv * R_bg) >> 8);
-          u8 G = (u8)((alpha * G_fg + alpha_inv * G_bg) >> 8);
-          u8 B = (u8)((alpha * B_fg + alpha_inv * B_bg) >> 8);
-          *pixel = R << 16 | G << 8 | B << 0;
-        }
-      }
-    }
-    if (string[ch + 1] != '\0') {
-      int kern_advance;
-      kern_advance =
-          stbtt_GetCodepointKernAdvance(font, string[ch], string[ch + 1]);
-      start.x += (advance + 10 + kern_advance) * scale;
-    }
-    ch++;
-  }
-}
-
-// TODO: optimize the drawing of nice strings above and delete the code below
-#if 1
-void draw_string(Area *area, v2i position, const char *string,
-                 u32 text_color, bool top_left = true) {
-  position += V2i(area->left, area->bottom);
-
-  if (!top_left) {
-    // Convert position to top-left
-    position.y = area->buffer->height - position.y - 1;
-  }
-
-  char c;
-  v2i start = V2i(position.x + 2, position.y);
-  while ((c = *string++) != '\0') {
-    if (c == '\n') {
+  while (string[ch] != '\0') {
+    if (string[ch] == '\n') {
       start.x = position.x + 2;
       start.y += g_font.line_height;
       continue;
     }
 
-    ED_Font_Codepoint *codepoint = g_font.codepoints + (c - g_font.first_char);
+    ED_Font_Codepoint *codepoint =
+        g_font.codepoints + (string[ch] - g_font.first_char);
     u8 *char_bitmap = codepoint->bitmap;
 
     int min_y = max(0, (int)start.y + codepoint->y0);
     int max_y = min(area->buffer->height - 1, (int)start.y + codepoint->y1);
     int min_x = max(0, (int)start.x + codepoint->x0);
     int max_x = min(area->buffer->width - 1, (int)start.x + codepoint->x1);
-    for (int y = min_y; y <= max_y; ++y) {
-      for (int x = min_x; x <= max_x; ++x) {
+    for (int y = min_y; y < max_y; ++y) {
+      for (int x = min_x; x < max_x; ++x) {
         u8 alpha_src =
             char_bitmap[(x - min_x) + (y - min_y) * codepoint->width];
         u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
@@ -610,15 +526,15 @@ void draw_string(Area *area, v2i position, const char *string,
         }
       }
     }
-    if (*string != '\0') {
+    if (string[ch + 1] != '\0') {
       ED_Font_Codepoint *next_codepoint =
-          g_font.codepoints + (*string - g_font.first_char);
+          g_font.codepoints + (string[ch + 1] - g_font.first_char);
       int advance, kern_advance;
       stbtt_GetGlyphHMetrics(&g_font.info, codepoint->glyph, &advance, 0);
       kern_advance = stbtt_GetGlyphKernAdvance(&g_font.info, codepoint->glyph,
                                                next_codepoint->glyph);
       start.x += (int)((advance + kern_advance) * g_font.scale);
     }
+    ++ch;
   }
 }
-#endif

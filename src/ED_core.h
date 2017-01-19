@@ -130,7 +130,7 @@ struct ED_Font {
   int tmp_bitmap_size;
   u8 *ttf_raw_data;
   stbtt_fontinfo info;
-  static const char first_char = '!';
+  static const char first_char = ' ';
   static const char last_char = '~';
   ED_Font_Codepoint codepoints[last_char - first_char + 1];
   r32 scale;

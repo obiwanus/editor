@@ -31,7 +31,7 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   buffer->width = state->kWindowWidth;
   buffer->height = state->kWindowHeight;
 
-  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 15);
+  g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 16);
 
   // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
@@ -114,13 +114,6 @@ void ED_Font::load_from_file(char *filename, int char_height) {
   stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
   this->baseline = (int)(ascent * this->scale);
   this->line_height = (int)((line_gap + ascent - descent) * this->scale);
-
-  if (this->tmp_bitmap == NULL) {
-    this->tmp_bitmap_size = this->line_height + 10;
-    this->tmp_bitmap =
-        (u8 *)malloc(this->tmp_bitmap_size * this->tmp_bitmap_size *
-                     sizeof(*this->tmp_bitmap));
-  }
 
   int alphabet_size = this->last_char - this->first_char + 1;
 

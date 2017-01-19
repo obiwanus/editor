@@ -62,6 +62,9 @@ idea: try to look at the objects in clip space from different angles
 ==============================================================================
 DONE:
 
+[20/01/2017]
+- actually drawing nice pre-rendered cheap strings
+
 [19/01/2017]
 - draw nicer and more expensive strings
 

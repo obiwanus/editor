@@ -338,7 +338,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     draw_line(area, origin, Z, kZColor, 2);
     draw_line(area, origin, Y, kYColor, 2);
 
-    v2i letter_adjust = V2i(-3, 15);
+    v2i letter_adjust = V2i(-3, 17);
     draw_string(area, X + letter_adjust, "x", kXColor, false);
     draw_string(area, Y + letter_adjust, "y", kYColor, false);
     draw_string(area, Z + letter_adjust, "z", kZColor, false);
