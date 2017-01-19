@@ -109,15 +109,18 @@ void ED_Font::load_from_file(char *filename, int char_height) {
     exit(1);
   }
 
-  if (this->tmp_bitmap == NULL) {
-    this->tmp_bitmap = (u8 *)malloc(100 * 100 * sizeof(*this->tmp_bitmap));
-  }
-
   this->scale = stbtt_ScaleForPixelHeight(&this->info, (r32)char_height);
   int ascent, descent, line_gap;
   stbtt_GetFontVMetrics(&this->info, &ascent, &descent, &line_gap);
   this->baseline = (int)(ascent * this->scale);
   this->line_height = (int)((line_gap + ascent - descent) * this->scale);
+
+  if (this->tmp_bitmap == NULL) {
+    this->tmp_bitmap_size = this->line_height + 10;
+    this->tmp_bitmap =
+        (u8 *)malloc(this->tmp_bitmap_size * this->tmp_bitmap_size *
+                     sizeof(*this->tmp_bitmap));
+  }
 
   int alphabet_size = this->last_char - this->first_char + 1;
 
@@ -129,6 +132,10 @@ void ED_Font::load_from_file(char *filename, int char_height) {
     int x0, y0, x1, y1;
     stbtt_GetGlyphBitmapBox(&this->info, codepoint->glyph, this->scale,
                             this->scale, &x0, &y0, &x1, &y1);
+    codepoint->x0 = x0;
+    codepoint->y0 = y0;
+    codepoint->x1 = x1;
+    codepoint->y1 = y1;
     codepoint->width = x1 - x0;
     codepoint->height = y1 - y0;
     buffer_size += codepoint->width * codepoint->height;

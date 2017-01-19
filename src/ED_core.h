@@ -117,12 +117,17 @@ struct Program_State {
 struct ED_Font_Codepoint {
   int width;
   int height;
+  int x0;
+  int y0;
+  int x1;
+  int y1;
   int glyph;
   u8 *bitmap;
 };
 
 struct ED_Font {
   u8 *tmp_bitmap;
+  int tmp_bitmap_size;
   u8 *ttf_raw_data;
   stbtt_fontinfo info;
   static const char first_char = '!';

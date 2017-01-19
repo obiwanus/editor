@@ -469,9 +469,8 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
   }
 }
 
-void draw_nice_string(Area *area, v2i position,
-                      const char *string, u32 text_color,
-                      bool top_left = true) {
+void draw_nice_string(Area *area, v2i position, const char *string,
+                      u32 text_color, bool top_left = true) {
   int area_width = area->get_width();
   int area_height = area->get_height();
 
@@ -485,11 +484,7 @@ void draw_nice_string(Area *area, v2i position,
   stbtt_fontinfo *font = &g_font.info;
   r32 scale = g_font.scale;
 
-  int ascent;
-  stbtt_GetFontVMetrics(font, &ascent, 0, 0);
-  r32 baseline = (ascent * scale);
-
-  v2 start = V2((r32)position.x + 1.0f, (r32)position.y + baseline);
+  v2 start = V2((r32)position.x + 1.0f, (r32)position.y);
 
   int ch = 0;
   while (string[ch]) {
@@ -503,21 +498,24 @@ void draw_nice_string(Area *area, v2i position,
                                         y_shift, &x0, &y0, &x1, &y1);
     int width = x1 - x0;
     int height = y1 - y0;
+    assert(width < g_font.tmp_bitmap_size);
+    memset(g_font.tmp_bitmap, 0, g_font.tmp_bitmap_size *
+                                     g_font.tmp_bitmap_size *
+                                     sizeof(*g_font.tmp_bitmap));
     stbtt_MakeCodepointBitmapSubpixel(font, g_font.tmp_bitmap, width, height,
                                       width, scale, scale, x_shift, y_shift,
                                       string[ch]);
+    // TODO: simd
     // Blend the tmp bitmap onto the target bitmap
-    // TODO: this can be optimized significantly
-    assert(width < 100 && height < 100);
-    for (int y = 0; y < height; ++y) {
-      int Y = (int)start.y + y - height;
-      if (Y < 0 || Y > area_height) continue;
-
-      for (int x = 0; x < width; ++x) {
-        int X = (int)start.x + x;
-        if (X < 0 || X > area_width) continue;
-        u8 alpha_src = g_font.tmp_bitmap[x + y * width];
-        u32 *pixel = (u32 *)area->buffer->memory + X + Y * area->buffer->width;
+    // TODO: clip against the area bounds
+    int min_y = max(0, (int)start.y + y0);
+    int max_y = min(area->buffer->height - 1, (int)start.y + y1);
+    int min_x = max(0, (int)start.x + x0);
+    int max_x = min(area->buffer->width - 1, (int)start.x + x1);
+    for (int y = min_y; y <= max_y; ++y) {
+      for (int x = min_x; x <= max_x; ++x) {
+        u8 alpha_src = g_font.tmp_bitmap[(x - min_x) + (y - min_y) * width];
+        u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
         if (alpha_src == 0xFF) {
           // Just draw foreground
           *pixel = text_color;
@@ -555,17 +553,21 @@ void draw_nice_string(Area *area, v2i position,
 }
 
 // TODO: optimize the drawing of nice strings above and delete the code below
-#if 0
-void draw_string(Area *area, int string_x, int string_y, const char *string,
-                 u32 text_color) {
-  int area_width = area->get_width();
-  int area_height = area->get_height();
+#if 1
+void draw_string(Area *area, v2i position, const char *string,
+                 u32 text_color, bool top_left = true) {
+  position += V2i(area->left, area->bottom);
+
+  if (!top_left) {
+    // Convert position to top-left
+    position.y = area->buffer->height - position.y - 1;
+  }
 
   char c;
-  v2i start = V2i(string_x, string_y + g_font.baseline);
+  v2i start = V2i(position.x + 2, position.y);
   while ((c = *string++) != '\0') {
     if (c == '\n') {
-      start.x = string_x;
+      start.x = position.x + 2;
       start.y += g_font.line_height;
       continue;
     }
@@ -573,15 +575,15 @@ void draw_string(Area *area, int string_x, int string_y, const char *string,
     ED_Font_Codepoint *codepoint = g_font.codepoints + (c - g_font.first_char);
     u8 *char_bitmap = codepoint->bitmap;
 
-    // TODO: this can be optimized significantly
-    for (int x = 0; x < codepoint->width; x++) {
-      int X = start.x + x;
-      if (X < 0 || X > area_width) continue;
-      for (int y = 0; y < codepoint->height; y++) {
-        int Y = start.y + y - codepoint->height;
-        if (Y < 0 || Y > area_height) continue;
-        u8 alpha_src = char_bitmap[x + y * codepoint->width];
-        u32 *pixel = (u32 *)area->buffer->memory + X + Y * area->buffer->width;
+    int min_y = max(0, (int)start.y + codepoint->y0);
+    int max_y = min(area->buffer->height - 1, (int)start.y + codepoint->y1);
+    int min_x = max(0, (int)start.x + codepoint->x0);
+    int max_x = min(area->buffer->width - 1, (int)start.x + codepoint->x1);
+    for (int y = min_y; y <= max_y; ++y) {
+      for (int x = min_x; x <= max_x; ++x) {
+        u8 alpha_src =
+            char_bitmap[(x - min_x) + (y - min_y) * codepoint->width];
+        u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
         if (alpha_src == 0xFF) {
           // Just draw foreground
           *pixel = text_color;
