@@ -471,11 +471,13 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
 
 void draw_string(Area *area, v2i position, const char *string, u32 text_color,
                  bool top_left = true) {
-  position += V2i(area->left, area->bottom);
+  position.x += area->left;
 
   if (!top_left) {
     // Convert position to top-left
-    position.y = area->buffer->height - position.y - 1;
+    position.y = area->buffer->height - position.y - 1 - area->bottom;
+  } else {
+    position.y = area->buffer->height - area->top + position.y;
   }
 
   v2i start = V2i(position.x + 2, position.y + g_font.baseline);

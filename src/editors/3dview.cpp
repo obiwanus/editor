@@ -344,7 +344,34 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 
   // Draw status string
   {
-
+    char status_string[200];
+    char *position_type;
+    switch (this->camera.position_type) {
+      case Camera_Position_User: {
+        position_type = "User";
+      } break;
+      case Camera_Position_Front: {
+        position_type = "Front";
+      } break;
+      case Camera_Position_Left: {
+        position_type = "Left";
+      } break;
+      case Camera_Position_Top: {
+        position_type = "Top";
+      } break;
+      default: {
+        position_type = "User";
+      } break;
+    };
+    char *projection;
+    if (this->camera.ortho_projection) {
+      projection = "ortho";
+    } else {
+      projection = "persp";
+    }
+    sprintf(status_string, "%s %s", position_type, projection);
+    draw_string(area, V2i(area->get_width() - 100, 10),
+                status_string, 0x00FFFFFF, true);
   }
 
 #endif

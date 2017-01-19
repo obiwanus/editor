@@ -226,7 +226,6 @@ void UI_Select::update_and_draw(User_Input *input) {
 
   // If mouse cursor is not in the area, don't interact with select
   if (area_rect.contains(input->mouse)) {
-
     const int kMargin = 1;
     Rect all_options_rect;
     all_options_rect.left = select_rect.left - kMargin;
@@ -275,9 +274,9 @@ void UI_Select::update_and_draw(User_Input *input) {
         }
         draw_rect(area, option, color);
         const char *editor_name = Editor_Names[opt];
-        draw_string(area,
-                    V2i(option.left + 3, option.bottom + g_font.line_height + 1),
-                    editor_name, 0x00FFFFFF, false);
+        draw_string(
+            area, V2i(option.left + 3, option.bottom + g_font.line_height + 1),
+            editor_name, 0x00FFFFFF, false);
         bottom += select->option_height + 1;
 
         // Select the option on click
@@ -290,16 +289,15 @@ void UI_Select::update_and_draw(User_Input *input) {
         }
       }
     }
-  }
-  else {
+  } else {
     select->open = false;
   }
 
   // Draw the name of currently selected option
   const char *selected_name = Editor_Names[select->option_selected];
-  draw_string(area, V2i(select_rect.left + 3,
-                        select_rect.bottom + g_font.line_height),
-              selected_name, 0x00FFFFFF, false);
+  draw_string(
+      area, V2i(select_rect.left + 3, select_rect.bottom + g_font.line_height),
+      selected_name, 0x00FFFFFF, false);
 }
 
 Area *User_Interface::create_area(Area *parent_area, Rect rect) {

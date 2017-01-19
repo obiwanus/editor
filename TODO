@@ -60,6 +60,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [20/01/2017]
+- display projection type in the status string
 - draw text on editor type selectors
 - actually drawing nice pre-rendered cheap strings
 

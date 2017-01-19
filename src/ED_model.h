@@ -57,6 +57,15 @@ struct Model : Entity {
   void destroy();
 };
 
+enum Camera_Position {
+  Camera_Position_User = 0,
+  Camera_Position_Front,
+  Camera_Position_Left,
+  Camera_Position_Top,
+
+  Camera_Position__COUNT,
+};
+
 struct Camera : Entity {
   // View frustum
   r32 near = -1.0f;
@@ -66,6 +75,7 @@ struct Camera : Entity {
   v2i viewport;
 
   bool ortho_projection = false;
+  Camera_Position position_type;
 
   v3 pivot = {};
   v3 old_pivot = {};
