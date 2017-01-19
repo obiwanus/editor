@@ -24,6 +24,11 @@ enum Editor_3DView_Mode {
   Editor_3DView_Mode_Pivot_Move,
 };
 
+const char *Editor_Names[Area_Editor_Type__COUNT] = {
+  "3D view",
+  "Ray trace",
+};
+
 struct Editor_3DView : Area_Editor {
   Camera camera;
   Editor_3DView_Mode mode;

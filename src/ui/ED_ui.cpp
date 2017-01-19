@@ -221,74 +221,85 @@ void UI_Select::update_and_draw(User_Input *input) {
   Rect select_rect = select->get_rect();
 
   // Draw unhighlighted no matter what
-  const u32 colors[10] = {0x00000000, 0x00123123};
-  draw_rect(area, select_rect, colors[select->option_selected]);
+  u32 base_color = 0x00222222;
+  draw_rect(area, select_rect, base_color);
 
   // If mouse cursor is not in the area, don't interact with select
-  if (!area_rect.contains(input->mouse)) {
-    select->open = false;
-    return;
-  }
+  if (area_rect.contains(input->mouse)) {
 
-  const int kMargin = 1;
-  Rect all_options_rect;
-  all_options_rect.left = select_rect.left - kMargin;
-  all_options_rect.right = select_rect.right + 30 + kMargin;
-  all_options_rect.bottom = select_rect.bottom - kMargin;
-  all_options_rect.top = select_rect.top +
-                         select->option_count * (select->option_height + 1) +
-                         kMargin - 1;
+    const int kMargin = 1;
+    Rect all_options_rect;
+    all_options_rect.left = select_rect.left - kMargin;
+    all_options_rect.right = select_rect.right + 30 + kMargin;
+    all_options_rect.bottom = select_rect.bottom - kMargin;
+    all_options_rect.top = select_rect.top +
+                           select->option_count * (select->option_height + 1) +
+                           kMargin - 1;
 
-  // Update
-  v2i mouse = area_rect.projected(input->mouse);
-  bool mouse_over_select = select_rect.contains(mouse);
-  bool mouse_over_options = all_options_rect.contains(mouse);
+    // Update
+    v2i mouse = area_rect.projected(input->mouse);
+    bool mouse_over_select = select_rect.contains(mouse);
+    bool mouse_over_options = all_options_rect.contains(mouse);
 
-  if (mouse_over_select && input->button_went_down(IB_mouse_left)) {
-    select->open = true;
-  }
+    if (mouse_over_select && input->button_went_down(IB_mouse_left)) {
+      select->open = true;
+    }
 
-  if (select->open && !mouse_over_options) {
-    select->open = false;
-  }
+    if (select->open && !mouse_over_options) {
+      select->open = false;
+    }
 
-  if (mouse_over_select || select->open) {
-    // Draw highlighted
-    draw_rect(area, select_rect, 0x00222222);
-  }
+    if (mouse_over_select || select->open) {
+      // Draw highlighted
+      draw_rect(area, select_rect, 0x00343434);
+    }
 
-  if (select->open) {
-    Rect options_border = all_options_rect;
-    options_border.bottom = select_rect.top + kMargin;
+    if (select->open) {
+      Rect options_border = all_options_rect;
+      options_border.bottom = select_rect.top + kMargin;
 
-    // Draw all options rect first
-    draw_rect(area, options_border, 0x00686868);
+      // Draw all options rect first
+      draw_rect(area, options_border, 0x00686868);
 
-    int bottom = select_rect.top;
-    for (int opt = 0; opt < select->option_count; opt++) {
-      Rect option;
-      option.bottom = bottom;
-      option.left = select_rect.left;
-      option.right = select_rect.right + 30;
-      option.top = option.bottom + select->option_height;
-      bool mouse_over_option = mouse_over_options && option.contains(mouse);
-      u32 color = colors[opt];
-      if (mouse_over_option) {
-        color += 0x00121212;  // highlight
-      }
-      draw_rect(area, option, color);
-      bottom += select->option_height + 1;
+      int bottom = select_rect.top;
+      for (int opt = 0; opt < select->option_count; opt++) {
+        Rect option;
+        option.bottom = bottom;
+        option.left = select_rect.left;
+        option.right = select_rect.right + 30;
+        option.top = option.bottom + select->option_height;
+        bool mouse_over_option = mouse_over_options && option.contains(mouse);
+        u32 color = base_color;
+        if (mouse_over_option) {
+          color += 0x00121212;  // highlight
+        }
+        draw_rect(area, option, color);
+        const char *editor_name = Editor_Names[opt];
+        draw_string(area,
+                    V2i(option.left + 3, option.bottom + g_font.line_height + 1),
+                    editor_name, 0x00FFFFFF, false);
+        bottom += select->option_height + 1;
 
-      // Select the option on click
-      if (mouse_over_option && input->button_went_down(IB_mouse_left)) {
-        select->option_selected = opt;
-        select->open = false;
+        // Select the option on click
+        if (mouse_over_option && input->button_went_down(IB_mouse_left)) {
+          select->option_selected = opt;
+          select->open = false;
 
-        // TODO: if we ever generalize this, this bit will have to change
-        select->parent_area->editor_type = (Area_Editor_Type)opt;
+          // TODO: if we ever generalize this, this bit will have to change
+          select->parent_area->editor_type = (Area_Editor_Type)opt;
+        }
       }
     }
   }
+  else {
+    select->open = false;
+  }
+
+  // Draw the name of currently selected option
+  const char *selected_name = Editor_Names[select->option_selected];
+  draw_string(area, V2i(select_rect.left + 3,
+                        select_rect.bottom + g_font.line_height),
+              selected_name, 0x00FFFFFF, false);
 }
 
 Area *User_Interface::create_area(Area *parent_area, Rect rect) {
@@ -324,7 +335,7 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
     *select = {};
     select->align_bottom = true;
     select->x = 20;
-    select->y = 4;
+    select->y = 3;
     select->option_count = Area_Editor_Type__COUNT;
     select->option_height = 20;
     select->parent_area = area;

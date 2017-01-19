@@ -17,7 +17,6 @@ NOW:
 - fill rules for the float rasterizer if applicable
 - avoid random heap allocations everywhere
 - put things we're not going to free in the permanent memory
-- [optimise] maybe pre-render strings and store them if rendering on the fly is too slow
 - thread-safe performance counters
 - when selecting models, take the closest one
 - properly outline triangles
@@ -27,7 +26,6 @@ NOW:
 - drag models without manipulator
 - add the model move manipulator
 - move models along the axis using the manipulator
-- debug info output onto the screen
 - don't expect obj files to include normals
 - clipping
 - scene graph - research
@@ -35,7 +33,6 @@ NOW:
 - be able to read scene info
 - [bug] cursor moves when trying to split an area
 - [linux] fix window performance problems for opengl
-- find out exactly why zeroing the z-buffer seems to work
 - procedural surface generation
 - metaballs
 - eulerian grid fluid
@@ -50,7 +47,7 @@ NOW:
 - align buffer width to 4 pixels and use aligned writes
 
 - Warp cursor pointer when rotating
-- Fix the blue axis in the corner
+- Fix the blue axis in the corner (they should use their own z-buffer)
 - Allocate max size and no more glitches on resize please
 - Logging
 - don't transform the same vertex several times
@@ -63,6 +60,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [20/01/2017]
+- draw text on editor type selectors
 - actually drawing nice pre-rendered cheap strings
 
 [19/01/2017]

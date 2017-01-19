@@ -260,7 +260,6 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
                 WorldTransform * (model->position + model->direction * 0.3f),
                 0x00FF0000, z_buffer);
 
-#if 0
       // Draw AABBoxes
       v3 verts[] = {
           {min.x, min.y, min.z},
@@ -279,7 +278,6 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         draw_line(area, WorldTransform * verts[lines[i]],
                   WorldTransform * verts[lines[i + 1]], 0x00FFAA40, z_buffer);
       }
-#endif
     }
   }
 
@@ -342,6 +340,11 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     draw_string(area, X + letter_adjust, "x", kXColor, false);
     draw_string(area, Y + letter_adjust, "y", kYColor, false);
     draw_string(area, Z + letter_adjust, "z", kZColor, false);
+  }
+
+  // Draw status string
+  {
+
   }
 
 #endif

@@ -486,6 +486,8 @@ void draw_string(Area *area, v2i position, const char *string, u32 text_color,
       start.y += g_font.line_height;
       continue;
     }
+    assert(string[ch] - g_font.first_char >= 0);
+    assert(g_font.last_char - string[ch] >= 0);
 
     ED_Font_Codepoint *codepoint =
         g_font.codepoints + (string[ch] - g_font.first_char);
