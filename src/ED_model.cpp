@@ -14,11 +14,6 @@ void Model::read_texture(char *filename) {
   this->texture = image;
 }
 
-m4x4 Model::get_model_transform() {
-  return Matrix::frame_to_canonical(this->get_basis(), this->position) *
-         Matrix::S(this->scale);
-}
-
 void Model::destroy() {
   sb_free(this->vertices);
   sb_free(this->vns);
@@ -54,6 +49,9 @@ m4x4 Entity::transform_to_entity_space() {
 }
 
 basis3 Entity::get_basis() {
+  assert(direction.x != 0 || direction.y != 0 || direction.z != 0);
+  assert(up.x != 0 || up.y != 0 || up.z != 0);
+
   basis3 result;
   result.w = this->direction.normalized();
   result.u = this->up.cross(result.w).normalized();

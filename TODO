@@ -15,6 +15,12 @@ NICE TO HAVE:
 - Animation of camera when moving to predefined points
 
 
+BUGS:
+
+- cursor moves when clicking outside of the view area
+- cursor setting doesn't work properly in ortho projection
+
+
 NOW:
 
 - fill rules for the float rasterizer if applicable
@@ -34,7 +40,6 @@ NOW:
 - scene graph - research
 - scene graph - implementation
 - be able to read scene info
-- [bug] cursor moves when trying to split an area
 - [linux] fix window performance problems for opengl
 - procedural surface generation
 - metaballs
@@ -48,7 +53,6 @@ NOW:
 - use quaternions for model orientation
 - save scenes (and models)
 - align buffer width to 4 pixels and use aligned writes
-
 - Warp cursor pointer when rotating
 - Fix the blue axis in the corner (they should use their own z-buffer)
 - Allocate max size and no more glitches on resize please

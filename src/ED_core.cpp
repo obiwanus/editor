@@ -85,31 +85,35 @@ void Program_State::read_wavefront_obj_file(char *filename) {
     }
   }
 
-  model.scale = 0.3f;
-  model.position = V3(0, 0, 0);
+  model.scale = 1.0f;
   model.direction = V3(1, 0, 0);
   model.display = true;
   model.debug = true;
 
   // Find AABB and reposition the model
-  model.aabb.min = V3(INFINITY, INFINITY, INFINITY);
-  model.aabb.max = V3(-INFINITY, -INFINITY, -INFINITY);
-  m4x4 ModelTransform = model.get_model_transform();
+  v3 min = V3(INFINITY, INFINITY, INFINITY);
+  v3 max = V3(-INFINITY, -INFINITY, -INFINITY);
+  // m4x4 ModelTransform = model.get_model_transform();
   for (int tr = 0; tr < sb_count(model.triangles); ++tr) {
     Triangle triangle = model.triangles[tr];
     for (int i = 0; i < 3; ++i) {
-      v3 scene_vert =
-          ModelTransform * model.vertices[triangle.vertices[i].index];
+      v3 vertex = model.vertices[triangle.vertices[i].index];
+      // v3 scene_vert =
+      //     ModelTransform * model.vertices[triangle.vertices[i].index];
 
       for (int j = 0; j < 3; ++j) {
-        r32 value = scene_vert.E[j];
-        if (value < model.aabb.min.E[j]) {
-          model.aabb.min.E[j] = value;
-        } else if (model.aabb.max.E[j] < value) {
-          model.aabb.max.E[j] = value;
+        r32 value = vertex.E[j];
+        if (value < min.E[j]) {
+          min.E[j] = value;
+        } else if (max.E[j] < value) {
+          max.E[j] = value;
         }
       }
     }
+  }
+  model.position = (min + max) * 0.5f;
+  for (int i = 0; i < sb_count(model.vertices); ++i) {
+    model.vertices[i] -= model.position;
   }
 
   sb_push(this->models, model);

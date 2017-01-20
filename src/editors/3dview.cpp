@@ -60,7 +60,9 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         if (model == state->selected_model) continue;
 
         // Put model in the scene
-        m4x4 ModelTransform = model->get_model_transform();
+        m4x4 ModelTransform =
+            Matrix::frame_to_canonical(model->get_basis(), model->position) *
+            Matrix::S(model->scale);
 
         for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
           Triangle triangle = model->triangles[tr];
@@ -217,7 +219,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       v3 vns[3];
 
       for (int i = 0; i < 3; ++i) {
-        scene_verts[i] = ModelTransform * model->vertices[triangle.vertices[i].index];
+        scene_verts[i] =
+            ModelTransform * model->vertices[triangle.vertices[i].index];
 
         // Find AABB. This is probably not a good idea since it
         // won't work if the next frame the model drastically changes its
