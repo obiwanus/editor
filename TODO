@@ -10,9 +10,11 @@ MINIMUM WHAT NEEDS TO BE DONE:
 - nice icons for splitting and removing
 - Drawing should be fast
 
-NICE TO HAVE:
 
-- Animation of camera when moving to predefined points
+NOW:
+
+- take quads into account when calculating AABB
+- display the name of the selected model
 
 
 BUGS:
@@ -21,11 +23,12 @@ BUGS:
 - cursor setting doesn't work properly in ortho projection
 
 
-NOW:
+NICE TO HAVE:
 
-- don't calculate AABB every frame - only when something changes, e.g. direction
-- display the name of the selected model
+- Animation of camera when moving to predefined points
 
+
+BACKLOG:
 
 - avoid random heap allocations everywhere
 - put things we're not going to free in the permanent memory
@@ -67,9 +70,11 @@ NOW:
 idea: try to look at the objects in clip space from different angles
 
 ==============================================================================
+
 DONE:
 
 [21/01/2017]
+- don't calculate AABB every frame - only when something changes, e.g. direction
 - change the view hotkeys to properly work when pivot is not 0,0,0
 - draw quads
 - don't expect obj files to always have texture indices

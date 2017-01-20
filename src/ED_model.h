@@ -45,6 +45,7 @@ struct Model : Entity {
   Triangle *triangles;
   Quad *quads;
   Image texture;
+  v3 old_direction;
 
   r32 scale = 1.0f;
   bool display = true;
@@ -53,7 +54,7 @@ struct Model : Entity {
   AABBox aabb;
 
   void read_texture(char *);
-  m4x4 get_model_transform();
+  void update_aabb();
   void destroy();
 };
 

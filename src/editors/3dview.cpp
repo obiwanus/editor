@@ -177,6 +177,10 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     // Basic frustum culling - using the AABB calculated in the prev frame
     // (the vertices are already in the scene space)
     {
+      if (model->old_direction != model->direction) {
+        model->old_direction = model->direction;
+        model->update_aabb();
+      }
       v3 min = model->aabb.min;
       v3 max = model->aabb.max;
       v3 verts[] = {
@@ -212,9 +216,6 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         Matrix::frame_to_canonical(model->get_basis(), model->position) *
         Matrix::S(model->scale);
 
-    model->aabb.min = V3(INFINITY, INFINITY, INFINITY);
-    model->aabb.max = V3(-INFINITY, -INFINITY, -INFINITY);
-
     for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
       Triangle triangle = model->triangles[tr];
       v3 scene_verts[3];
@@ -225,18 +226,6 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       for (int i = 0; i < 3; ++i) {
         scene_verts[i] =
             ModelTransform * model->vertices[triangle.vertices[i].index];
-
-        // Find AABB. This is probably not a good idea since it
-        // won't work if the next frame the model drastically changes its
-        // position, but we'll see
-        for (int j = 0; j < 3; ++j) {
-          r32 value = scene_verts[i].E[j];
-          if (value < model->aabb.min.E[j]) {
-            model->aabb.min.E[j] = value;
-          } else if (model->aabb.max.E[j] < value) {
-            model->aabb.max.E[j] = value;
-          }
-        }
 
         // texture_verts[i] = model->vts[triangle.vt_ids[i]];
         screen_verts[i] = WorldTransform * scene_verts[i];
