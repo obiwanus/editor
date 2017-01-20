@@ -54,7 +54,7 @@ struct Model : Entity {
   AABBox aabb;
 
   void read_texture(char *);
-  void update_aabb();
+  void update_aabb(bool);
   void destroy();
 };
 

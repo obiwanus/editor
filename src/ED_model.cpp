@@ -14,21 +14,22 @@ void Model::read_texture(char *filename) {
   this->texture = image;
 }
 
-void Model::update_aabb() {
+void Model::update_aabb(bool rotated) {
   v3 min = V3(INFINITY, INFINITY, INFINITY);
   v3 max = V3(-INFINITY, -INFINITY, -INFINITY);
   m4x4 RotateModel = Matrix::frame_to_canonical(this->get_basis(), V3(0, 0, 0));
-  for (int tr = 0; tr < sb_count(this->triangles); ++tr) {
-    Triangle triangle = this->triangles[tr];
-    for (int i = 0; i < 3; ++i) {
-      v3 vertex = RotateModel * this->vertices[triangle.vertices[i].index];
-      for (int j = 0; j < 3; ++j) {
-        r32 value = vertex.E[j];
-        if (value < min.E[j]) {
-          min.E[j] = value;
-        } else if (max.E[j] < value) {
-          max.E[j] = value;
-        }
+  for (int i = 0; i < sb_count(this->vertices); ++i) {
+    v3 vertex = this->vertices[i];
+    if (rotated) {
+      vertex = RotateModel * vertex;
+    }
+
+    for (int j = 0; j < 3; ++j) {
+      r32 value = vertex.E[j];
+      if (value < min.E[j]) {
+        min.E[j] = value;
+      } else if (max.E[j] < value) {
+        max.E[j] = value;
       }
     }
   }
