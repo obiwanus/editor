@@ -86,8 +86,29 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     }
     if (input->key_went_down('5')) {
       this->camera.ortho_projection = !this->camera.ortho_projection;
-    }
-    if (input->button_went_down(IB_mouse_middle)) {
+    } else if (input->key_went_down('1')) {
+      // Move to front
+      this->camera.position = V3(this->camera.pivot.x, this->camera.pivot.y,
+                                 this->camera.distance_to_pivot());
+      this->camera.up = V3(0, 1, 0);
+      this->camera.look_at(this->camera.pivot);
+      this->camera.position_type = Camera_Position_Front;
+    } else if (input->key_went_down('3')) {
+      // Move to left
+      this->camera.position = V3((-1) * this->camera.distance_to_pivot(),
+                                 this->camera.pivot.y, this->camera.pivot.z);
+      this->camera.up = V3(0, 1, 0);
+      this->camera.look_at(this->camera.pivot);
+      this->camera.position_type = Camera_Position_Left;
+    } else if (input->key_went_down('7')) {
+      // Move to top
+      this->camera.position =
+          V3(this->camera.pivot.x, this->camera.distance_to_pivot(),
+             this->camera.pivot.z);
+      this->camera.up = V3(0, 1, -1);
+      this->camera.look_at(this->camera.pivot);
+      this->camera.position_type = Camera_Position_Top;
+    } else if (input->button_went_down(IB_mouse_middle)) {
       // Remember position
       this->camera.old_position = this->camera.position;
       this->camera.old_up = this->camera.up;
@@ -97,6 +118,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         this->mode = Editor_3DView_Mode_Pivot_Move;
       } else {
         this->mode = Editor_3DView_Mode_Camera_Rotate;
+        this->camera.position_type = Camera_Position_User;
       }
     }
     if (input->button_is_down(IB_mouse_middle)) {
@@ -291,7 +313,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     for (int i = 0; i < kLineCount; ++i) {
       u32 color = kGridColor;
       v3 vert1, vert2;
-      r32 step =  -1.0f + i * 2.0f / (kLineCount - 1);
+      r32 step = -1.0f + i * 2.0f / (kLineCount - 1);
       // Along the x axis
       {
         vert1 = WorldTransform * V3(-1.0f, 0.0f, step);
@@ -359,9 +381,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       case Camera_Position_Top: {
         position_type = "Top";
       } break;
-      default: {
-        position_type = "User";
-      } break;
+      default: { position_type = "User"; } break;
     };
     char *projection;
     if (this->camera.ortho_projection) {
@@ -370,8 +390,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       projection = "persp";
     }
     sprintf(status_string, "%s %s", position_type, projection);
-    draw_string(area, V2i(area->get_width() - 100, 10),
-                status_string, 0x00FFFFFF, true);
+    draw_string(area, V2i(area->get_width() - 100, 10), status_string,
+                0x00FFFFFF, true);
   }
 
 #endif
