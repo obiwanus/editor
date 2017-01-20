@@ -60,18 +60,16 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         if (model == state->selected_model) continue;
 
         // Put model in the scene
-        m4x4 ModelTransform =
-            Matrix::frame_to_canonical(model->get_basis(), model->position) *
-            Matrix::S(model->scale);
+        m4x4 ModelTransform = model->get_model_transform();
 
-        for (int f = 0; f < sb_count(model->faces); ++f) {
-          Face face = model->faces[f];
-          Triangle triangle;
+        for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
+          Triangle triangle = model->triangles[tr];
+          v3 vertices[3];
           for (int i = 0; i < 3; ++i) {
-            triangle.vertices[i] =
-                ModelTransform * model->vertices[face.v_ids[i]];
+            vertices[i] =
+                ModelTransform * model->vertices[triangle.vertices[i].index];
           }
-          if (triangle.hit_by(ray) > 0) {
+          if (ray.hits_triangle(vertices) > 0) {
             state->selected_model = model;
             break;
           }
@@ -208,35 +206,34 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         Matrix::frame_to_canonical(model->get_basis(), model->position) *
         Matrix::S(model->scale);
 
-    // For AABB - note we assume the position is within the model
-    v3 min = model->position;
-    v3 max = model->position;
+    model->aabb.min = V3(INFINITY, INFINITY, INFINITY);
+    model->aabb.max = V3(-INFINITY, -INFINITY, -INFINITY);
 
-    for (int f = 0; f < sb_count(model->faces); ++f) {
-      Face face = model->faces[f];
+    for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
+      Triangle triangle = model->triangles[tr];
       v3 scene_verts[3];
       v3 screen_verts[3];
       // v2 texture_verts[3];
       v3 vns[3];
 
       for (int i = 0; i < 3; ++i) {
-        scene_verts[i] = ModelTransform * model->vertices[face.v_ids[i]];
+        scene_verts[i] = ModelTransform * model->vertices[triangle.vertices[i].index];
 
         // Find AABB. This is probably not a good idea since it
         // won't work if the next frame the model drastically changes its
         // position, but we'll see
         for (int j = 0; j < 3; ++j) {
           r32 value = scene_verts[i].E[j];
-          if (value < min.E[j]) {
-            min.E[j] = value;
-          } else if (max.E[j] < value) {
-            max.E[j] = value;
+          if (value < model->aabb.min.E[j]) {
+            model->aabb.min.E[j] = value;
+          } else if (model->aabb.max.E[j] < value) {
+            model->aabb.max.E[j] = value;
           }
         }
 
-        // texture_verts[i] = model->vts[face.vt_ids[i]];
+        // texture_verts[i] = model->vts[triangle.vt_ids[i]];
         screen_verts[i] = WorldTransform * scene_verts[i];
-        vns[i] = model->vns[face.vn_ids[i]];
+        vns[i] = model->vns[triangle.vertices[i].vn_index];
         vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
       }
 
@@ -247,36 +244,11 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       // triangle_rasterize(area, screen_verts, 0x00FFFFFF);
       triangle_rasterize_simd(area, screen_verts, vns, z_buffer, light_dir,
                               outline);
-
-      // {
-      //   // Draw single color grey facets
-      //   v3 vert1 = scene_verts[0];
-      //   v3 vert2 = scene_verts[1];
-      //   v3 vert3 = scene_verts[2];
-      //   v3 n = ((vert3 - vert1).cross(vert2 - vert1)).normalized();
-      //   r32 intensity = n * light_dir;
-      //   if (intensity < 0) { intensity = 0; }
-      //   intensity = lerp(0.2f, 1.0f, intensity);
-      //   const r32 grey = 0.7f;
-      //   u32 color = get_rgb_u32(V3(grey, grey, grey) * intensity);
-      //   triangle_rasterize(area, screen_verts, color);
-      // }
-
-      // // Debug draw normals
-      // for (int j = 0; j < 3; ++j) {
-      //   scene_verts[j] = model->vertices[face.v_ids[j]];
-      //   vns[j] = model->vns[face.vn_ids[j]];
-      //   v3 normal_end = WorldTransform * ModelTransform *
-      //                   (scene_verts[j] + (vns[j] * 0.1f));
-      //   draw_line(area, screen_verts[j], normal_end, 0x00FF0000, z_buffer);
-      // }
     }
 
-    // Update bounding box
-    model->aabb.min = min;
-    model->aabb.max = max;
-
     if (model->debug) {
+      v3 min = model->aabb.min;
+      v3 max = model->aabb.max;
       // Draw the direction vector
       draw_line(area, WorldTransform * model->position,
                 WorldTransform * (model->position + model->direction * 0.3f),

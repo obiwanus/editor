@@ -21,77 +21,98 @@ void Program_State::read_wavefront_obj_file(char *filename) {
     exit(1);
   }
 
+  Model model = {};  // TODO: support multiple models in one file
+  model.triangles = NULL;
+  model.vertices = NULL;
+  model.vts = NULL;
+  model.vns = NULL;
+
   const int kBufSize = 300;
   char string[kBufSize];
   while (fgets(string, kBufSize, f) != NULL) {
-    // Face string
     if (string[0] == 'f' && string[1] == ' ') {
-      // Ugly, I know
+      // Face string - parse by hand
       char number_string[kBufSize / 2];
       const int kMaxIndices = 12;
       int indices[kMaxIndices];
-      int next_index = 0;
+      int num_indices = 0;
       int ch = 0;
       while (string[2 + ch] != '\n') {
         int num_symbols = 0;
         char c;
-        while (is_number_sym(c = string[2 + ch++])) {
+        while (is_number_sym(c = string[2 + ch])) {
           number_string[num_symbols++] = c;
+          ++ch;
         }
         number_string[num_symbols] = '\0';
         if (c != '\n') ++ch;
 
         int parsed_index = -1;
         if (num_symbols > 0) {
-          parsed_index = atoi(number_string);
+          parsed_index = atoi(number_string) - 1;  // start from 0
         }
-        indices[next_index] = parsed_index;
-        ++next_index;
-        assert(next_index <= kMaxIndices);
+        indices[num_indices++] = parsed_index;
+        assert(num_indices <= kMaxIndices);
+      }
+      if (num_indices == 9) {
+        Triangle triangle;
+        for (int i = 0; i < 3; ++i) {
+          triangle.vertices[i].index = indices[3 * i];
+          triangle.vertices[i].vt_index = indices[3 * i + 1];
+          triangle.vertices[i].vn_index = indices[3 * i + 2];
+        }
+        sb_push(model.triangles, triangle);
+      } else if (num_indices == 12) {
+        // Quad
+      } else {
+        assert(!"Unknown face definition");
+      }
+    } else if (string[0] == 'v' && string[1] == ' ') {
+      // Vertex
+      v3 vertex;
+      sscanf(string + 2, "%f %f %f", &vertex.x, &vertex.y, &vertex.z);
+      sb_push(model.vertices, vertex);
+    } else if (string[0] == 'v' && string[1] == 't' && string[2] == ' ') {
+      // Texture vertex
+      v2 vt;  // only expecting 2d textures
+      sscanf(string + 3, "%f %f", &vt.x, &vt.y);
+      sb_push(model.vts, vt);
+    } else if (string[0] == 'v' && string[1] == 'n' && string[2] == ' ') {
+      // Normal
+      v3 vn;
+      sscanf(string + 3, "%f %f %f", &vn.x, &vn.y, &vn.z);
+      sb_push(model.vns, vn);
+    }
+  }
+
+  model.scale = 0.3f;
+  model.position = V3(0, 0, 0);
+  model.direction = V3(1, 0, 0);
+  model.display = true;
+  model.debug = true;
+
+  // Find AABB and reposition the model
+  model.aabb.min = V3(INFINITY, INFINITY, INFINITY);
+  model.aabb.max = V3(-INFINITY, -INFINITY, -INFINITY);
+  m4x4 ModelTransform = model.get_model_transform();
+  for (int tr = 0; tr < sb_count(model.triangles); ++tr) {
+    Triangle triangle = model.triangles[tr];
+    for (int i = 0; i < 3; ++i) {
+      v3 scene_vert =
+          ModelTransform * model.vertices[triangle.vertices[i].index];
+
+      for (int j = 0; j < 3; ++j) {
+        r32 value = scene_vert.E[j];
+        if (value < model.aabb.min.E[j]) {
+          model.aabb.min.E[j] = value;
+        } else if (model.aabb.max.E[j] < value) {
+          model.aabb.max.E[j] = value;
+        }
       }
     }
   }
 
-  // this->vertices = NULL;  // stb_stretchy_buffer needs this
-  // this->faces = NULL;
-  // this->vts = NULL;
-  // this->vns = NULL;
-
-  // const int kBufSize = 300;
-  // char string[kBufSize];
-  // while (fgets(string, kBufSize, f) != NULL) {
-  //   if (string)
-  //   if (string[0] == 'v' && string[1] == ' ') {
-  //     v3 vertex;
-  //     sscanf(string + 2, "%f %f %f", &vertex.x, &vertex.y, &vertex.z);
-  //     sb_push(this->vertices, vertex);
-  //   }
-  //   if (string[0] == 'f' && string[1] == ' ') {
-  //     Face face;
-  //     sscanf(string + 2, "%d/%d/%d %d/%d/%d %d/%d/%d", &face.v_ids[0],
-  //            &face.vt_ids[0], &face.vn_ids[0], &face.v_ids[1],
-  //            &face.vt_ids[1],
-  //            &face.vn_ids[1], &face.v_ids[2], &face.vt_ids[2],
-  //            &face.vn_ids[2]);
-  //     for (int i = 0; i < 3; i++) {
-  //       // All indices should start from 0
-  //       face.v_ids[i]--;
-  //       face.vn_ids[i]--;
-  //       face.vt_ids[i]--;
-  //     }
-  //     sb_push(this->faces, face);
-  //   }
-  //   if (string[0] == 'v' && string[1] == 't' && string[2] == ' ') {
-  //     v2 vt;  // only expecting 2d textures
-  //     sscanf(string + 3, "%f %f", &vt.x, &vt.y);
-  //     sb_push(this->vts, vt);
-  //   }
-  //   if (string[0] == 'v' && string[1] == 'n' && string[2] == ' ') {
-  //     v3 vn;
-  //     sscanf(string + 3, "%f %f %f", &vn.x, &vn.y, &vn.z);
-  //     sb_push(this->vns, vn);
-  //   }
-  // }
+  sb_push(this->models, model);
 
   fclose(f);
 }
@@ -126,33 +147,33 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
 
   state->UI->cursor = V3(0, 0, 0);
 
-  this->read_wavefront_obj_file("../models/test.wobj");
-
   // For some reason these pointers are not initialized by default
   // on windows using C++11 struct initializers
   state->models = NULL;
   state->selected_model = NULL;
 
-  Model model = {};
-  model.read_from_obj_file("../models/african_head/african_head.wobj");
-  model.read_texture("../models/african_head/african_head_diffuse.jpg");
-  model.scale = 0.5f;
-  model.position = V3(-1.0f, 0.5f, 0.0f);
-  model.direction = V3(-1, 1, 1);
-  model.debug = false;
-  // model.display = false;
-  sb_push(state->models, model);
+  this->read_wavefront_obj_file("../models/test.wobj");
 
-  model = {};
-  model.read_from_obj_file("../models/cube/cube.wobj");
-  // model.read_texture("../models/cube/cube.png");
-  model.scale = 0.4f;
-  model.position = V3(0.5f, 0.3f, 0.0f);
-  model.direction = V3(1, 1, 1);
-  model.debug = false;
-  sb_push(state->models, model);
+  // Model model = {};
+  // model.read_from_obj_file("../models/african_head/african_head.wobj");
+  // model.read_texture("../models/african_head/african_head_diffuse.jpg");
+  // model.scale = 0.5f;
+  // model.position = V3(-1.0f, 0.5f, 0.0f);
+  // model.direction = V3(-1, 1, 1);
+  // model.debug = false;
+  // // model.display = false;
+  // sb_push(state->models, model);
 
-  state->selected_model = models + 0;  // head
+  // model = {};
+  // model.read_from_obj_file("../models/cube/cube.wobj");
+  // // model.read_texture("../models/cube/cube.png");
+  // model.scale = 0.4f;
+  // model.position = V3(0.5f, 0.3f, 0.0f);
+  // model.direction = V3(1, 1, 1);
+  // model.debug = false;
+  // sb_push(state->models, model);
+
+  // state->selected_model = models + 0;  // head
 }
 
 void ED_Font::load_from_file(char *filename, int char_height) {

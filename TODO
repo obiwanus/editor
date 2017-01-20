@@ -3,7 +3,7 @@ MINIMUM WHAT NEEDS TO BE DONE:
 - Load and display simple scenes in OBJ
 - Camera as an object
 - Raytrace render from the camera (chalky)
-- Split scenes into pieces by vertex connectivity on load
+- Split scenes into pieces by vertex connectivity on load (?)
 - Move models with or without manipulator
 - Read mtl files
 - Render from the camera (using mtl)
@@ -61,6 +61,9 @@ idea: try to look at the objects in clip space from different angles
 
 ==============================================================================
 DONE:
+
+[21/01/2017]
+- don't expect obj files to always have texture indices
 
 [20/01/2017]
 - shortcuts for positioning and projection

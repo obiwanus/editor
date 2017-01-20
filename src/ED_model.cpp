@@ -1,53 +1,4 @@
 
-// TODO: get rid of this
-void Model::read_from_obj_file(char *filename) {
-  FILE *f = fopen(filename, "rb");
-  if (f == NULL) {
-    printf("Can't open model file %s\n", filename);
-    exit(1);
-  }
-
-  this->vertices = NULL;  // stb_stretchy_buffer needs this
-  this->faces = NULL;
-  this->vts = NULL;
-  this->vns = NULL;
-
-  const int kBufSize = 100;
-  char string[kBufSize];
-  while (fgets(string, kBufSize, f) != NULL) {
-    if (string[0] == 'v' && string[1] == ' ') {
-      v3 vertex;
-      sscanf(string + 2, "%f %f %f", &vertex.x, &vertex.y, &vertex.z);
-      sb_push(this->vertices, vertex);
-    }
-    if (string[0] == 'f' && string[1] == ' ') {
-      Face face;
-      sscanf(string + 2, "%d/%d/%d %d/%d/%d %d/%d/%d", &face.v_ids[0],
-             &face.vt_ids[0], &face.vn_ids[0], &face.v_ids[1], &face.vt_ids[1],
-             &face.vn_ids[1], &face.v_ids[2], &face.vt_ids[2], &face.vn_ids[2]);
-      for (int i = 0; i < 3; i++) {
-        // All indices should start from 0
-        face.v_ids[i]--;
-        face.vn_ids[i]--;
-        face.vt_ids[i]--;
-      }
-      sb_push(this->faces, face);
-    }
-    if (string[0] == 'v' && string[1] == 't' && string[2] == ' ') {
-      v2 vt;  // only expecting 2d textures
-      sscanf(string + 3, "%f %f", &vt.x, &vt.y);
-      sb_push(this->vts, vt);
-    }
-    if (string[0] == 'v' && string[1] == 'n' && string[2] == ' ') {
-      v3 vn;
-      sscanf(string + 3, "%f %f %f", &vn.x, &vn.y, &vn.z);
-      sb_push(this->vns, vn);
-    }
-  }
-
-  fclose(f);
-}
-
 void Model::read_texture(char *filename) {
   Image image = {};
   image.data = (u32 *)stbi_load(filename, &image.width, &image.height,
@@ -63,11 +14,16 @@ void Model::read_texture(char *filename) {
   this->texture = image;
 }
 
+m4x4 Model::get_model_transform() {
+  return Matrix::frame_to_canonical(this->get_basis(), this->position) *
+         Matrix::S(this->scale);
+}
+
 void Model::destroy() {
   sb_free(this->vertices);
   sb_free(this->vns);
   sb_free(this->vts);
-  sb_free(this->faces);
+  sb_free(this->triangles);
 }
 
 u32 Image::color(int x, int y, r32 intensity = 1.0f) {
@@ -187,16 +143,16 @@ r32 Camera::distance_to_pivot() {
   return result;
 }
 
-r32 Triangle::hit_by(Ray ray) {
-  v3 a = this->vertices[0];
-  v3 b = this->vertices[1];
-  v3 c = this->vertices[2];
+r32 Ray::hits_triangle(v3 vertices[]) {
+  v3 a = vertices[0];
+  v3 b = vertices[1];
+  v3 c = vertices[2];
 
   // clang-format off
   m3x3 A = {
-    a.x - b.x, a.x - c.x, ray.direction.x,
-    a.y - b.y, a.y - c.y, ray.direction.y,
-    a.z - b.z, a.z - c.z, ray.direction.z,
+    a.x - b.x, a.x - c.x, this->direction.x,
+    a.y - b.y, a.y - c.y, this->direction.y,
+    a.z - b.z, a.z - c.z, this->direction.z,
   };
   // clang-format on
 
@@ -204,7 +160,7 @@ r32 Triangle::hit_by(Ray ray) {
   if (D == 0) {
     return -1;
   }
-  v3 R = {a.x - ray.origin.x, a.y - ray.origin.y, a.z - ray.origin.z};
+  v3 R = {a.x - this->origin.x, a.y - this->origin.y, a.z - this->origin.z};
 
   // Use Cramer's rule to find t, beta, and gamma
   m3x3 A2 = A.replace_column(2, R);

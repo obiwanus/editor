@@ -1,17 +1,18 @@
 #ifndef ED_MODEL_H
 #define ED_MODEL_H
 
-struct Ray {
-  v3 origin;
-  v3 direction;
-
-  v3 point_at(r32 t);
+struct Vertex {
+  int index;
+  int vt_index;
+  int vn_index;
 };
 
-struct Face {
-  int v_ids[3];   // vertex
-  int vn_ids[3];  // vertex normal
-  int vt_ids[3];   // texture
+struct Triangle {
+  Vertex vertices[3];
+};
+
+struct Quad {
+  Vertex vertices[4];
 };
 
 struct Image {
@@ -35,15 +36,13 @@ struct Entity {
 struct AABBox {
   v3 min;
   v3 max;
-
-  r32 hit_by(Ray);
 };
 
 struct Model : Entity {
   v3 *vertices;
   v3 *vns;
   v2 *vts;
-  Face *faces;
+  Triangle *triangles;
   Image texture;
 
   r32 scale = 1.0f;
@@ -52,9 +51,17 @@ struct Model : Entity {
 
   AABBox aabb;
 
-  void read_from_obj_file(char *);
   void read_texture(char *);
+  m4x4 get_model_transform();
   void destroy();
+};
+
+struct Ray {
+  v3 origin;
+  v3 direction;
+
+  v3 point_at(r32 t);
+  r32 hits_triangle(v3 vertices[3]);
 };
 
 enum Camera_Position {
@@ -94,14 +101,6 @@ struct Camera : Entity {
 struct Plane {
   v3 normal;
   v3 point;
-
-  r32 hit_by(Ray);
-};
-
-struct Triangle {
-  v3 vertices[3];
-
-  r32 hit_by(Ray);
 };
 
 
