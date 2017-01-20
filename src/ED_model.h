@@ -43,6 +43,7 @@ struct Model : Entity {
   v3 *vns;
   v2 *vts;
   Triangle *triangles;
+  Quad *quads;
   Image texture;
 
   r32 scale = 1.0f;

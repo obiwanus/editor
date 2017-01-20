@@ -23,7 +23,11 @@ BUGS:
 
 NOW:
 
-- fill rules for the float rasterizer if applicable
+- change the view hotkeys to properly work when pivot is not 0,0,0
+- don't calculate AABB every frame - only when something changes, e.g. direction
+- display the name of the selected model
+
+
 - avoid random heap allocations everywhere
 - put things we're not going to free in the permanent memory
 - thread-safe performance counters
@@ -67,6 +71,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [21/01/2017]
+- draw quads
 - don't expect obj files to always have texture indices
 
 [20/01/2017]

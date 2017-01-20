@@ -249,6 +249,30 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
                               outline);
     }
 
+    for (int q = 0; q < sb_count(model->quads); ++q) {
+      Quad quad = model->quads[q];
+      v3 screen_verts[4];
+      v3 vns[4];
+
+      for (int i = 0; i < 4; ++i) {
+        v3 vertex =
+            ModelTransform * model->vertices[quad.vertices[i].index];
+        screen_verts[i] = WorldTransform * vertex;
+        vns[i] = model->vns[quad.vertices[i].vn_index];
+        vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
+      }
+
+      v3 light_dir = -this->camera.direction;
+
+      bool outline = (model == state->selected_model);
+      v3 triangle1[3] = {screen_verts[0], screen_verts[1], screen_verts[2]};
+      triangle_rasterize_simd(area, triangle1, vns, z_buffer, light_dir,
+                              outline);
+      v3 triangle2[3] = {screen_verts[0], screen_verts[2], screen_verts[3]};
+      triangle_rasterize_simd(area, triangle2, vns, z_buffer, light_dir,
+                              outline);
+    }
+
     if (model->debug) {
       v3 min = model->aabb.min;
       v3 max = model->aabb.max;

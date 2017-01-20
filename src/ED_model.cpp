@@ -19,6 +19,7 @@ void Model::destroy() {
   sb_free(this->vns);
   sb_free(this->vts);
   sb_free(this->triangles);
+  sb_free(this->quads);
 }
 
 u32 Image::color(int x, int y, r32 intensity = 1.0f) {

@@ -23,6 +23,7 @@ void Program_State::read_wavefront_obj_file(char *filename) {
 
   Model model = {};  // TODO: support multiple models in one file
   model.triangles = NULL;
+  model.quads = NULL;
   model.vertices = NULL;
   model.vts = NULL;
   model.vns = NULL;
@@ -63,7 +64,13 @@ void Program_State::read_wavefront_obj_file(char *filename) {
         }
         sb_push(model.triangles, triangle);
       } else if (num_indices == 12) {
-        // Quad
+        Quad quad;
+        for (int i = 0; i < 4; ++i) {
+          quad.vertices[i].index = indices[3 * i];
+          quad.vertices[i].vt_index = indices[3 * i + 1];
+          quad.vertices[i].vn_index = indices[3 * i + 2];
+        }
+        sb_push(model.quads, quad);
       } else {
         assert(!"Unknown face definition");
       }
