@@ -10,6 +10,92 @@ void *Program_Memory::allocate(size_t size) {
   return result;
 }
 
+bool is_number_sym(int ch) {
+  return ('0' <= ch && ch <= '9') || ch == '-' || ch == '.';
+}
+
+void Program_State::read_wavefront_obj_file(char *filename) {
+  FILE *f = fopen(filename, "rb");
+  if (f == NULL) {
+    printf("Can't open model file %s\n", filename);
+    exit(1);
+  }
+
+  const int kBufSize = 300;
+  char string[kBufSize];
+  while (fgets(string, kBufSize, f) != NULL) {
+    // Face string
+    if (string[0] == 'f' && string[1] == ' ') {
+      // Ugly, I know
+      char number_string[kBufSize / 2];
+      const int kMaxIndices = 12;
+      int indices[kMaxIndices];
+      int next_index = 0;
+      int ch = 0;
+      while (string[2 + ch] != '\n') {
+        int num_symbols = 0;
+        char c;
+        while (is_number_sym(c = string[2 + ch++])) {
+          number_string[num_symbols++] = c;
+        }
+        number_string[num_symbols] = '\0';
+        if (c != '\n') ++ch;
+
+        int parsed_index = -1;
+        if (num_symbols > 0) {
+          parsed_index = atoi(number_string);
+        }
+        indices[next_index] = parsed_index;
+        ++next_index;
+        assert(next_index <= kMaxIndices);
+      }
+    }
+  }
+
+  // this->vertices = NULL;  // stb_stretchy_buffer needs this
+  // this->faces = NULL;
+  // this->vts = NULL;
+  // this->vns = NULL;
+
+  // const int kBufSize = 300;
+  // char string[kBufSize];
+  // while (fgets(string, kBufSize, f) != NULL) {
+  //   if (string)
+  //   if (string[0] == 'v' && string[1] == ' ') {
+  //     v3 vertex;
+  //     sscanf(string + 2, "%f %f %f", &vertex.x, &vertex.y, &vertex.z);
+  //     sb_push(this->vertices, vertex);
+  //   }
+  //   if (string[0] == 'f' && string[1] == ' ') {
+  //     Face face;
+  //     sscanf(string + 2, "%d/%d/%d %d/%d/%d %d/%d/%d", &face.v_ids[0],
+  //            &face.vt_ids[0], &face.vn_ids[0], &face.v_ids[1],
+  //            &face.vt_ids[1],
+  //            &face.vn_ids[1], &face.v_ids[2], &face.vt_ids[2],
+  //            &face.vn_ids[2]);
+  //     for (int i = 0; i < 3; i++) {
+  //       // All indices should start from 0
+  //       face.v_ids[i]--;
+  //       face.vn_ids[i]--;
+  //       face.vt_ids[i]--;
+  //     }
+  //     sb_push(this->faces, face);
+  //   }
+  //   if (string[0] == 'v' && string[1] == 't' && string[2] == ' ') {
+  //     v2 vt;  // only expecting 2d textures
+  //     sscanf(string + 3, "%f %f", &vt.x, &vt.y);
+  //     sb_push(this->vts, vt);
+  //   }
+  //   if (string[0] == 'v' && string[1] == 'n' && string[2] == ' ') {
+  //     v3 vn;
+  //     sscanf(string + 3, "%f %f %f", &vn.x, &vn.y, &vn.z);
+  //     sb_push(this->vns, vn);
+  //   }
+  // }
+
+  fclose(f);
+}
+
 void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   Program_State *state = this;
 
@@ -40,6 +126,8 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
 
   state->UI->cursor = V3(0, 0, 0);
 
+  this->read_wavefront_obj_file("../models/test.wobj");
+
   // For some reason these pointers are not initialized by default
   // on windows using C++11 struct initializers
   state->models = NULL;
@@ -55,16 +143,6 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   // model.display = false;
   sb_push(state->models, model);
 
-  // Model model = {};
-  // model.read_from_obj_file("../../models/geometricCuldesac.obj");
-  // // model.read_texture("../models/african_head/african_head_diffuse.jpg");
-  // model.scale = 0.5f;
-  // model.position = V3(-1.0f, 0.5f, 0.0f);
-  // model.direction = V3(-1, 1, 1);
-  // // model.debug = false;
-  // // model.display = false;
-  // sb_push(state->models, model);
-
   model = {};
   model.read_from_obj_file("../models/cube/cube.wobj");
   // model.read_texture("../models/cube/cube.png");
@@ -75,10 +153,6 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   sb_push(state->models, model);
 
   state->selected_model = models + 0;  // head
-
-  // model.read_from_obj_file("../models/capsule/capsule.wobj");
-  // model.read_texture("../models/capsule/capsule0.jpg");
-  // sb_push(Model *, state->models, model);
 }
 
 void ED_Font::load_from_file(char *filename, int char_height) {

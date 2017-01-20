@@ -112,6 +112,7 @@ struct Program_State {
   Model *selected_model = NULL;
 
   void init(Program_Memory *, Pixel_Buffer *);
+  void read_wavefront_obj_file(char *filename);
 };
 
 struct ED_Font_Codepoint {

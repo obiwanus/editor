@@ -1,4 +1,5 @@
 
+// TODO: get rid of this
 void Model::read_from_obj_file(char *filename) {
   FILE *f = fopen(filename, "rb");
   if (f == NULL) {

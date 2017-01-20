@@ -1,6 +1,5 @@
 MINIMUM WHAT NEEDS TO BE DONE:
 
-- shortcuts for positioning and projection
 - Load and display simple scenes in OBJ
 - Camera as an object
 - Raytrace render from the camera (chalky)
@@ -10,6 +9,10 @@ MINIMUM WHAT NEEDS TO BE DONE:
 - Render from the camera (using mtl)
 - nice icons for splitting and removing
 - Drawing should be fast
+
+NICE TO HAVE:
+
+- Animation of camera when moving to predefined points
 
 
 NOW:
@@ -60,6 +63,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [20/01/2017]
+- shortcuts for positioning and projection
 - display projection type in the status string
 - draw text on editor type selectors
 - actually drawing nice pre-rendered cheap strings
