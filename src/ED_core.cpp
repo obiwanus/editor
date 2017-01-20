@@ -21,17 +21,39 @@ void Program_State::read_wavefront_obj_file(char *filename) {
     exit(1);
   }
 
+  int num_models = 0;
+
   Model model = {};  // TODO: support multiple models in one file
   model.triangles = NULL;
   model.quads = NULL;
   model.vertices = NULL;
   model.vts = NULL;
   model.vns = NULL;
+  model.scale = 1.0f;
+  model.direction = V3(1, 0, 0);
+  model.display = true;
+  model.debug = true;
+  sprintf(model.name, "Model %d", num_models + 1);
 
   const int kBufSize = 300;
   char string[kBufSize];
   while (fgets(string, kBufSize, f) != NULL) {
-    if (string[0] == 'f' && string[1] == ' ') {
+    if (string[0] == 'o' && string[1] == ' ') {
+      if (model.triangles != NULL) {
+        // Push the model and start a new one
+        sb_push(this->models, model);
+        model.triangles = NULL;
+        model.quads = NULL;
+        model.vertices = NULL;
+        model.vts = NULL;
+        model.vns = NULL;
+        model.name[0] = '\0';
+        ++num_models;
+      }
+      // Set model name
+      strncpy(model.name, string + 2, model.kMaxNameLength);
+      model.name[strlen(model.name) - 1] = '\0';
+    } else if (string[0] == 'f' && string[1] == ' ') {
       // Face string - parse by hand
       char number_string[kBufSize / 2];
       const int kMaxIndices = 12;
@@ -92,20 +114,21 @@ void Program_State::read_wavefront_obj_file(char *filename) {
     }
   }
 
-  model.scale = 1.0f;
-  model.direction = V3(1, 0, 0);
-  model.display = true;
-  model.debug = true;
-
-  // Find AABB and reposition the model
-  model.position = V3(0, 0, 0);
-  model.update_aabb(false);  // not rotated
-  model.position = (model.aabb.min + model.aabb.max) * 0.5f;
-  for (int i = 0; i < sb_count(model.vertices); ++i) {
-    model.vertices[i] -= model.position;
+  if (model.vertices != NULL) {
+    sb_push(this->models, model);
+    num_models++;
   }
 
-  sb_push(this->models, model);
+  // Find AABB and reposition the models
+  for (int i = 0; i < sb_count(this->models); ++i) {
+    Model *m = this->models + i;
+    m->position = V3(0, 0, 0);
+    m->update_aabb(false);  // not rotated
+    m->position = (m->aabb.min + m->aabb.max) * 0.5f;
+    for (int i = 0; i < sb_count(m->vertices); ++i) {
+      m->vertices[i] -= m->position;
+    }
+  }
 
   fclose(f);
 }

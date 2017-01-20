@@ -46,6 +46,8 @@ struct Model : Entity {
   Quad *quads;
   Image texture;
   v3 old_direction;
+  static const int kMaxNameLength = 100;
+  char name[kMaxNameLength + 1];
 
   r32 scale = 1.0f;
   bool display = true;

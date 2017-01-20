@@ -13,8 +13,7 @@ MINIMUM WHAT NEEDS TO BE DONE:
 
 NOW:
 
-- load more than one model from obj file
-- display the name of the selected model
+- be able to align text right
 
 
 BUGS:
@@ -74,6 +73,8 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [21/01/2017]
+- load more than one model from obj file
+- display the name of the selected model
 - take quads into account when calculating AABB
 - don't calculate AABB every frame - only when something changes, e.g. direction
 - change the view hotkeys to properly work when pivot is not 0,0,0
