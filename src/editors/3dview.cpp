@@ -86,29 +86,33 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     }
     if (input->key_went_down('5')) {
       this->camera.ortho_projection = !this->camera.ortho_projection;
-    } else if (input->key_went_down('1')) {
-      // Move to front
-      this->camera.position = V3(this->camera.pivot.x, this->camera.pivot.y,
-                                 this->camera.distance_to_pivot());
-      this->camera.up = V3(0, 1, 0);
-      this->camera.look_at(this->camera.pivot);
-      this->camera.position_type = Camera_Position_Front;
-    } else if (input->key_went_down('3')) {
-      // Move to left
-      this->camera.position = V3((-1) * this->camera.distance_to_pivot(),
-                                 this->camera.pivot.y, this->camera.pivot.z);
-      this->camera.up = V3(0, 1, 0);
-      this->camera.look_at(this->camera.pivot);
-      this->camera.position_type = Camera_Position_Left;
-    } else if (input->key_went_down('7')) {
-      // Move to top
-      this->camera.position =
-          V3(this->camera.pivot.x, this->camera.distance_to_pivot(),
-             this->camera.pivot.z);
-      this->camera.up = V3(0, 1, -1);
-      this->camera.look_at(this->camera.pivot);
-      this->camera.position_type = Camera_Position_Top;
-    } else if (input->button_went_down(IB_mouse_middle)) {
+    } else if (input->key_went_down('1') || input->key_went_down('3') ||
+               input->key_went_down('7')) {
+      // View shortcuts
+      v3 pivot = this->camera.pivot;
+      r32 distance_to_pivot = this->camera.distance_to_pivot();
+      this->camera.position = pivot;
+      if (input->symbol == '1') {
+        // Move to front
+        this->camera.position_type = Camera_Position_Front;
+        this->camera.position.z = pivot.z + distance_to_pivot;
+        this->camera.up = V3(0, 1, 0);
+      } else if (input->symbol == '3') {
+        // Move to left
+        this->camera.position_type = Camera_Position_Left;
+        this->camera.position.x = pivot.x - distance_to_pivot;
+        this->camera.up = V3(0, 1, 0);
+      } else if (input->symbol == '7') {
+        // Move to top
+        this->camera.position_type = Camera_Position_Top;
+        this->camera.position.y = pivot.y + distance_to_pivot;
+        this->camera.up = V3(0, 1, -1);
+      } else {
+        assert(!"Wrong code path");
+      }
+      this->camera.look_at(pivot);
+    }
+    if (input->button_went_down(IB_mouse_middle)) {
       // Remember position
       this->camera.old_position = this->camera.position;
       this->camera.old_up = this->camera.up;
@@ -255,8 +259,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       v3 vns[4];
 
       for (int i = 0; i < 4; ++i) {
-        v3 vertex =
-            ModelTransform * model->vertices[quad.vertices[i].index];
+        v3 vertex = ModelTransform * model->vertices[quad.vertices[i].index];
         screen_verts[i] = WorldTransform * vertex;
         vns[i] = model->vns[quad.vertices[i].vn_index];
         vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
@@ -265,11 +268,15 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       v3 light_dir = -this->camera.direction;
 
       bool outline = (model == state->selected_model);
+
+      // TODO: Make this look nicer
       v3 triangle1[3] = {screen_verts[0], screen_verts[1], screen_verts[2]};
-      triangle_rasterize_simd(area, triangle1, vns, z_buffer, light_dir,
+      v3 vns1[3] = {vns[0], vns[1], vns[2]};
+      triangle_rasterize_simd(area, triangle1, vns1, z_buffer, light_dir,
                               outline);
       v3 triangle2[3] = {screen_verts[0], screen_verts[2], screen_verts[3]};
-      triangle_rasterize_simd(area, triangle2, vns, z_buffer, light_dir,
+      v3 vns2[3] = {vns[0], vns[2], vns[3]};
+      triangle_rasterize_simd(area, triangle2, vns2, z_buffer, light_dir,
                               outline);
     }
 
