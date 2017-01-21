@@ -469,15 +469,49 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
   }
 }
 
-void draw_string(Area *area, v2i position, const char *string, u32 text_color,
-                 bool top_left = true) {
-  position.x += area->left;
+int get_string_len(char *string) {
+  int length = 0;
+  int ch = 0;
+  while (string[ch] != '\0') {
+    // We only measure length, height doesn't count
+    if (string[ch] == '\n') {
+      length = 0;
+      ++ch;
+      continue;
+    }
+    ED_Font_Codepoint *cp =
+        g_font.codepoints + (string[ch] - g_font.first_char);
 
-  if (!top_left) {
+    int advance = 0, kern_advance = 0;
+    stbtt_GetGlyphHMetrics(&g_font.info, cp->glyph, &advance, 0);
+    if (string[ch + 1] != '\0') {
+      ED_Font_Codepoint *next =
+          g_font.codepoints + (*string - g_font.first_char);
+      kern_advance =
+          stbtt_GetGlyphKernAdvance(&g_font.info, cp->glyph, next->glyph);
+    }
+    length += (int)((advance + kern_advance) * g_font.scale);
+
+    ++ch;
+  }
+  return length;
+}
+
+void draw_string(Area *area, v2i position, char *string, u32 text_color,
+                 bool aligh_top = true, bool aligh_right = false) {
+  int buffer_width = area->buffer->width;
+  int buffer_height = area->buffer->height;
+
+  if (!aligh_top) {
     // Convert position to top-left
-    position.y = area->buffer->height - position.y - 1 - area->bottom;
+    position.y = buffer_height - position.y - 1 - area->bottom;
   } else {
-    position.y = area->buffer->height - area->top + position.y;
+    position.y = buffer_height - area->top + position.y;
+  }
+  if (!aligh_right) {
+    position.x += area->left;
+  } else {
+    position.x = area->right - position.x - get_string_len(string);
   }
 
   v2i start = V2i(position.x + 2, position.y + g_font.baseline);
@@ -496,14 +530,14 @@ void draw_string(Area *area, v2i position, const char *string, u32 text_color,
     u8 *char_bitmap = codepoint->bitmap;
 
     int min_y = max(0, (int)start.y + codepoint->y0);
-    int max_y = min(area->buffer->height - 1, (int)start.y + codepoint->y1);
+    int max_y = min(buffer_height - 1, (int)start.y + codepoint->y1);
     int min_x = max(0, (int)start.x + codepoint->x0);
-    int max_x = min(area->buffer->width - 1, (int)start.x + codepoint->x1);
+    int max_x = min(buffer_width - 1, (int)start.x + codepoint->x1);
     for (int y = min_y; y < max_y; ++y) {
       for (int x = min_x; x < max_x; ++x) {
         u8 alpha_src =
             char_bitmap[(x - min_x) + (y - min_y) * codepoint->width];
-        u32 *pixel = (u32 *)area->buffer->memory + x + y * area->buffer->width;
+        u32 *pixel = (u32 *)area->buffer->memory + x + y * buffer_width;
         if (alpha_src == 0xFF) {
           // Just draw foreground
           *pixel = text_color;

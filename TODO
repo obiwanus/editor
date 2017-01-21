@@ -13,7 +13,7 @@ MINIMUM WHAT NEEDS TO BE DONE:
 
 NOW:
 
-- be able to align text right
+- clip text against area bounds
 
 
 BUGS:
@@ -73,6 +73,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [21/01/2017]
+- align text right
 - load more than one model from obj file
 - display the name of the selected model
 - take quads into account when calculating AABB

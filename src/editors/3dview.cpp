@@ -391,8 +391,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 
   // Display the name of the selected model
   if (state->selected_model != NULL) {
-    draw_string(area, V2i(area->get_width() - 200, 50),
-                state->selected_model->name, 0x00FFFFFF, false);
+    draw_string(area, V2i(15, 50),
+                state->selected_model->name, 0x00FFFFFF, false, true);
   }
 
 #endif

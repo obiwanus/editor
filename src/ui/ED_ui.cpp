@@ -273,7 +273,7 @@ void UI_Select::update_and_draw(User_Input *input) {
           color += 0x00121212;  // highlight
         }
         draw_rect(area, option, color);
-        const char *editor_name = Editor_Names[opt];
+        char *editor_name = Editor_Names[opt];
         draw_string(
             area, V2i(option.left + 3, option.bottom + g_font.line_height + 1),
             editor_name, 0x00FFFFFF, false);
@@ -294,7 +294,7 @@ void UI_Select::update_and_draw(User_Input *input) {
   }
 
   // Draw the name of currently selected option
-  const char *selected_name = Editor_Names[select->option_selected];
+  char *selected_name = Editor_Names[select->option_selected];
   draw_string(
       area, V2i(select_rect.left + 3, select_rect.bottom + g_font.line_height),
       selected_name, 0x00FFFFFF, false);
