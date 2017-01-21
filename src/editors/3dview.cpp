@@ -385,7 +385,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       projection = "persp";
     }
     sprintf(status_string, "%s %s", position_type, projection);
-    draw_string(area, V2i(area->get_width() - 100, 10), status_string,
+    draw_string(area, V2i(100, 10), status_string,
                 0x00FFFFFF, true);
   }
 

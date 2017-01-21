@@ -13,7 +13,7 @@ MINIMUM WHAT NEEDS TO BE DONE:
 
 NOW:
 
-- clip text against area bounds
+- test multiple objects from single obj file
 
 
 BUGS:
@@ -73,6 +73,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [21/01/2017]
+- clip text against area bounds
 - align text right
 - load more than one model from obj file
 - display the name of the selected model

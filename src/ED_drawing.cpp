@@ -529,10 +529,10 @@ void draw_string(Area *area, v2i position, char *string, u32 text_color,
         g_font.codepoints + (string[ch] - g_font.first_char);
     u8 *char_bitmap = codepoint->bitmap;
 
-    int min_y = max(0, (int)start.y + codepoint->y0);
-    int max_y = min(buffer_height - 1, (int)start.y + codepoint->y1);
-    int min_x = max(0, (int)start.x + codepoint->x0);
-    int max_x = min(buffer_width - 1, (int)start.x + codepoint->x1);
+    int min_y = max(buffer_height - area->top, (int)start.y + codepoint->y0);
+    int max_y = min(buffer_height - area->bottom - 1, (int)start.y + codepoint->y1);
+    int min_x = max(area->left, (int)start.x + codepoint->x0);
+    int max_x = min(area->right, (int)start.x + codepoint->x1);
     for (int y = min_y; y < max_y; ++y) {
       for (int x = min_x; x < max_x; ++x) {
         u8 alpha_src =
