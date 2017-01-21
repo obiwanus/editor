@@ -216,6 +216,9 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         Matrix::frame_to_canonical(model->get_basis(), model->position) *
         Matrix::S(model->scale);
 
+    v3 light_dir = -this->camera.direction;
+    bool outline = (model == state->selected_model);
+
     for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
       Triangle triangle = model->triangles[tr];
       v3 scene_verts[3];
@@ -227,15 +230,11 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         scene_verts[i] =
             ModelTransform * model->vertices[triangle.vertices[i].index];
 
-        // texture_verts[i] = model->vts[triangle.vt_ids[i]];
         screen_verts[i] = WorldTransform * scene_verts[i];
         vns[i] = model->vns[triangle.vertices[i].vn_index];
         vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
       }
 
-      v3 light_dir = -this->camera.direction;
-
-      bool outline = (model == state->selected_model);
       // triangle_shaded(area, screen_verts, vns, z_buffer, light_dir, outline);
       // triangle_rasterize(area, screen_verts, 0x00FFFFFF);
       triangle_rasterize_simd(area, screen_verts, vns, z_buffer, light_dir,
@@ -254,10 +253,6 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
       }
 
-      v3 light_dir = -this->camera.direction;
-
-      bool outline = (model == state->selected_model);
-
       // TODO: Make this look nicer
       v3 triangle1[3] = {screen_verts[0], screen_verts[1], screen_verts[2]};
       v3 vns1[3] = {vns[0], vns[1], vns[2]};
@@ -267,6 +262,27 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       v3 vns2[3] = {vns[0], vns[2], vns[3]};
       triangle_rasterize_simd(area, triangle2, vns2, z_buffer, light_dir,
                               outline);
+    }
+
+    for (int q = 0; q < sb_count(model->fans); ++q) {
+      Fan fan = model->fans[q];
+      v3 screen_verts[Fan::kMaxNumVertices];
+      v3 vns[Fan::kMaxNumVertices];
+
+      for (int i = 0; i < fan.num_vertices; ++i) {
+        v3 vertex = ModelTransform * model->vertices[fan.vertices[i].index];
+        screen_verts[i] = WorldTransform * vertex;
+        vns[i] = model->vns[fan.vertices[i].vn_index];
+        vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
+      }
+
+      for (int i = 0; i < fan.num_vertices - 2; ++i) {
+        v3 triangle[3] = {screen_verts[0], screen_verts[i + 1],
+                          screen_verts[i + 2]};
+        v3 vns[3] = {vns[0], vns[i + 1], vns[i + 2]};
+        triangle_rasterize_simd(area, triangle, vns, z_buffer, light_dir,
+                                outline);
+      }
     }
 
     if (model->debug) {
@@ -385,14 +401,13 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       projection = "persp";
     }
     sprintf(status_string, "%s %s", position_type, projection);
-    draw_string(area, V2i(20, 10), status_string,
-                0x00FFFFFF, true, true);
+    draw_string(area, V2i(20, 10), status_string, 0x00FFFFFF, true, true);
   }
 
   // Display the name of the selected model
   if (state->selected_model != NULL) {
-    draw_string(area, V2i(15, 50),
-                state->selected_model->name, 0x00FFFFFF, false, true);
+    draw_string(area, V2i(15, 50), state->selected_model->name, 0x00FFFFFF,
+                false, true);
   }
 
 #endif

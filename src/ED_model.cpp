@@ -37,12 +37,26 @@ void Model::update_aabb(bool rotated) {
   this->aabb.max = max + this->position;
 }
 
+void Model::set_defaults() {
+  this->triangles = NULL;
+  this->quads = NULL;
+  this->fans = NULL;
+  this->vertices = NULL;
+  this->vts = NULL;
+  this->vns = NULL;
+  this->scale = 1.0f;
+  this->direction = V3(1, 0, 0);
+  this->display = true;
+  this->debug = false;
+}
+
 void Model::destroy() {
   sb_free(this->vertices);
   sb_free(this->vns);
   sb_free(this->vts);
   sb_free(this->triangles);
   sb_free(this->quads);
+  sb_free(this->fans);
 }
 
 u32 Image::color(int x, int y, r32 intensity = 1.0f) {

@@ -50,6 +50,7 @@ struct Model : Entity {
   v2 *vts;
   Triangle *triangles;
   Quad *quads;
+  Fan *fans;
   Image texture;
   v3 old_direction;
   static const int kMaxNameLength = 100;
@@ -63,6 +64,7 @@ struct Model : Entity {
 
   void read_texture(char *);
   void update_aabb(bool);
+  void set_defaults();
   void destroy();
 };
 
