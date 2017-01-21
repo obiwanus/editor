@@ -385,8 +385,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       projection = "persp";
     }
     sprintf(status_string, "%s %s", position_type, projection);
-    draw_string(area, V2i(100, 10), status_string,
-                0x00FFFFFF, true);
+    draw_string(area, V2i(20, 10), status_string,
+                0x00FFFFFF, true, true);
   }
 
   // Display the name of the selected model

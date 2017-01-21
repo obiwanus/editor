@@ -32,23 +32,35 @@ void Program_State::read_wavefront_obj_file(char *filename) {
   model.scale = 1.0f;
   model.direction = V3(1, 0, 0);
   model.display = true;
-  model.debug = true;
+  model.debug = false;
   sprintf(model.name, "Model %d", num_models + 1);
+
+  // Where indices start for each model
+  int v_start = 0;
+  int vn_start = 0;
+  int vt_start = 0;
 
   const int kBufSize = 300;
   char string[kBufSize];
   while (fgets(string, kBufSize, f) != NULL) {
     if (string[0] == 'o' && string[1] == ' ') {
       if (model.triangles != NULL) {
-        // Push the model and start a new one
+        // Push the model
         sb_push(this->models, model);
+        ++num_models;
+
+        // Update indices for the next model
+        v_start += model.vertices ? sb_count(model.vertices) : 0;
+        vn_start += model.vns ? sb_count(model.vns) : 0;
+        vt_start += model.vts ? sb_count(model.vts) : 0;
+
+        // Start a new one
         model.triangles = NULL;
         model.quads = NULL;
         model.vertices = NULL;
         model.vts = NULL;
         model.vns = NULL;
         model.name[0] = '\0';
-        ++num_models;
       }
       // Set model name
       strncpy(model.name, string + 2, model.kMaxNameLength);
@@ -56,7 +68,7 @@ void Program_State::read_wavefront_obj_file(char *filename) {
     } else if (string[0] == 'f' && string[1] == ' ') {
       // Face string - parse by hand
       char number_string[kBufSize / 2];
-      const int kMaxIndices = 12;
+      const int kMaxIndices = 30;
       int indices[kMaxIndices];
       int num_indices = 0;
       int ch = 0;
@@ -73,6 +85,17 @@ void Program_State::read_wavefront_obj_file(char *filename) {
         int parsed_index = -1;
         if (num_symbols > 0) {
           parsed_index = atoi(number_string) - 1;  // start from 0
+
+          // Substract the previous model indices
+          if (num_indices % 3 == 0) {
+            parsed_index -= v_start;
+          } else if (num_indices % 3 == 1) {
+            parsed_index -= vt_start;
+          } else if (num_indices % 3 == 2) {
+            parsed_index -= vn_start;
+          } else {
+            INVALID_CODE_PATH;
+          }
         }
         indices[num_indices++] = parsed_index;
         assert(num_indices <= kMaxIndices);
@@ -93,8 +116,18 @@ void Program_State::read_wavefront_obj_file(char *filename) {
           quad.vertices[i].vn_index = indices[3 * i + 2];
         }
         sb_push(model.quads, quad);
+      } else if (num_indices >= 15 && (num_indices % 3) == 0) {
+        Fan fan;
+        fan.num_vertices = num_indices / 3;
+        for (int i = 0; i < fan.num_vertices; ++i) {
+          fan.vertices[i].index = indices[3 * i];
+          fan.vertices[i].vt_index = indices[3 * i + 1];
+          fan.vertices[i].vn_index = indices[3 * i + 2];
+        }
       } else {
-        assert(!"Unknown face definition");
+        printf("Unknown face definition in file %s, line \"%s\"\n", filename,
+               string);
+        exit(1);
       }
     } else if (string[0] == 'v' && string[1] == ' ') {
       // Vertex
@@ -168,7 +201,8 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   state->models = NULL;
   state->selected_model = NULL;
 
-  this->read_wavefront_obj_file("../models/test.wobj");
+  // this->read_wavefront_obj_file("../models/test.wobj");
+  this->read_wavefront_obj_file("../models/culdesac/geometricCuldesac.wobj");
 
   // Model model = {};
   // model.read_from_obj_file("../models/african_head/african_head.wobj");

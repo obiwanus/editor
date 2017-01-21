@@ -43,6 +43,8 @@ typedef unsigned int uint;
 #define assert(Expression)
 #endif
 
+#define INVALID_CODE_PATH { printf("Invalid code path, file %s, line %d\n", __FILE__, __LINE__); exit(1); }
+
 #define COUNT_OF(x) \
   ((sizeof(x) / sizeof(0 [x])) / ((size_t)(!(sizeof(x) % sizeof(0 [x])))))
 

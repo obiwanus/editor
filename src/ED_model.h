@@ -15,6 +15,12 @@ struct Quad {
   Vertex vertices[4];
 };
 
+struct Fan {
+  static const int kMaxNumVertices = 8;
+  int num_vertices;
+  Vertex vertices[kMaxNumVertices];
+};
+
 struct Image {
   int width;
   int height;
