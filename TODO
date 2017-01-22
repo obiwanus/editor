@@ -1,7 +1,5 @@
 MINIMUM WHAT NEEDS TO BE DONE:
 
-- Load and display simple scenes in OBJ
-- Camera as an object
 - Raytrace render from the camera (chalky)
 - Split scenes into pieces by vertex connectivity on load (?)
 - Move models with or without manipulator
@@ -13,7 +11,6 @@ MINIMUM WHAT NEEDS TO BE DONE:
 
 NOW:
 
-- test multiple objects from single obj file
 
 
 BUGS:
@@ -73,6 +70,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [22/01/2017]
+- tidy up rendering code
 - fix problems with positioning
 - load a reasonably big obj file
 

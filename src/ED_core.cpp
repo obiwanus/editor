@@ -95,15 +95,7 @@ void Program_State::read_wavefront_obj_file(char *filename) {
           triangle.vertices[i].vn_index = indices[3 * i + 2];
         }
         sb_push(model.triangles, triangle);
-      } else if (num_indices == 12) {
-        Quad quad;
-        for (int i = 0; i < 4; ++i) {
-          quad.vertices[i].index = indices[3 * i];
-          quad.vertices[i].vt_index = indices[3 * i + 1];
-          quad.vertices[i].vn_index = indices[3 * i + 2];
-        }
-        sb_push(model.quads, quad);
-      } else if (num_indices >= 15 && (num_indices % 3) == 0) {
+      } else if (num_indices >= 12 && (num_indices % 3) == 0) {
         Fan fan;
         fan.num_vertices = num_indices / 3;
         for (int i = 0; i < fan.num_vertices; ++i) {
@@ -146,8 +138,8 @@ void Program_State::read_wavefront_obj_file(char *filename) {
     m->position = V3(0, 0, 0);
     m->update_aabb(false);  // not rotated
     m->position = (m->aabb.min + m->aabb.max) * 0.5f;
-    for (int i = 0; i < sb_count(m->vertices); ++i) {
-      m->vertices[i] -= m->position;
+    for (int j = 0; j < sb_count(m->vertices); ++j) {
+      m->vertices[j] -= m->position;
     }
   }
 

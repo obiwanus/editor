@@ -39,7 +39,6 @@ void Model::update_aabb(bool rotated) {
 
 void Model::set_defaults() {
   this->triangles = NULL;
-  this->quads = NULL;
   this->fans = NULL;
   this->vertices = NULL;
   this->vts = NULL;
@@ -55,7 +54,6 @@ void Model::destroy() {
   sb_free(this->vns);
   sb_free(this->vts);
   sb_free(this->triangles);
-  sb_free(this->quads);
   sb_free(this->fans);
 }
 

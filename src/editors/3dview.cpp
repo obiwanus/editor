@@ -235,37 +235,12 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
       }
 
-      // triangle_shaded(area, screen_verts, vns, z_buffer, light_dir, outline);
-      // triangle_rasterize(area, screen_verts, 0x00FFFFFF);
       triangle_rasterize_simd(area, screen_verts, vns, z_buffer, light_dir,
                               outline);
     }
 
-    for (int q = 0; q < sb_count(model->quads); ++q) {
-      Quad quad = model->quads[q];
-      v3 screen_verts[4];
-      v3 vns[4];
-
-      for (int i = 0; i < 4; ++i) {
-        v3 vertex = ModelTransform * model->vertices[quad.vertices[i].index];
-        screen_verts[i] = WorldTransform * vertex;
-        vns[i] = model->vns[quad.vertices[i].vn_index];
-        vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
-      }
-
-      // TODO: Make this look nicer
-      v3 triangle1[3] = {screen_verts[0], screen_verts[1], screen_verts[2]};
-      v3 vns1[3] = {vns[0], vns[1], vns[2]};
-      triangle_rasterize_simd(area, triangle1, vns1, z_buffer, light_dir,
-                              outline);
-      v3 triangle2[3] = {screen_verts[0], screen_verts[2], screen_verts[3]};
-      v3 vns2[3] = {vns[0], vns[2], vns[3]};
-      triangle_rasterize_simd(area, triangle2, vns2, z_buffer, light_dir,
-                              outline);
-    }
-
-    for (int q = 0; q < sb_count(model->fans); ++q) {
-      Fan fan = model->fans[q];
+    for (int f = 0; f < sb_count(model->fans); ++f) {
+      Fan fan = model->fans[f];
       v3 screen_verts[Fan::kMaxNumVertices];
       v3 vns[Fan::kMaxNumVertices];
 
@@ -279,8 +254,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       for (int i = 0; i < fan.num_vertices - 2; ++i) {
         v3 triangle[3] = {screen_verts[0], screen_verts[i + 1],
                           screen_verts[i + 2]};
-        v3 vns[3] = {vns[0], vns[i + 1], vns[i + 2]};
-        triangle_rasterize_simd(area, triangle, vns, z_buffer, light_dir,
+        v3 tr_vns[3] = {vns[0], vns[i + 1], vns[i + 2]};
+        triangle_rasterize_simd(area, triangle, tr_vns, z_buffer, light_dir,
                                 outline);
       }
     }

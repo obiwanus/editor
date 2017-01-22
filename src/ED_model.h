@@ -11,10 +11,6 @@ struct Triangle {
   Vertex vertices[3];
 };
 
-struct Quad {
-  Vertex vertices[4];
-};
-
 struct Fan {
   static const int kMaxNumVertices = 8;
   int num_vertices;
@@ -49,7 +45,6 @@ struct Model : Entity {
   v3 *vns;
   v2 *vts;
   Triangle *triangles;
-  Quad *quads;
   Fan *fans;
   Image texture;
   v3 old_direction;

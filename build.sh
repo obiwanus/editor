@@ -19,7 +19,7 @@ if [ "$1" = "run" ]; then
 fi
 
 CFLAGS="-g -fno-exceptions\
-        -Wall -Wextra -Wno-write-strings -Wno-missing-field-initializers\
+        -Wall -Wextra -Wno-write-strings -Wno-missing-field-initializers -Wshadow\
         -Wno-missing-braces -Wno-unused-parameter -Wno-unused -Werror\
         -DBUILD_INTERNAL=$BUILD_INTERNAL\
         -DBUILD_SLOW=$BUILD_SLOW\
