@@ -140,16 +140,16 @@ void Program_State::read_wavefront_obj_file(char *filename) {
     num_models++;
   }
 
-  // // Find AABB and reposition the models
-  // for (int i = 0; i < sb_count(this->models); ++i) {
-  //   Model *m = this->models + i;
-  //   m->position = V3(0, 0, 0);
-  //   m->update_aabb(false);  // not rotated
-  //   m->position = (m->aabb.min + m->aabb.max) * 0.5f;
-  //   for (int i = 0; i < sb_count(m->vertices); ++i) {
-  //     m->vertices[i] -= m->position;
-  //   }
-  // }
+  // Find AABB and reposition the models
+  for (int i = 0; i < sb_count(this->models); ++i) {
+    Model *m = this->models + i;
+    m->position = V3(0, 0, 0);
+    m->update_aabb(false);  // not rotated
+    m->position = (m->aabb.min + m->aabb.max) * 0.5f;
+    for (int i = 0; i < sb_count(m->vertices); ++i) {
+      m->vertices[i] -= m->position;
+    }
+  }
 
   fclose(f);
 }

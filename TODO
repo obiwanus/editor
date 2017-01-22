@@ -72,6 +72,10 @@ idea: try to look at the objects in clip space from different angles
 
 DONE:
 
+[22/01/2017]
+- fix problems with positioning
+- load a reasonably big obj file
+
 [21/01/2017]
 - clip text against area bounds
 - align text right
