@@ -13,13 +13,16 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
   // Get pixel in camera coordinates
   v2 pixel_size = V2(2 * camera.right / camera.viewport.x,
                      2 * camera.top / camera.viewport.y);
+
+  r32 x_start = -camera.right + 0.5f * pixel_size.x;  // x = 0
+
   v3 camera_pixel;
+  camera_pixel.x = x_start;
+  camera_pixel.y = -camera.top + 0.5f * pixel_size.y;  // y = 0
   camera_pixel.z = camera.near;
 
   for (int y = 0; y < area_height; ++y) {
     for (int x = 0; x < area_width; ++x) {
-      camera_pixel.x = -camera.right + 0.5f * pixel_size.x + x * pixel_size.x;
-      camera_pixel.y = -camera.top + 0.5f * pixel_size.y + y * pixel_size.y;
       ray.direction = camera_pixel;  // we're assuming ray origin is 0, 0, 0
       ray.direction = V3(CameraSpaceTransform * V4_v(ray.direction));
 
@@ -44,6 +47,10 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
           }
         }
       }
+
+      camera_pixel.x += pixel_size.x;
     }
+    camera_pixel.x = x_start;
+    camera_pixel.y += pixel_size.y;
   }
 }
