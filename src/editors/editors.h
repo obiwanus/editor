@@ -37,7 +37,7 @@ struct Editor_3DView : Area_Editor {
 };
 
 struct Editor_Raytrace : Area_Editor {
-  void draw();
+  void draw(Pixel_Buffer *, Program_State *);
 };
 
 #endif  // __ED_EDITORS_H__

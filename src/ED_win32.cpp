@@ -15,6 +15,7 @@
 #include "ED_model.cpp"
 #include "ED_drawing.cpp"
 #include "editors/3dview.cpp"
+#include "editors/raytrace.cpp"
 #include "ui/ED_ui.cpp"
 
 // ========================== Platform headers ================================

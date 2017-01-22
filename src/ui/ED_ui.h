@@ -66,8 +66,6 @@ struct Area {
   void set_bottom(int);
   void reposition_splitter(r32, r32);
 
-  // void draw(Pixel_Buffer *);
-
   void destroy();
 };
 

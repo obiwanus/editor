@@ -675,6 +675,12 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
         }
       } break;
 
+      case Area_Editor_Type_Raytrace: {
+        if (!area->editor_raytrace.is_drawn) {
+          area->editor_raytrace.draw(buffer, state);
+        }
+      } break;
+
       default: { assert(!"Unknown editor type"); } break;
     }
 
