@@ -1,6 +1,5 @@
 
 void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
-
   int area_width = this->area->get_width();
   int area_height = this->area->get_height();
 
@@ -14,9 +13,12 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
     end.y = start.y + min(this->backbuffer.height, area_height);
     for (int y = start.y; y < end.y; ++y) {
       for (int x = start.x; x < end.x; ++x) {
-        u32 *pixel_src = (u32 *)this->backbuffer.memory + y * this->backbuffer.width + x;
-        int x_dst = this->area->left + (area_width - this->backbuffer.width) / 2 + x;
-        int y_dst = buffer->height - this->area->top + (area_height - this->backbuffer.height) / 2 + y;
+        u32 *pixel_src =
+            (u32 *)this->backbuffer.memory + y * this->backbuffer.width + x;
+        int x_dst =
+            this->area->left + (area_width - this->backbuffer.width) / 2 + x;
+        int y_dst = buffer->height - this->area->top +
+                    (area_height - this->backbuffer.height) / 2 + y;
         u32 *pixel_dst = (u32 *)buffer->memory + y_dst * buffer->width + x_dst;
         *pixel_dst = *pixel_src;
       }
@@ -49,6 +51,10 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
   // Clear (maybe temporary)
   memset(this->backbuffer.memory, EDITOR_BACKGROUND_COLOR, bb_size);
 
+  this->trace_tile(state->models, V2i(0, 0), V2i(area_width, area_height));
+}
+
+void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
   Camera camera = this->area->editor_3dview.camera;
 
   Ray ray;
@@ -67,13 +73,13 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
   camera_pixel.y = -camera.top + 0.5f * pixel_size.y;  // y = 0
   camera_pixel.z = camera.near;
 
-  for (int y = 0; y < area_height; ++y) {
-    for (int x = 0; x < area_width; ++x) {
+  for (int y = start.y; y < end.y; ++y) {
+    for (int x = start.x; x < end.x; ++x) {
       ray.direction = camera_pixel;  // we're assuming ray origin is 0, 0, 0
       ray.direction = V3(CameraSpaceTransform * V4_v(ray.direction));
 
-      for (int m = 0; m < sb_count(state->models); ++m) {
-        Model *model = state->models + m;
+      for (int m = 0; m < sb_count(models); ++m) {
+        Model *model = models + m;
         if (!model->display) continue;
 
         // Put model in the scene

@@ -40,6 +40,7 @@ struct Editor_Raytrace : Area_Editor {
   Pixel_Buffer backbuffer;
 
   void draw(Pixel_Buffer *, Program_State *);
+  void trace_tile(Model *, v2i, v2i);
 };
 
 #endif  // __ED_EDITORS_H__
