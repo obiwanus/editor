@@ -7,8 +7,13 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
   if (this->is_drawn) {
     // Blit the contents of the back buffer
     // TODO: simd?
-    for (int y = 0; y < this->backbuffer.height; ++y) {
-      for (int x = 0; x < this->backbuffer.width; ++x) {
+    v2i start, end;
+    start.x = max(0, (this->backbuffer.width - area_width) / 2);
+    start.y = max(0, (this->backbuffer.height - area_height) / 2);
+    end.x = start.x + min(this->backbuffer.width, area_width);
+    end.y = start.y + min(this->backbuffer.height, area_height);
+    for (int y = start.y; y < end.y; ++y) {
+      for (int x = start.x; x < end.x; ++x) {
         u32 *pixel_src = (u32 *)this->backbuffer.memory + y * this->backbuffer.width + x;
         int x_dst = this->area->left + (area_width - this->backbuffer.width) / 2 + x;
         int y_dst = buffer->height - this->area->top + (area_height - this->backbuffer.height) / 2 + y;

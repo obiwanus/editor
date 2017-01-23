@@ -1,7 +1,6 @@
 MINIMUM WHAT NEEDS TO BE DONE:
 
 - Raytrace render from the camera (chalky)
-- Split scenes into pieces by vertex connectivity on load (?)
 - Move models with or without manipulator
 - Read mtl files
 - Render from the camera (using mtl)
@@ -26,6 +25,8 @@ NICE TO HAVE:
 
 BACKLOG:
 
+- try intrinsic for sqrt
+- avoid normalising vectors so often
 - avoid random heap allocations everywhere
 - put things we're not going to free in the permanent memory
 - thread-safe performance counters
@@ -68,6 +69,13 @@ idea: try to look at the objects in clip space from different angles
 ==============================================================================
 
 DONE:
+
+[24/01/2017]
+
+
+[23/01/2017]
+- basic ray tracer (again)
+- draw ray trace result into a backbuffer
 
 [22/01/2017]
 - tidy up rendering code
