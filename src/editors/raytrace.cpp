@@ -51,7 +51,17 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
   // Clear (maybe temporary)
   memset(this->backbuffer.memory, EDITOR_BACKGROUND_COLOR, bb_size);
 
-  this->trace_tile(state->models, V2i(0, 0), V2i(area_width, area_height));
+  // this->trace_tile(state->models, V2i(0, 0), V2i(area_width, area_height));
+
+  const int kTileCount = 2;
+  v2i tile_size = {area_width / kTileCount, area_height / kTileCount};
+  for (int y = 0; y < kTileCount; ++y) {
+    for (int x = 0; x < kTileCount; ++x) {
+      v2i start = {x * tile_size.x, y * tile_size.y};
+      v2i end = start + tile_size;
+      this->trace_tile(state->models, start, end);
+    }
+  }
 }
 
 void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
@@ -66,11 +76,11 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
   v2 pixel_size = V2(2 * camera.right / camera.viewport.x,
                      2 * camera.top / camera.viewport.y);
 
-  r32 x_start = -camera.right + 0.5f * pixel_size.x;  // x = 0
+  r32 x_start = -camera.right + pixel_size.x * (0.5f + start.x);
 
   v3 camera_pixel;
   camera_pixel.x = x_start;
-  camera_pixel.y = -camera.top + 0.5f * pixel_size.y;  // y = 0
+  camera_pixel.y = -camera.top + pixel_size.y  * (0.5f + start.y);
   camera_pixel.z = camera.near;
 
   for (int y = start.y; y < end.y; ++y) {
