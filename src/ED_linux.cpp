@@ -592,6 +592,9 @@ int main(int argc, char *argv[]) {
 
   // Free areas
   for (int i = 0; i < state->UI->num_areas; ++i) {
+    if (state->UI->areas[i]->editor_raytrace.backbuffer.memory) {
+      free(state->UI->areas[i]->editor_raytrace.backbuffer.memory);
+    }
     free(state->UI->areas[i]);
   }
   sb_free(state->UI->areas);

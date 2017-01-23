@@ -4,6 +4,8 @@
 // 256 Mb
 #define MAX_INTERNAL_MEMORY_SIZE (256 * 1024 * 1024)
 
+#define EDITOR_BACKGROUND_COLOR 0x36
+
 struct Program_Memory {
   void *start;
   void *free_memory;

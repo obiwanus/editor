@@ -286,6 +286,11 @@ void UI_Select::update_and_draw(User_Input *input) {
 
           // TODO: if we ever generalize this, this bit will have to change
           select->parent_area->editor_type = (Area_Editor_Type)opt;
+          if (select->parent_area->editor_type == Area_Editor_Type_Raytrace) {
+            select->parent_area->editor_raytrace.is_drawn = false;
+            // TODO: when we use multiple threads to draw, need to
+            // be careful as they might not have finished drawing yet
+          }
         }
       }
     }
@@ -650,7 +655,8 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
   // TODO: maybe take this completely away from ui::draw?
 
   // Clear
-  memset(buffer->memory, 0x36, buffer->width * buffer->height * sizeof(u32));
+  memset(buffer->memory, EDITOR_BACKGROUND_COLOR,
+         buffer->width * buffer->height * sizeof(u32));
 
   if (this->z_buffer == NULL) {
     this->z_buffer =
@@ -670,15 +676,11 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     // Draw editor contents
     switch (area->editor_type) {
       case Area_Editor_Type_3DView: {
-        if (!area->editor_3dview.is_drawn) {
-          area->editor_3dview.draw(buffer, z_buffer, state, input);
-        }
+        area->editor_3dview.draw(buffer, z_buffer, state, input);
       } break;
 
       case Area_Editor_Type_Raytrace: {
-        if (!area->editor_raytrace.is_drawn) {
-          area->editor_raytrace.draw(buffer, state);
-        }
+        area->editor_raytrace.draw(buffer, state);
       } break;
 
       default: { assert(!"Unknown editor type"); } break;

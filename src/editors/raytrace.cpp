@@ -1,9 +1,50 @@
 
 void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
-  Camera camera = this->area->editor_3dview.camera;
 
   int area_width = this->area->get_width();
   int area_height = this->area->get_height();
+
+  if (this->is_drawn) {
+    // Blit the contents of the back buffer
+    // TODO: simd?
+    for (int y = 0; y < this->backbuffer.height; ++y) {
+      for (int x = 0; x < this->backbuffer.width; ++x) {
+        u32 *pixel_src = (u32 *)this->backbuffer.memory + y * this->backbuffer.width + x;
+        int x_dst = this->area->left + (area_width - this->backbuffer.width) / 2 + x;
+        int y_dst = buffer->height - this->area->top + (area_height - this->backbuffer.height) / 2 + y;
+        u32 *pixel_dst = (u32 *)buffer->memory + y_dst * buffer->width + x_dst;
+        *pixel_dst = *pixel_src;
+      }
+    }
+    return;
+  }
+
+  // Draw. TODO: use at least 1 separate thread
+  this->is_drawn = true;
+
+  // Always update the boundaries when drawing
+  this->backbuffer.width = area_width;
+  this->backbuffer.height = area_height;
+
+  int bb_size = area_width * area_height * sizeof(u32);
+
+  if (this->backbuffer.memory == NULL) {
+    // Allocate back buffer
+    this->backbuffer.max_width = area_width;
+    this->backbuffer.max_height = area_height;
+    this->backbuffer.memory = malloc(bb_size);
+  } else if (this->backbuffer.max_width < area_width ||
+             this->backbuffer.max_height < area_height) {
+    // Reallocate since we have a bigger area now
+    this->backbuffer.max_width = area_width;
+    this->backbuffer.max_height = area_height;
+    this->backbuffer.memory = realloc(this->backbuffer.memory, bb_size);
+  }
+
+  // Clear (maybe temporary)
+  memset(this->backbuffer.memory, EDITOR_BACKGROUND_COLOR, bb_size);
+
+  Camera camera = this->area->editor_3dview.camera;
 
   Ray ray;
   m4x4 CameraSpaceTransform =
@@ -43,7 +84,7 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
                 ModelTransform * model->vertices[triangle.vertices[i].index];
           }
           if (ray.hits_triangle(vertices) > 0) {
-            draw_pixel(this->area, x, y, 0x00FFFFFF);
+            draw_pixel(&this->backbuffer, x, y, 0x00FFFFFF);
           }
         }
       }
