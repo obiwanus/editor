@@ -26,13 +26,18 @@
 
 // =========================== Platform code ==================================
 
-global LARGE_INTEGER gPerformanceFrequency;
-global GLuint gTextureHandle;
-
 struct Thread_Info {
   int thread_number;
   HANDLE thread_handle;
 };
+
+struct Win32_Raytrace_Work_Queue : Raytrace_Work_Queue {
+  HANDLE semaphore;
+};
+
+global Win32_Raytrace_Work_Queue g_raytrace_queue;
+global LARGE_INTEGER gPerformanceFrequency;
+global GLuint gTextureHandle;
 
 static void Win32UpdateWindow(HDC hdc) {
   if (!g_pixel_buffer.memory) return;
@@ -156,8 +161,51 @@ inline r32 Win32GetMillisecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End) {
 DWORD WINAPI RaytraceWorkerThread(LPVOID lpParam) {
   Thread_Info *info = (Thread_Info *)lpParam;
 
-  printf("Thread %d exited\n", info->thread_number);
-  return 0;
+  Win32_Raytrace_Work_Queue *queue = &g_raytrace_queue;
+
+  for (;;) {
+    bool thread_should_sleep = false;
+    u32 original_next_entry_to_do = queue->next_entry_to_do;
+    u32 new_next_entry_to_do =
+        (original_next_entry_to_do + 1) % COUNT_OF(queue->entries);
+
+    if (original_next_entry_to_do != queue->last_entry_done) {
+      // There's probably work to do
+      u32 index = InterlockedCompareExchange(
+          (LONG volatile *)&queue->next_entry_to_do, new_next_entry_to_do,
+          original_next_entry_to_do);
+    }
+
+    // if (work) {
+    //   Raytrace_Work_Entry *entry = ;
+    //   entry->editor->trace_tile(entry->models, entry->start, entry->end);
+    // }
+
+    //  bool32 WeShouldSleep = false;
+
+    // uint32 OriginalNextEntryToRead = Queue->NextEntryToRead;
+    // uint32 NewNextEntryToRead = (OriginalNextEntryToRead + 1) %
+    // ArrayCount(Queue->Entries);
+    // if(OriginalNextEntryToRead != Queue->NextEntryToWrite)
+    // {
+    //     uint32 Index = InterlockedCompareExchange((LONG volatile
+    //     *)&Queue->NextEntryToRead,
+    //                                               NewNextEntryToRead,
+    //                                               OriginalNextEntryToRead);
+    //     if(Index == OriginalNextEntryToRead)
+    //     {
+    //         platform_work_queue_entry Entry = Queue->Entries[Index];
+    //         Entry.Callback(Queue, Entry.Data);
+    //         InterlockedIncrement((LONG volatile *)&Queue->CompletionCount);
+    //     }
+    // }
+    // else
+    // {
+    //     WeShouldSleep = true;
+    // }
+
+    // return(WeShouldSleep);
+  }
 }
 
 int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,

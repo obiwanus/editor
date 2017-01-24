@@ -43,4 +43,18 @@ struct Editor_Raytrace : Area_Editor {
   void trace_tile(Model *, v2i, v2i);
 };
 
+struct Raytrace_Work_Entry {
+  Editor_Raytrace *editor;
+  Model *models;
+  v2i start;
+  v2i end;
+};
+
+struct Raytrace_Work_Queue {
+  u32 volatile last_entry_done;
+  u32 volatile next_entry_to_do;
+
+  Raytrace_Work_Entry entries[256];
+};
+
 #endif  // __ED_EDITORS_H__

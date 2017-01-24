@@ -280,6 +280,7 @@ Window linux_create_opengl_window(Display *display, int width, int height) {
 
 // =========================== Platform code ==================================
 
+global Raytrace_Work_Queue g_raytrace_queue;
 global timespec g_timestamp;
 global XImage *g_ximage;
 
