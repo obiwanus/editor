@@ -29,9 +29,9 @@
 global LARGE_INTEGER gPerformanceFrequency;
 global GLuint gTextureHandle;
 
-struct Win32_Thread_Param {
+struct Thread_Info {
   int thread_number;
-  Program_State *state;
+  HANDLE thread_handle;
 };
 
 static void Win32UpdateWindow(HDC hdc) {
@@ -153,10 +153,10 @@ inline r32 Win32GetMillisecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End) {
   return Result;
 }
 
-DWORD WINAPI ThreadProc(LPVOID lpParam) {
-  Win32_Thread_Param *param = (Win32_Thread_Param *)lpParam;
-  Program_State *state = param->state;
+DWORD WINAPI RaytraceWorkerThread(LPVOID lpParam) {
+  Thread_Info *info = (Thread_Info *)lpParam;
 
+  printf("Thread %d exited\n", info->thread_number);
   return 0;
 }
 
@@ -283,25 +283,24 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
   // Create worker threads
   {
-    const int kMaxThreads = 1;
-    Win32_Thread_Param thread_params[kMaxThreads];
+    const int kNumThreads = 4;
+    Thread_Info threads[kNumThreads];
 
-    for (int i = 0; i < kMaxThreads; i++) {
-      thread_params[i].thread_number = i;
-      thread_params[i].state = state;
-      HANDLE thread_handle =
-          CreateThread(0,           // LPSECURITY_ATTRIBUTES lpThreadAttributes,
-                       0,           // SIZE_T dwStackSize,
-                       ThreadProc,  // LPTHREAD_START_ROUTINE lpStartAddress,
-                       &thread_params[i],  // LPVOID lpParameter,
-                       0,                  // DWORD dwCreationFlags,
-                       NULL                // LPDWORD lpThreadId
-                       );
+    for (int i = 0; i < kNumThreads; i++) {
+      threads[i].thread_number = i + 1;
+      HANDLE thread_handle = CreateThread(
+          0,                     // LPSECURITY_ATTRIBUTES lpThreadAttributes,
+          0,                     // SIZE_T dwStackSize,
+          RaytraceWorkerThread,  // LPTHREAD_START_ROUTINE lpStartAddress,
+          &threads[i],           // LPVOID lpParameter,
+          0,                     // DWORD dwCreationFlags,
+          NULL                   // LPDWORD lpThreadId
+          );
+      threads[i].thread_handle = thread_handle;
       if (thread_handle == NULL) {
         printf("CreateThread error: %d\n", GetLastError());
         exit(1);
       }
-      CloseHandle(thread_handle);
     }
   }
 
@@ -352,16 +351,26 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
           // Handle symbols
           int symbol = (int)vk_code;
-          if (vk_code == VK_NUMPAD0) symbol = '0';
-          else if (vk_code == VK_NUMPAD1) symbol = '1';
-          else if (vk_code == VK_NUMPAD2) symbol = '2';
-          else if (vk_code == VK_NUMPAD3) symbol = '3';
-          else if (vk_code == VK_NUMPAD4) symbol = '4';
-          else if (vk_code == VK_NUMPAD5) symbol = '5';
-          else if (vk_code == VK_NUMPAD6) symbol = '6';
-          else if (vk_code == VK_NUMPAD7) symbol = '7';
-          else if (vk_code == VK_NUMPAD8) symbol = '8';
-          else if (vk_code == VK_NUMPAD9) symbol = '9';
+          if (vk_code == VK_NUMPAD0)
+            symbol = '0';
+          else if (vk_code == VK_NUMPAD1)
+            symbol = '1';
+          else if (vk_code == VK_NUMPAD2)
+            symbol = '2';
+          else if (vk_code == VK_NUMPAD3)
+            symbol = '3';
+          else if (vk_code == VK_NUMPAD4)
+            symbol = '4';
+          else if (vk_code == VK_NUMPAD5)
+            symbol = '5';
+          else if (vk_code == VK_NUMPAD6)
+            symbol = '6';
+          else if (vk_code == VK_NUMPAD7)
+            symbol = '7';
+          else if (vk_code == VK_NUMPAD8)
+            symbol = '8';
+          else if (vk_code == VK_NUMPAD9)
+            symbol = '9';
 
           if (('A' <= symbol && symbol <= 'Z') ||
               ('0' <= symbol && symbol <= '9')) {
@@ -401,7 +410,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     Update_Result result =
         update_and_render(&g_program_memory, state, new_input);
 
-    #include "debug/ED_debug_draw.cpp"
+#include "debug/ED_debug_draw.cpp"
 
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     SetCursor(win_cursors[result.cursor]);

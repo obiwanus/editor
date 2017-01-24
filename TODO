@@ -10,7 +10,7 @@ MINIMUM WHAT NEEDS TO BE DONE:
 
 NOW:
 
-
+- make worker threads check for new job in the queue
 
 BUGS:
 
@@ -71,7 +71,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [24/01/2017]
-
+- create worker threads
 
 [23/01/2017]
 - basic ray tracer (again)
