@@ -33,7 +33,20 @@ struct Thread_Info {
 
 struct Win32_Raytrace_Work_Queue : Raytrace_Work_Queue {
   HANDLE semaphore;
+
+  virtual void add_entry(Raytrace_Work_Entry);
 };
+
+void Win32_Raytrace_Work_Queue::add_entry(Raytrace_Work_Entry entry) {
+  u32 new_next_entry_to_add =
+      (this->next_entry_to_add + 1) % COUNT_OF(this->entries);
+  assert(new_next_entry_to_add != this->next_entry_to_do);
+  Raytrace_Work_Entry *entry_to_add = this->entries + this->next_entry_to_add;
+  *entry_to_add = entry;
+  _WriteBarrier();
+  this->next_entry_to_add = new_next_entry_to_add;
+  ReleaseSemaphore(this->semaphore, 1, 0);
+}
 
 global Win32_Raytrace_Work_Queue g_raytrace_queue;
 global LARGE_INTEGER gPerformanceFrequency;
@@ -164,47 +177,27 @@ DWORD WINAPI RaytraceWorkerThread(LPVOID lpParam) {
   Win32_Raytrace_Work_Queue *queue = &g_raytrace_queue;
 
   for (;;) {
-    bool thread_should_sleep = false;
     u32 original_next_entry_to_do = queue->next_entry_to_do;
     u32 new_next_entry_to_do =
         (original_next_entry_to_do + 1) % COUNT_OF(queue->entries);
 
-    if (original_next_entry_to_do != queue->last_entry_done) {
+    if (original_next_entry_to_do != queue->next_entry_to_add) {
       // There's probably work to do
       u32 index = InterlockedCompareExchange(
           (LONG volatile *)&queue->next_entry_to_do, new_next_entry_to_do,
           original_next_entry_to_do);
+      if (index == original_next_entry_to_do) {
+        // No other thread has beaten us to it, do the work
+        Raytrace_Work_Entry entry = queue->entries[index];
+        entry.editor->trace_tile(entry.models, entry.start, entry.end);
+        printf("Thread %d did work entry %d\n", info->thread_number, index);
+      }
+    } else {
+      // Sleep
+      printf("Thread %d went to sleep\n", info->thread_number);
+      WaitForSingleObjectEx(queue->semaphore, INFINITE, FALSE);
+      printf("Thread %d has woken up\n", info->thread_number);
     }
-
-    // if (work) {
-    //   Raytrace_Work_Entry *entry = ;
-    //   entry->editor->trace_tile(entry->models, entry->start, entry->end);
-    // }
-
-    //  bool32 WeShouldSleep = false;
-
-    // uint32 OriginalNextEntryToRead = Queue->NextEntryToRead;
-    // uint32 NewNextEntryToRead = (OriginalNextEntryToRead + 1) %
-    // ArrayCount(Queue->Entries);
-    // if(OriginalNextEntryToRead != Queue->NextEntryToWrite)
-    // {
-    //     uint32 Index = InterlockedCompareExchange((LONG volatile
-    //     *)&Queue->NextEntryToRead,
-    //                                               NewNextEntryToRead,
-    //                                               OriginalNextEntryToRead);
-    //     if(Index == OriginalNextEntryToRead)
-    //     {
-    //         platform_work_queue_entry Entry = Queue->Entries[Index];
-    //         Entry.Callback(Queue, Entry.Data);
-    //         InterlockedIncrement((LONG volatile *)&Queue->CompletionCount);
-    //     }
-    // }
-    // else
-    // {
-    //     WeShouldSleep = true;
-    // }
-
-    // return(WeShouldSleep);
   }
 }
 
@@ -218,7 +211,8 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   // Main program state
   Program_State *state =
       (Program_State *)g_program_memory.allocate(sizeof(Program_State));
-  state->init(&g_program_memory, &g_pixel_buffer);
+  state->init(&g_program_memory, &g_pixel_buffer,
+              (Raytrace_Work_Queue *)&g_raytrace_queue);
 
   // Create window class
   WNDCLASS WindowClass = {};
@@ -332,8 +326,15 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
   // Create worker threads
   {
     const int kNumThreads = 4;
-    Thread_Info threads[kNumThreads];
 
+    // Init work queue
+    g_raytrace_queue.next_entry_to_add = 0;
+    g_raytrace_queue.next_entry_to_do = 0;
+    u32 initial_num_threads = 0;
+    g_raytrace_queue.semaphore = CreateSemaphoreEx(
+        0, initial_num_threads, kNumThreads, 0, 0, SEMAPHORE_ALL_ACCESS);
+
+    Thread_Info threads[kNumThreads];
     for (int i = 0; i < kNumThreads; i++) {
       threads[i].thread_number = i + 1;
       HANDLE thread_handle = CreateThread(

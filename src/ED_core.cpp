@@ -146,7 +146,8 @@ void Program_State::read_wavefront_obj_file(char *filename) {
   fclose(f);
 }
 
-void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
+void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer,
+                         Raytrace_Work_Queue *queue) {
   Program_State *state = this;
 
   g_FPS.value = 0;
@@ -161,6 +162,8 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer) {
   memset(state->UI, 0, sizeof(*state->UI));
   state->UI->memory = memory;
   state->UI->buffer = buffer;
+
+  state->raytrace_queue = queue;
 
   // Allocate memory for the main buffer
   buffer->allocate();

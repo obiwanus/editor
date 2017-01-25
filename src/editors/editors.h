@@ -51,10 +51,12 @@ struct Raytrace_Work_Entry {
 };
 
 struct Raytrace_Work_Queue {
-  u32 volatile last_entry_done;
   u32 volatile next_entry_to_do;
+  u32 volatile next_entry_to_add;
 
   Raytrace_Work_Entry entries[256];
+
+  virtual void add_entry(Raytrace_Work_Entry) = 0;
 };
 
 #endif  // __ED_EDITORS_H__

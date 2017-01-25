@@ -70,6 +70,9 @@ idea: try to look at the objects in clip space from different angles
 
 DONE:
 
+[25/01/2017]
+- [windows] basic thread work queue
+
 [24/01/2017]
 - create worker threads
 

@@ -53,13 +53,18 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
 
   // this->trace_tile(state->models, V2i(0, 0), V2i(area_width, area_height));
 
-  const int kTileCount = 2;
+  const int kTileCount = 4;  // one side
   v2i tile_size = {area_width / kTileCount, area_height / kTileCount};
   for (int y = 0; y < kTileCount; ++y) {
     for (int x = 0; x < kTileCount; ++x) {
       v2i start = {x * tile_size.x, y * tile_size.y};
       v2i end = start + tile_size;
-      this->trace_tile(state->models, start, end);
+      Raytrace_Work_Entry entry;
+      entry.editor = this;
+      entry.models = state->models;
+      entry.start = start;
+      entry.end = end;
+      state->raytrace_queue->add_entry(entry);
     }
   }
 }

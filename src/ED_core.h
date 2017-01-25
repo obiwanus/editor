@@ -104,6 +104,8 @@ struct Update_Result {
   Cursor_Type cursor;
 };
 
+struct Raytrace_Work_Queue;
+
 struct Program_State {
   int kWindowWidth;
   int kWindowHeight;
@@ -113,7 +115,9 @@ struct Program_State {
   Model *models = NULL;
   Model *selected_model = NULL;
 
-  void init(Program_Memory *, Pixel_Buffer *);
+  Raytrace_Work_Queue *raytrace_queue = NULL;
+
+  void init(Program_Memory *, Pixel_Buffer *, Raytrace_Work_Queue *);
   void read_wavefront_obj_file(char *);
 };
 
