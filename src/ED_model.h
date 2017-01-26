@@ -69,6 +69,7 @@ struct Ray {
 
   v3 point_at(r32 t);
   r32 hits_triangle(v3 vertices[3]);
+  bool hits_aabb(AABBox);
 };
 
 enum Camera_Position {

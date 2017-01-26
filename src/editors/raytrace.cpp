@@ -90,12 +90,12 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
 
   for (int y = start.y; y < end.y; ++y) {
     for (int x = start.x; x < end.x; ++x) {
-      ray.direction = camera_pixel;  // we're assuming ray origin is 0, 0, 0
-      ray.direction = V3(CameraSpaceTransform * V4_v(ray.direction));
+      ray.direction = CameraSpaceTransform * camera_pixel - ray.origin;
 
       for (int m = 0; m < sb_count(models); ++m) {
         Model *model = models + m;
         if (!model->display) continue;
+        if (!ray.hits_aabb(model->aabb)) continue;
 
         // Put model in the scene
         m4x4 ModelTransform =

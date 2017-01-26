@@ -5,12 +5,13 @@ MINIMUM WHAT NEEDS TO BE DONE:
 - Read mtl files
 - Render from the camera (using mtl)
 - nice icons for splitting and removing
-- Drawing should be fast
+- simd for ray tracing?
 
 
 NOW:
 
-- make worker threads check for new job in the queue
+- basic chalky raytrace render
+
 
 BUGS:
 
@@ -25,8 +26,8 @@ NICE TO HAVE:
 
 BACKLOG:
 
-- try intrinsic for sqrt
 - avoid normalising vectors so often
+- try intrinsic for sqrt
 - avoid random heap allocations everywhere
 - put things we're not going to free in the permanent memory
 - thread-safe performance counters
@@ -69,6 +70,9 @@ idea: try to look at the objects in clip space from different angles
 ==============================================================================
 
 DONE:
+
+[26/01/2017]
+- check for intersection with aabb first
 
 [25/01/2017]
 - [windows] basic thread work queue

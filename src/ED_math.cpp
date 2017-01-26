@@ -29,6 +29,16 @@ v3 v3::cross(v3 Vector) {
   return result;
 }
 
+v3 v3::hadamard(v3 Vector) {
+  v3 result;
+
+  result.x = x * Vector.x;
+  result.y = y * Vector.y;
+  result.z = z * Vector.z;
+
+  return result;
+}
+
 v4 v4::homogenized() {
   v4 result;
 

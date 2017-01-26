@@ -179,7 +179,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     {
       if (model->old_direction != model->direction) {
         model->old_direction = model->direction;
-        model->update_aabb(true);  // take the rotation into account
+        model->update_aabb(true);  // transformed model aabb
       }
       v3 min = model->aabb.min;
       v3 max = model->aabb.max;

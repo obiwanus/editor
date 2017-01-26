@@ -94,7 +94,8 @@ union v3 {
 
   r32 len();
   v3 normalized();
-  v3 cross(v3 Vector);
+  v3 cross(v3);
+  v3 hadamard(v3);
 };
 
 // NOTE: thanks @rygorous for an example of how to organise simd operations
@@ -682,6 +683,16 @@ inline v3 operator/(v3 A, r32 B) {
   result.x = A.x / B;
   result.y = A.y / B;
   result.z = A.z / B;
+
+  return result;
+}
+
+inline v3 operator/(r32 scalar, v3 A) {
+  v3 result;
+
+  result.x = scalar / A.x;
+  result.y = scalar / A.y;
+  result.z = scalar / A.z;
 
   return result;
 }

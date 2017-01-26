@@ -14,14 +14,15 @@ void Model::read_texture(char *filename) {
   this->texture = image;
 }
 
-void Model::update_aabb(bool rotated) {
+void Model::update_aabb(bool transformed) {
   v3 min = V3(INFINITY, INFINITY, INFINITY);
   v3 max = V3(-INFINITY, -INFINITY, -INFINITY);
-  m4x4 RotateModel = Matrix::frame_to_canonical(this->get_basis(), V3(0, 0, 0));
+  m4x4 Transform = Matrix::frame_to_canonical(this->get_basis(), V3(0, 0, 0)) *
+                   Matrix::S(this->scale);
   for (int i = 0; i < sb_count(this->vertices); ++i) {
     v3 vertex = this->vertices[i];
-    if (rotated) {
-      vertex = RotateModel * vertex;
+    if (transformed) {
+      vertex = Transform * vertex;
     }
 
     for (int j = 0; j < 3; ++j) {
@@ -46,7 +47,7 @@ void Model::set_defaults() {
   this->scale = 1.0f;
   this->direction = V3(0, 0, 1);
   this->display = true;
-  this->debug = false;
+  this->debug = true;
 }
 
 void Model::destroy() {
@@ -212,4 +213,16 @@ r32 Ray::hits_triangle(v3 vertices[]) {
   }
 
   return t;
+}
+
+bool Ray::hits_aabb(AABBox aabb) {
+  v3 ray_inv_direction = 1.0f / this->direction;
+
+  v3 t1 = (aabb.min - this->origin).hadamard(ray_inv_direction);
+  v3 t2 = (aabb.max - this->origin).hadamard(ray_inv_direction);
+
+  r32 tmin = max3(min(t1.x, t2.x), min(t1.y, t2.y), min(t1.z, t2.z));
+  r32 tmax = min3(max(t1.x, t2.x), max(t1.y, t2.y), max(t1.z, t2.z));
+
+  return tmax >= tmin;
 }
