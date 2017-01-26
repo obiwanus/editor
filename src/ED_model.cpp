@@ -224,5 +224,5 @@ bool Ray::hits_aabb(AABBox aabb) {
   r32 tmin = max3(min(t1.x, t2.x), min(t1.y, t2.y), min(t1.z, t2.z));
   r32 tmax = min3(max(t1.x, t2.x), max(t1.y, t2.y), max(t1.z, t2.z));
 
-  return tmax >= tmin;
+  return tmax >= tmin && tmax > 0;
 }

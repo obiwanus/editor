@@ -121,3 +121,81 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
     camera_pixel.y += pixel_size.y;
   }
 }
+
+// v3 Ray::get_color(ProgramState *state, RayObject *reflected_from,
+//                   int recurse_further) {
+//   Ray *ray = this;
+
+//   v3 color = {};
+
+//   RayHit ray_hit = ray->get_object_hit(state, 0, INFINITY, reflected_from);
+
+//   if (ray_hit.object == NULL) {
+//     color = {0.05f, 0.05f, 0.05f};  // background color
+//     return color;
+//   }
+
+//   v3 hit_point = ray->point_at(ray_hit.at);
+//   v3 normal = ray_hit.object->get_normal(hit_point);
+//   v3 line_of_sight = -ray->direction.normalized();
+
+//   for (int i = 0; i < state->kLightCount; i++) {
+//     LightSource *light = &state->lights[i];
+
+//     v3 light_direction = (hit_point - light->source).normalized();
+
+//     b32 point_in_shadow = false;
+//     {
+//       // Cast shadow ray
+//       Ray shadow_ray = Ray();
+//       shadow_ray.origin = hit_point;
+//       shadow_ray.direction =
+//           light->source - hit_point;  // not normalizing on purpose
+
+//       RayHit shadow_ray_hit =
+//           shadow_ray.get_object_hit(state, 0, 1, ray_hit.object, true);
+//       if (shadow_ray_hit.object != NULL) {
+//         point_in_shadow = true;
+//       }
+//     }
+
+//     if (!point_in_shadow) {
+//       v3 V = (-light_direction + line_of_sight).normalized();
+
+//       r32 illuminance = -light_direction * normal;
+//       if (illuminance < 0) {
+//         illuminance = 0;
+//       }
+//       color += ray_hit.object->color * light->intensity * illuminance;
+
+//       // Calculate specular reflection
+//       r32 reflection = V * normal;
+//       if (reflection < 0) {
+//         reflection = 0;
+//       }
+//       v3 specular_reflection = ray_hit.object->specular_color *
+//                                light->intensity *
+//                                (r32)pow(reflection, ray_hit.object->phong_exp);
+//       color += specular_reflection;
+//     }
+//   }
+
+//   // Calculate mirror reflection
+//   if (recurse_further) {
+//     Ray reflection_ray = {};
+//     reflection_ray.origin = hit_point;
+//     reflection_ray.direction =
+//         ray->direction - 2 * (ray->direction * normal) * normal;
+
+//     const r32 max_k = 0.3f;
+//     r32 k = ray_hit.object->phong_exp * 0.001f;
+//     if (k > max_k) {
+//       k = max_k;
+//     }
+//     color +=
+//         k *
+//         reflection_ray.get_color(state, ray_hit.object, recurse_further - 1);
+//   }
+
+//   return color;
+// }
