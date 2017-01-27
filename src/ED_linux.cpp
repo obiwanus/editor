@@ -2,6 +2,7 @@
 
 #include <x86intrin.h>  // __rdtsc()
 #include <pthread.h>
+#include <semaphore.h>
 
 #include "ED_base.h"
 #include "debug/ED_debug.h"
@@ -282,7 +283,24 @@ Window linux_create_opengl_window(Display *display, int width, int height) {
 
 // =========================== Platform code ==================================
 
-global Raytrace_Work_Queue g_raytrace_queue;
+struct Linux_Raytrace_Work_Queue : Raytrace_Work_Queue {
+  sem_t semaphore;
+
+  virtual void add_entry(Raytrace_Work_Entry);
+};
+
+void Linux_Raytrace_Work_Queue::add_entry(Raytrace_Work_Entry entry) {
+  u32 new_next_entry_to_add =
+      (this->next_entry_to_add + 1) % COUNT_OF(this->entries);
+  assert(new_next_entry_to_add != this->next_entry_to_do);
+  Raytrace_Work_Entry *entry_to_add = this->entries + this->next_entry_to_add;
+  *entry_to_add = entry;
+  asm volatile("" ::: "memory");
+  this->next_entry_to_add = new_next_entry_to_add;
+  sem_post(&this->semaphore);
+}
+
+global Linux_Raytrace_Work_Queue g_raytrace_queue;
 global timespec g_timestamp;
 global XImage *g_ximage;
 
@@ -309,11 +327,32 @@ struct thread_info {
 };
 
 void *raytrace_worker_thread(void *arg) {
-  // for (;;) {
-  // }
   thread_info *info = (thread_info *)arg;
-  printf("Thread %d exited\n", info->thread_num);
-  return NULL;
+
+  Linux_Raytrace_Work_Queue *queue = &g_raytrace_queue;
+  for (;;) {
+    u32 original_next_entry_to_do = queue->next_entry_to_do;
+    u32 new_next_entry_to_do =
+        (original_next_entry_to_do + 1) % COUNT_OF(queue->entries);
+
+    if (original_next_entry_to_do != queue->next_entry_to_add) {
+      // There's probably work to do
+      u32 index = __sync_val_compare_and_swap(&queue->next_entry_to_do,
+                                              original_next_entry_to_do,
+                                              new_next_entry_to_do);
+      if (index == original_next_entry_to_do) {
+        // No other thread has beaten us to it, do the work
+        Raytrace_Work_Entry entry = queue->entries[index];
+        entry.editor->trace_tile(entry.models, entry.start, entry.end);
+        printf("Thread %d did work entry %d\n", info->thread_num, index);
+      }
+    } else {
+      // Sleep
+      printf("Thread %d went to sleep\n", info->thread_num);
+      sem_wait(&queue->semaphore);
+      printf("Thread %d has woken up\n", info->thread_num);
+    }
+  }
 }
 
 int main(int argc, char *argv[]) {
@@ -324,7 +363,8 @@ int main(int argc, char *argv[]) {
   // Main program state - note that window size is set there
   Program_State *state =
       (Program_State *)g_program_memory.allocate(sizeof(Program_State));
-  state->init(&g_program_memory, &g_pixel_buffer);
+  state->init(&g_program_memory, &g_pixel_buffer,
+              (Raytrace_Work_Queue *)&g_raytrace_queue);
 
   Display *display;
   Window window;
@@ -395,15 +435,23 @@ int main(int argc, char *argv[]) {
   *new_input = {};
 
   // Create worked threads
-  const int kNumThreads = 4;
-  thread_info threads[kNumThreads];
-  for (int i = 0; i < kNumThreads; ++i) {
-    threads[i].thread_num = i + 1;
-    int error = pthread_create(&threads[i].thread_id, NULL,
-                               raytrace_worker_thread, &threads[i]);
-    if (error) {
-      printf("Can't create thread\n");
-      exit(EXIT_FAILURE);
+  {
+    const int kNumThreads = 4;
+
+    // Init work queue
+    g_raytrace_queue.next_entry_to_add = 0;
+    g_raytrace_queue.next_entry_to_do = 0;
+    sem_init(&g_raytrace_queue.semaphore, 0, 0);
+
+    thread_info threads[kNumThreads];
+    for (int i = 0; i < kNumThreads; ++i) {
+      threads[i].thread_num = i + 1;
+      int error = pthread_create(&threads[i].thread_id, NULL,
+                                 raytrace_worker_thread, &threads[i]);
+      if (error) {
+        printf("Can't create thread\n");
+        exit(EXIT_FAILURE);
+      }
     }
   }
 

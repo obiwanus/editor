@@ -27,7 +27,7 @@
 // =========================== Platform code ==================================
 
 struct Thread_Info {
-  int thread_number;
+  int thread_num;
   HANDLE thread_handle;
 };
 
@@ -190,13 +190,13 @@ DWORD WINAPI RaytraceWorkerThread(LPVOID lpParam) {
         // No other thread has beaten us to it, do the work
         Raytrace_Work_Entry entry = queue->entries[index];
         entry.editor->trace_tile(entry.models, entry.start, entry.end);
-        printf("Thread %d did work entry %d\n", info->thread_number, index);
+        printf("Thread %d did work entry %d\n", info->thread_num, index);
       }
     } else {
       // Sleep
-      printf("Thread %d went to sleep\n", info->thread_number);
+      printf("Thread %d went to sleep\n", info->thread_num);
       WaitForSingleObjectEx(queue->semaphore, INFINITE, FALSE);
-      printf("Thread %d has woken up\n", info->thread_number);
+      printf("Thread %d has woken up\n", info->thread_num);
     }
   }
 }
@@ -336,7 +336,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
 
     Thread_Info threads[kNumThreads];
     for (int i = 0; i < kNumThreads; i++) {
-      threads[i].thread_number = i + 1;
+      threads[i].thread_num = i + 1;
       HANDLE thread_handle = CreateThread(
           0,                     // LPSECURITY_ATTRIBUTES lpThreadAttributes,
           0,                     // SIZE_T dwStackSize,
