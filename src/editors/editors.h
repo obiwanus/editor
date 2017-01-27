@@ -39,7 +39,7 @@ struct Editor_3DView : Area_Editor {
 struct Editor_Raytrace : Area_Editor {
   Pixel_Buffer backbuffer;
 
-  void draw(Pixel_Buffer *, Program_State *);
+  void draw(Pixel_Buffer *, Program_State *, User_Input *);
   void trace_tile(Model *, v2i, v2i);
 };
 

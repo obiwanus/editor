@@ -1,5 +1,5 @@
 
-void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
+void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state, User_Input *input) {
   int area_width = this->area->get_width();
   int area_height = this->area->get_height();
 
@@ -120,6 +120,11 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
     }
     camera_pixel.x = x_start;
     camera_pixel.y += pixel_size.y;
+
+    // This is a way to abort ray trace if the editor type has changed
+    if (this->area->editor_type != Area_Editor_Type_Raytrace) {
+      return;
+    }
   }
 }
 

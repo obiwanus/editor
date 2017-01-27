@@ -37,7 +37,7 @@ struct Area {
 
   Pixel_Buffer *buffer;  // just a pointer to the global buffer
 
-  Area_Editor_Type editor_type;
+  Area_Editor_Type volatile editor_type;
   Editor_3DView editor_3dview;
   Editor_Raytrace editor_raytrace;
 

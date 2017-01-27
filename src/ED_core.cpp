@@ -184,9 +184,9 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer,
   state->models = NULL;
   state->selected_model = NULL;
 
-  // this->read_wavefront_obj_file("../models/african_head/african_head.wobj");
+  this->read_wavefront_obj_file("../models/african_head/african_head.wobj");
   // this->read_wavefront_obj_file("../models/teapot/teapot.wobj");
-  this->read_wavefront_obj_file("../models/cube/cube.wobj");
+  // this->read_wavefront_obj_file("../models/cube/cube.wobj");
   // this->read_wavefront_obj_file("../models/test.wobj");
   // this->read_wavefront_obj_file("../models/culdesac/geometricCuldesac.wobj");
 

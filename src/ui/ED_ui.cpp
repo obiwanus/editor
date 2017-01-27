@@ -692,7 +692,7 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
       } break;
 
       case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.draw(buffer, state);
+        area->editor_raytrace.draw(buffer, state, input);
       } break;
 
       default: { assert(!"Unknown editor type"); } break;

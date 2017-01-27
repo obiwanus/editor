@@ -71,6 +71,13 @@ idea: try to look at the objects in clip space from different angles
 
 DONE:
 
+[28/02/2017]
+- don't copy raytrace views on split
+- [linux] raytrace work queue
+
+[27/01/2017]
+- [linux] create threads
+
 [26/01/2017]
 - check for intersection with aabb first
 
