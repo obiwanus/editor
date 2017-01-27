@@ -105,7 +105,7 @@ struct User_Interface {
 
   v3 cursor;
 
-  Area *create_area(Area *, Rect);
+  Area *create_area(Area *, Rect, bool);
   void remove_area(Area *);
   Area_Splitter *split_area(Area *, v2i, bool);
   void set_movement_boundaries(Area_Splitter *);

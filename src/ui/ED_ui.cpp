@@ -305,7 +305,7 @@ void UI_Select::update_and_draw(User_Input *input) {
       selected_name, 0x00FFFFFF, false);
 }
 
-Area *User_Interface::create_area(Area *parent_area, Rect rect) {
+Area *User_Interface::create_area(Area *parent_area, Rect rect, bool smaller) {
   // TODO: I don't want to allocate things randomly on the heap,
   // so later it'd be good to have a pool allocator for this
   // possibly with the ability to remove elements
@@ -326,7 +326,12 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
     area->editor_3dview.area = area;
     area->editor_raytrace.area = area;
     if (parent_area != NULL) {
-      area->editor_type = parent_area->editor_type;
+      if (smaller && parent_area->editor_type == Area_Editor_Type_Raytrace) {
+        // Do not proliferate raytrace areas
+        area->editor_type = Area_Editor_Type_3DView;
+      } else {
+        area->editor_type = parent_area->editor_type;
+      }
     }
   }
 
@@ -358,6 +363,12 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect) {
     camera->position = V3(0, 1, 3);
     camera->up = V3(0, 1, 0);
     camera->look_at(V3(0, 0, 0));
+  }
+
+  // Copy raytrace backbuffer if there is one
+  if (parent_area != NULL && !smaller) {
+    area->editor_raytrace.backbuffer = parent_area->editor_raytrace.backbuffer;
+    area->editor_raytrace.is_drawn = parent_area->editor_raytrace.is_drawn;
   }
 
   return area;
@@ -478,11 +489,12 @@ Area_Splitter *User_Interface::split_area(Area *area, v2i mouse,
       rect1.bottom = mouse.y;
       rect2.top = mouse.y;
     }
-    splitter->areas[0] = this->create_area(area, rect1);
-    splitter->areas[1] = this->create_area(area, rect2);
 
     int smaller_area = rect1.get_area() < rect2.get_area() ? 0 : 1;
     int bigger_area = (smaller_area + 1) % 2;
+
+    splitter->areas[0] = this->create_area(area, rect1, smaller_area == 0);
+    splitter->areas[1] = this->create_area(area, rect2, smaller_area == 1);
 
     // Make the new (smaller) area active
     this->active_area = splitter->areas[smaller_area];

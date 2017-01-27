@@ -4,6 +4,7 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
   int area_height = this->area->get_height();
 
   if (this->is_drawn) {
+    TIMED_BLOCK();
     // Blit the contents of the back buffer
     // TODO: simd?
     v2i start, end;
@@ -26,7 +27,7 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
     return;
   }
 
-  // Draw. TODO: use at least 1 separate thread
+  // Draw
   this->is_drawn = true;
 
   // Always update the boundaries when drawing

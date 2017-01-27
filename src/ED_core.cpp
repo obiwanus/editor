@@ -174,8 +174,8 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer,
 
   // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
-  state->UI->create_area(NULL,
-                         {0, state->kWindowHeight, state->kWindowWidth, 0});
+  state->UI->create_area(
+      NULL, {0, state->kWindowHeight, state->kWindowWidth, 0}, false);
 
   state->UI->cursor = V3(0, 0, 0);
 
@@ -184,6 +184,7 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer,
   state->models = NULL;
   state->selected_model = NULL;
 
+  // this->read_wavefront_obj_file("../models/african_head/african_head.wobj");
   // this->read_wavefront_obj_file("../models/teapot/teapot.wobj");
   this->read_wavefront_obj_file("../models/cube/cube.wobj");
   // this->read_wavefront_obj_file("../models/test.wobj");
