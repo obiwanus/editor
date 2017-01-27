@@ -502,7 +502,7 @@ int main(int argc, char *argv[]) {
 
         if (pressed || released) {
           if (key == XK_Escape) {
-            g_running = false;
+            new_input->buttons[IB_escape] = pressed;
           }
           if (key == XK_Up) {
             new_input->buttons[IB_up] = pressed;

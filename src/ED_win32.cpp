@@ -380,7 +380,7 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
             break;  // nothing has changed
           }
           if (vk_code == VK_ESCAPE) {
-            g_running = false;
+            new_input->buttons[IB_escape] = is_down;
           }
           if (vk_code == VK_UP) {
             new_input->buttons[IB_up] = is_down;

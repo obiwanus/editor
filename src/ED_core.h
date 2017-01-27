@@ -36,6 +36,7 @@ enum Input_Button {
   IB_right,
 
   IB_shift,
+  IB_escape,
   IB_key,
 
   IB__COUNT,

@@ -4,6 +4,10 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state, User_Inpu
   int area_height = this->area->get_height();
 
   if (this->is_drawn) {
+    if (input->button_went_down(IB_escape)) {
+      this->area->editor_type = Area_Editor_Type_3DView;
+    }
+
     TIMED_BLOCK();
     // Blit the contents of the back buffer
     // TODO: simd?
