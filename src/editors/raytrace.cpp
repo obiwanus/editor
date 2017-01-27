@@ -97,26 +97,36 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
     for (int x = start.x; x < end.x; ++x) {
       ray.direction = CameraSpaceTransform * camera_pixel - ray.origin;
 
-      for (int m = 0; m < sb_count(models); ++m) {
-        Model *model = models + m;
-        if (!model->display) continue;
-        if (!ray.hits_aabb(model->aabb)) continue;
+      {
+        r32 hit_at = INFINITY;
 
-        // Put model in the scene
-        m4x4 ModelTransform =
-            Matrix::frame_to_canonical(model->get_basis(), model->position) *
-            Matrix::S(model->scale);
 
-        for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
-          Triangle triangle = model->triangles[tr];
-          v3 vertices[3];
-          for (int i = 0; i < 3; ++i) {
-            vertices[i] =
-                ModelTransform * model->vertices[triangle.vertices[i].index];
+        for (int m = 0; m < sb_count(models); ++m) {
+          Model *model = models + m;
+          if (!model->display) continue;
+          if (!ray.hits_aabb(model->aabb)) continue;
+
+          // Put model in the scene
+          m4x4 ModelTransform =
+              Matrix::frame_to_canonical(model->get_basis(), model->position) *
+              Matrix::S(model->scale);
+
+          for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
+            Triangle triangle = model->triangles[tr];
+            v3 vertices[3];
+            for (int i = 0; i < 3; ++i) {
+              vertices[i] =
+                  ModelTransform * model->vertices[triangle.vertices[i].index];
+            }
+            r32 hit = ray.hits_triangle(vertices);
+            if (hit > 0 && hit < hit_at) {
+              hit_at = hit;
+            }
           }
-          if (ray.hits_triangle(vertices) > 0) {
-            draw_pixel(&this->backbuffer, x, y, 0x00FFFFFF);
-          }
+        }
+
+        if (hit_at < INFINITY) {
+          draw_pixel(&this->backbuffer, x, y, 0x00FFFFFF);
         }
       }
 

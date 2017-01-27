@@ -386,6 +386,7 @@ void User_Interface::remove_area(Area *area) {
 
   // Copy data from sister area
   parent_area->editor_3dview.camera = sister_area->editor_3dview.camera;
+  parent_area->type_select.option_selected = sister_area->editor_type;
 
   // Remove splitter
   {
