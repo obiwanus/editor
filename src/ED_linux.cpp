@@ -1,6 +1,7 @@
 // ============================ Program code ==================================
 
 #include <x86intrin.h>  // __rdtsc()
+#include <pthread.h>
 
 #include "ED_base.h"
 #include "debug/ED_debug.h"
@@ -9,6 +10,7 @@
 #include "ED_model.h"
 #include "editors/editors.h"
 #include "ui/ED_ui.h"
+#include "ED_platform.h"
 
 #include "ED_core.cpp"
 #include "ED_math.cpp"
@@ -301,6 +303,19 @@ u64 linux_time_elapsed() {
   return result;
 }
 
+struct thread_info {
+  pthread_t thread_id;
+  int thread_num;
+};
+
+void *raytrace_worker_thread(void *arg) {
+  // for (;;) {
+  // }
+  thread_info *info = (thread_info *)arg;
+  printf("Thread %d exited\n", info->thread_num);
+  return NULL;
+}
+
 int main(int argc, char *argv[]) {
   // Allocate main memory
   g_program_memory.start = malloc(MAX_INTERNAL_MEMORY_SIZE);
@@ -379,6 +394,20 @@ int main(int argc, char *argv[]) {
   User_Input *new_input = &inputs[1];
   *new_input = {};
 
+  // Create worked threads
+  const int kNumThreads = 4;
+  thread_info threads[kNumThreads];
+  for (int i = 0; i < kNumThreads; ++i) {
+    threads[i].thread_num = i + 1;
+    int error = pthread_create(&threads[i].thread_id, NULL,
+                               raytrace_worker_thread, &threads[i]);
+    if (error) {
+      printf("Can't create thread\n");
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  // Main loop
   g_running = true;
 
   clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &g_timestamp);
@@ -494,7 +523,7 @@ int main(int argc, char *argv[]) {
       result = update_and_render(&g_program_memory, state, new_input);
     }
 
-    #include "debug/ED_debug_draw.cpp"
+#include "debug/ED_debug_draw.cpp"
 
     assert(0 <= result.cursor && result.cursor < Cursor_Type__COUNT);
     XDefineCursor(display, window, linux_cursors[result.cursor]);
@@ -621,9 +650,8 @@ int main(int argc, char *argv[]) {
   stb_leakcheck_dumpmem();
 #endif  // ED_LEAKCHECK
 
-  return 0;
+  exit(EXIT_SUCCESS);
 }
 
 int g_num_perf_counters = __COUNTER__;
 ED_Perf_Counter g_performance_counters[__COUNTER__];
-
