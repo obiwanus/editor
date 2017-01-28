@@ -1,6 +1,13 @@
 #ifndef ED_MODEL_H
 #define ED_MODEL_H
 
+enum Object_Type {
+  Object_Type_Triangle = 0,
+  Object_Type_Fan,
+
+  Object_Type__COUNT,
+};
+
 struct Vertex {
   int index;
   int vt_index;
@@ -15,6 +22,13 @@ struct Fan {
   static const int kMaxNumVertices = 8;
   int num_vertices;
   Vertex vertices[kMaxNumVertices];
+};
+
+struct Triangle_Hit {
+  r32 at;
+  r32 alpha;
+  r32 beta;
+  r32 gamma;
 };
 
 struct Image {
@@ -47,6 +61,7 @@ struct Model : Entity {
   Triangle *triangles;
   Fan *fans;
   Image texture;
+  v3 old_position;
   v3 old_direction;
   static const int kMaxNameLength = 100;
   char name[kMaxNameLength + 1];
@@ -56,19 +71,22 @@ struct Model : Entity {
   bool debug = false;
 
   AABBox aabb;
+  m4x4 TransformMatrix;
+  bool transform_calculated = false;
 
   void read_texture(char *);
   void update_aabb(bool);
   void set_defaults();
   void destroy();
+  m4x4 get_transform_matrix();
 };
 
 struct Ray {
   v3 origin;
   v3 direction;
 
-  v3 point_at(r32 t);
-  r32 hits_triangle(v3 vertices[3]);
+  v3 get_point_at(r32 t);
+  Triangle_Hit hits_triangle(v3 vertices[3]);
   bool hits_aabb(AABBox);
 };
 

@@ -15,7 +15,7 @@
 
   g_FPS.frame_count--;
 
-#if 0  // Display performance counters
+#if 1  // Display performance counters
   int line_start = 50;
   int line_height = 25;
   char perf_counters[200];

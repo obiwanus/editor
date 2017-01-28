@@ -98,8 +98,11 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
       ray.direction = CameraSpaceTransform * camera_pixel - ray.origin;
 
       {
-        r32 hit_at = INFINITY;
-
+        Triangle_Hit closest_hit;
+        closest_hit.at = INFINITY;
+        int model_id = -1;
+        int object_id = -1;
+        Object_Type object_type;
 
         for (int m = 0; m < sb_count(models); ++m) {
           Model *model = models + m;
@@ -107,10 +110,9 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
           if (!ray.hits_aabb(model->aabb)) continue;
 
           // Put model in the scene
-          m4x4 ModelTransform =
-              Matrix::frame_to_canonical(model->get_basis(), model->position) *
-              Matrix::S(model->scale);
+          m4x4 ModelTransform = model->get_transform_matrix();
 
+          // TODO: fans
           for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
             Triangle triangle = model->triangles[tr];
             v3 vertices[3];
@@ -118,14 +120,22 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
               vertices[i] =
                   ModelTransform * model->vertices[triangle.vertices[i].index];
             }
-            r32 hit = ray.hits_triangle(vertices);
-            if (hit > 0 && hit < hit_at) {
-              hit_at = hit;
+            Triangle_Hit hit = ray.hits_triangle(vertices);
+            if (hit.at > 0 && hit.at < closest_hit.at) {
+              closest_hit = hit;
+              model_id = m;
+              object_id = tr;
+              object_type = Object_Type_Triangle;
             }
           }
         }
 
-        if (hit_at < INFINITY) {
+        if (model_id >= 0) {
+          Model *model = models + model_id;
+          if (object_type == Object_Type_Triangle) {
+            Triangle triangle = model->triangles[object_id];
+
+          }
           draw_pixel(&this->backbuffer, x, y, 0x00FFFFFF);
         }
       }

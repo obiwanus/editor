@@ -49,7 +49,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       // to camera's direction
       r32 t = (this->camera.pivot - ray.origin) * this->camera.direction /
               (ray.direction * this->camera.direction);
-      ui->cursor = ray.point_at(t);
+      ui->cursor = ray.get_point_at(t);
     } else if (input->button_went_down(IB_mouse_right)) {
       // Attempt to select a model
       // TODO: add bounding box check
@@ -60,9 +60,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         if (model == state->selected_model) continue;
 
         // Put model in the scene
-        m4x4 ModelTransform =
-            Matrix::frame_to_canonical(model->get_basis(), model->position) *
-            Matrix::S(model->scale);
+        m4x4 ModelTransform = model->get_transform_matrix();
 
         for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
           Triangle triangle = model->triangles[tr];
@@ -71,7 +69,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
             vertices[i] =
                 ModelTransform * model->vertices[triangle.vertices[i].index];
           }
-          if (ray.hits_triangle(vertices) > 0) {
+          Triangle_Hit hit = ray.hits_triangle(vertices);
+          if (hit.at > 0) {
             state->selected_model = model;
             break;
           }
@@ -177,8 +176,10 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     // Basic frustum culling - using the AABB calculated in the prev frame
     // (the vertices are already in the scene space)
     {
-      if (model->old_direction != model->direction) {
+      if (model->old_position != model->position ||
+          model->old_direction != model->direction) {
         model->old_direction = model->direction;
+        model->old_position = model->position;
         model->update_aabb(true);  // transformed model aabb
       }
       v3 min = model->aabb.min;
@@ -212,9 +213,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     }
 
     // Put model in the scene
-    m4x4 ModelTransform =
-        Matrix::frame_to_canonical(model->get_basis(), model->position) *
-        Matrix::S(model->scale);
+    m4x4 ModelTransform = model->get_transform_matrix();
 
     v3 light_dir = -this->camera.direction;
     bool outline = (model == state->selected_model);

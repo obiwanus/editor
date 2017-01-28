@@ -17,8 +17,10 @@ void Model::read_texture(char *filename) {
 void Model::update_aabb(bool transformed) {
   v3 min = V3(INFINITY, INFINITY, INFINITY);
   v3 max = V3(-INFINITY, -INFINITY, -INFINITY);
-  m4x4 Transform = Matrix::frame_to_canonical(this->get_basis(), V3(0, 0, 0)) *
-                   Matrix::S(this->scale);
+  v3 position_save = this->position;
+  this->position = V3(0, 0, 0);  // calculate transform at origin
+  m4x4 Transform = this->get_transform_matrix();
+  this->position = position_save;
   for (int i = 0; i < sb_count(this->vertices); ++i) {
     v3 vertex = this->vertices[i];
     if (transformed) {
@@ -56,6 +58,17 @@ void Model::destroy() {
   sb_free(this->vts);
   sb_free(this->triangles);
   sb_free(this->fans);
+}
+
+m4x4 Model::get_transform_matrix() {
+  if (this->transform_calculated) {
+    return this->TransformMatrix;
+  }
+  this->TransformMatrix =
+      Matrix::frame_to_canonical(this->get_basis(), this->position) *
+      Matrix::S(this->scale);
+  this->transform_calculated = true;
+  return this->TransformMatrix;
 }
 
 u32 Image::color(int x, int y, r32 intensity = 1.0f) {
@@ -96,7 +109,7 @@ basis3 Entity::get_basis() {
   return result;
 }
 
-v3 Ray::point_at(r32 t) {
+v3 Ray::get_point_at(r32 t) {
   v3 result = this->origin + this->direction * t;
   return result;
 }
@@ -178,7 +191,9 @@ r32 Camera::distance_to_pivot() {
   return result;
 }
 
-r32 Ray::hits_triangle(v3 vertices[]) {
+Triangle_Hit Ray::hits_triangle(v3 vertices[]) {
+  Triangle_Hit result;
+
   v3 a = vertices[0];
   v3 b = vertices[1];
   v3 c = vertices[2];
@@ -193,7 +208,8 @@ r32 Ray::hits_triangle(v3 vertices[]) {
 
   r32 D = A.determinant();
   if (D == 0) {
-    return -1;
+    result.at = -1;
+    return result;
   }
   v3 R = {a.x - this->origin.x, a.y - this->origin.y, a.z - this->origin.z};
 
@@ -201,18 +217,25 @@ r32 Ray::hits_triangle(v3 vertices[]) {
   m3x3 A2 = A.replace_column(2, R);
   r32 t = A2.determinant() / D;
   if (t <= 0) {
-    return -1;
+    result.at = -1;
+    return result;
   }
   r32 gamma = A.replace_column(1, R).determinant() / D;
   if (gamma < 0 || gamma > 1) {
-    return -1;
+    result.at = -1;
+    return result;
   }
   r32 beta = A.replace_column(0, R).determinant() / D;
   if (beta < 0 || beta > (1 - gamma)) {
-    return -1;
+    result.at = -1;
+    return result;
   }
 
-  return t;
+  result.at = t;
+  result.alpha = 1.0f - beta - gamma;
+  result.beta = beta;
+  result.gamma = gamma;
+  return result;
 }
 
 bool Ray::hits_aabb(AABBox aabb) {

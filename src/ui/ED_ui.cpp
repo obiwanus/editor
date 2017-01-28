@@ -429,6 +429,9 @@ void User_Interface::remove_area(Area *area) {
       }
     }
 
+    // TODO: maybe free raytrace buffers. Careful though - other areas
+    // may be using them
+
     free(area);
     free(sister_area);
 
