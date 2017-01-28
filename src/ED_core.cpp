@@ -23,7 +23,7 @@ void Program_State::read_wavefront_obj_file(char *filename) {
 
   int num_models = 0;
 
-  Model model = {};  // TODO: support multiple models in one file
+  Model model = {};
   model.set_defaults();
   sprintf(model.name, "Model %d", num_models + 1);
 
@@ -184,32 +184,12 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer,
   state->models = NULL;
   state->selected_model = NULL;
 
-  // this->read_wavefront_obj_file("../models/african_head/african_head.wobj");
+  this->read_wavefront_obj_file("../models/african_head/african_head.wobj");
   // this->read_wavefront_obj_file("../models/teapot/teapot.wobj");
   // this->read_wavefront_obj_file("../models/cube/cube.wobj");
   // this->read_wavefront_obj_file("../models/test.wobj");
-  this->read_wavefront_obj_file("../models/culdesac/geometricCuldesac.wobj");
+  // this->read_wavefront_obj_file("../models/culdesac/geometricCuldesac.wobj");
 
-  // Model model = {};
-  // model.read_from_obj_file("../models/african_head/african_head.wobj");
-  // model.read_texture("../models/african_head/african_head_diffuse.jpg");
-  // model.scale = 0.5f;
-  // model.position = V3(-1.0f, 0.5f, 0.0f);
-  // model.direction = V3(-1, 1, 1);
-  // model.debug = false;
-  // // model.display = false;
-  // sb_push(state->models, model);
-
-  // model = {};
-  // model.read_from_obj_file("../models/cube/cube.wobj");
-  // // model.read_texture("../models/cube/cube.png");
-  // model.scale = 0.4f;
-  // model.position = V3(0.5f, 0.3f, 0.0f);
-  // model.direction = V3(1, 1, 1);
-  // model.debug = false;
-  // sb_push(state->models, model);
-
-  // state->selected_model = models + 0;  // head
 }
 
 void ED_Font::load_from_file(char *filename, int char_height) {
@@ -363,4 +343,24 @@ bool User_Input::button_went_up(Input_Button button) {
 
 bool User_Input::key_went_down(int key) {
   return this->button_went_down(IB_key) && this->symbol == key;
+}
+
+u32 Image::color(int x, int y, r32 intensity = 1.0f) {
+  u32 result;
+  // if (this->bytes_per_pixel == 4) {
+  //   result = *(this->data + this->width * y + x);
+  // } else {
+  //   assert(!"TODO: add support for this");
+  //   u8 *pixel_byte = (u8 *)this->data + (this->width * y + x) * 3;
+  //   result = *((u32 *)pixel_byte) >> 8;
+  // }
+
+  // TODO: fix the images
+  u32 raw_pixel = *(this->data + this->width * y + x);
+  u32 R = (u32)(intensity * ((0x000000FF & raw_pixel) >> 0));
+  u32 G = (u32)(intensity * ((0x0000FF00 & raw_pixel) >> 8));
+  u32 B = (u32)(intensity * ((0x00FF0000 & raw_pixel) >> 16));
+  u32 A = (0xFF000000 & raw_pixel) >> 24;
+  result = (A << 24 | R << 16 | G << 8 | B << 0);
+  return result;
 }

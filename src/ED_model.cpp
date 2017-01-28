@@ -69,26 +69,6 @@ m4x4 Model::get_transform_matrix() {
   return this->TransformMatrix;
 }
 
-u32 Image::color(int x, int y, r32 intensity = 1.0f) {
-  u32 result;
-  // if (this->bytes_per_pixel == 4) {
-  //   result = *(this->data + this->width * y + x);
-  // } else {
-  //   assert(!"TODO: add support for this");
-  //   u8 *pixel_byte = (u8 *)this->data + (this->width * y + x) * 3;
-  //   result = *((u32 *)pixel_byte) >> 8;
-  // }
-
-  // TODO: fix the images
-  u32 raw_pixel = *(this->data + this->width * y + x);
-  u32 R = (u32)(intensity * ((0x000000FF & raw_pixel) >> 0));
-  u32 G = (u32)(intensity * ((0x0000FF00 & raw_pixel) >> 8));
-  u32 B = (u32)(intensity * ((0x00FF0000 & raw_pixel) >> 16));
-  u32 A = (0xFF000000 & raw_pixel) >> 24;
-  result = (A << 24 | R << 16 | G << 8 | B << 0);
-  return result;
-}
-
 m4x4 Entity::transform_to_entity_space() {
   m4x4 result;
   basis3 basis = this->get_basis();

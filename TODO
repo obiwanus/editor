@@ -1,16 +1,15 @@
 MINIMUM WHAT NEEDS TO BE DONE:
 
-- Raytrace render from the camera (chalky)
 - Move models with or without manipulator
 - Read mtl files
 - Render from the camera (using mtl)
-- nice icons for splitting and removing
 - simd for ray tracing?
 
 
 NOW:
 
-- basic chalky raytrace render
+- nice icons for splitting and removing
+-
 
 
 BUGS:
@@ -71,7 +70,11 @@ idea: try to look at the objects in clip space from different angles
 
 DONE:
 
+[29/02/2017]
+
+
 [28/02/2017]
+- basic chalky raytrace render
 - don't copy raytrace views on split
 - [linux] raytrace work queue
 

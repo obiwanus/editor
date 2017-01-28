@@ -75,6 +75,15 @@ struct Rect {
   int get_area();
 };
 
+struct Image {
+  int width;
+  int height;
+  int bytes_per_pixel;
+  u32 *data;
+
+  u32 color(int, int, r32);
+};
+
 struct Pixel_Buffer {
   int width;
   int height;
@@ -115,6 +124,8 @@ struct Program_State {
 
   Model *models = NULL;
   Model *selected_model = NULL;
+
+  Image icons;
 
   Raytrace_Work_Queue *raytrace_queue = NULL;
 

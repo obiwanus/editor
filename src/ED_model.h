@@ -29,15 +29,6 @@ struct Triangle_Hit {
   r32 barycentric[3];
 };
 
-struct Image {
-  int width;
-  int height;
-  int bytes_per_pixel;
-  u32 *data;
-
-  u32 color(int, int, r32);
-};
-
 struct Entity {
   v3 position = {{0, 0, 0}};
   v3 up = {{0, 1.0f, 0}};
