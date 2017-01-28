@@ -26,9 +26,7 @@ struct Fan {
 
 struct Triangle_Hit {
   r32 at;
-  r32 alpha;
-  r32 beta;
-  r32 gamma;
+  r32 barycentric[3];
 };
 
 struct Image {

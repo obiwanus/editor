@@ -81,6 +81,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       Model model = state->models[0];
       model.position = ui->cursor;
       model.direction = (this->camera.position - model.position).normalized();
+      model.transform_calculated = false;
       sb_push(state->models, model);
     }
     if (input->key_went_down('5')) {

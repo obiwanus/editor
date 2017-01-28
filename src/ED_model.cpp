@@ -17,10 +17,8 @@ void Model::read_texture(char *filename) {
 void Model::update_aabb(bool transformed) {
   v3 min = V3(INFINITY, INFINITY, INFINITY);
   v3 max = V3(-INFINITY, -INFINITY, -INFINITY);
-  v3 position_save = this->position;
-  this->position = V3(0, 0, 0);  // calculate transform at origin
-  m4x4 Transform = this->get_transform_matrix();
-  this->position = position_save;
+  m4x4 Transform = Matrix::frame_to_canonical(this->get_basis(), V3(0, 0, 0)) *
+                   Matrix::S(this->scale);
   for (int i = 0; i < sb_count(this->vertices); ++i) {
     v3 vertex = this->vertices[i];
     if (transformed) {
@@ -232,9 +230,9 @@ Triangle_Hit Ray::hits_triangle(v3 vertices[]) {
   }
 
   result.at = t;
-  result.alpha = 1.0f - beta - gamma;
-  result.beta = beta;
-  result.gamma = gamma;
+  result.barycentric[0] = 1.0f - beta - gamma;
+  result.barycentric[1] = beta;
+  result.barycentric[2] = gamma;
   return result;
 }
 

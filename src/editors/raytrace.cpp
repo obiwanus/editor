@@ -1,5 +1,6 @@
 
-void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state, User_Input *input) {
+void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state,
+                           User_Input *input) {
   int area_width = this->area->get_width();
   int area_height = this->area->get_height();
 
@@ -90,7 +91,7 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
 
   v3 camera_pixel;
   camera_pixel.x = x_start;
-  camera_pixel.y = -camera.top + pixel_size.y  * (0.5f + start.y);
+  camera_pixel.y = -camera.top + pixel_size.y * (0.5f + start.y);
   camera_pixel.z = camera.near;
 
   for (int y = start.y; y < end.y; ++y) {
@@ -98,8 +99,8 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
       ray.direction = CameraSpaceTransform * camera_pixel - ray.origin;
 
       {
-        Triangle_Hit closest_hit;
-        closest_hit.at = INFINITY;
+        Triangle_Hit triangle_hit;
+        triangle_hit.at = INFINITY;
         int model_id = -1;
         int object_id = -1;
         Object_Type object_type;
@@ -121,8 +122,8 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
                   ModelTransform * model->vertices[triangle.vertices[i].index];
             }
             Triangle_Hit hit = ray.hits_triangle(vertices);
-            if (hit.at > 0 && hit.at < closest_hit.at) {
-              closest_hit = hit;
+            if (hit.at > 0 && hit.at < triangle_hit.at) {
+              triangle_hit = hit;
               model_id = m;
               object_id = tr;
               object_type = Object_Type_Triangle;
@@ -130,13 +131,24 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
           }
         }
 
-        if (model_id >= 0) {
+        if (model_id >= 0 && object_id >= 0) {
+          v3 light_dir = V3(0, 0, 1);
+          v3 normal = {};
           Model *model = models + model_id;
+          m4x4 ModelTransform = model->get_transform_matrix();
           if (object_type == Object_Type_Triangle) {
             Triangle triangle = model->triangles[object_id];
-
+            for (int i = 0; i < 3; ++i) {
+              normal += model->vns[triangle.vertices[i].index] *
+                        triangle_hit.barycentric[i];
+            }
+            normal = V3(ModelTransform * V4_v(normal.normalized()));
           }
-          draw_pixel(&this->backbuffer, x, y, 0x00FFFFFF);
+          r32 intensity = light_dir * normal;
+          if (intensity < 0) intensity = 0;
+          intensity = lerp(0.2f, 1.0f, intensity);
+          u32 color = get_rgb_u32(V3(0.7f, 0.7f, 0.7f) * intensity);
+          draw_pixel(&this->backbuffer, x, y, color);
         }
       }
 
@@ -205,7 +217,8 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
 //       }
 //       v3 specular_reflection = ray_hit.object->specular_color *
 //                                light->intensity *
-//                                (r32)pow(reflection, ray_hit.object->phong_exp);
+//                                (r32)pow(reflection,
+//                                ray_hit.object->phong_exp);
 //       color += specular_reflection;
 //     }
 //   }
