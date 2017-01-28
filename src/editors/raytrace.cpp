@@ -132,14 +132,16 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
         }
 
         if (model_id >= 0 && object_id >= 0) {
-          v3 light_dir = V3(0, 0, 1);
+          v3 light_source = V3(-1, 2, 3);
           v3 normal = {};
+          v3 hit_point = ray.get_point_at(triangle_hit.at);
+          v3 light_dir = (light_source - hit_point).normalized();
           Model *model = models + model_id;
           m4x4 ModelTransform = model->get_transform_matrix();
           if (object_type == Object_Type_Triangle) {
             Triangle triangle = model->triangles[object_id];
             for (int i = 0; i < 3; ++i) {
-              normal += model->vns[triangle.vertices[i].index] *
+              normal += model->vns[triangle.vertices[i].vn_index] *
                         triangle_hit.barycentric[i];
             }
             normal = V3(ModelTransform * V4_v(normal.normalized()));
