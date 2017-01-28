@@ -47,7 +47,7 @@ void Model::set_defaults() {
   this->scale = 1.0f;
   this->direction = V3(0, 0, 1);
   this->display = true;
-  this->debug = true;
+  this->debug = false;
 }
 
 void Model::destroy() {

@@ -61,6 +61,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 
         // Put model in the scene
         m4x4 ModelTransform = model->get_transform_matrix();
+        r32 min_hit = INFINITY;
 
         for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
           Triangle triangle = model->triangles[tr];
@@ -70,11 +71,30 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
                 ModelTransform * model->vertices[triangle.vertices[i].index];
           }
           Triangle_Hit hit = ray.hits_triangle(vertices);
-          if (hit.at > 0) {
+          if (hit.at > 0 && hit.at < min_hit) {
+            min_hit = hit.at;
             state->selected_model = model;
-            break;
           }
         }
+
+        for (int f = 0; f < sb_count(model->fans); ++f) {
+            Fan fan = model->fans[f];
+            v3 vertices[Fan::kMaxNumVertices];
+            // Transform all vertices
+            for (int i = 0; i < fan.num_vertices; ++i) {
+              vertices[i] =
+                  ModelTransform * model->vertices[fan.vertices[i].index];
+            }
+            // Calculate hits
+            for (int i = 0; i < fan.num_vertices - 2; ++i) {
+              v3 triangle[3] = {vertices[0], vertices[i + 1], vertices[i + 2]};
+              Triangle_Hit hit = ray.hits_triangle(triangle);
+              if (hit.at > 0 && hit.at < min_hit) {
+                min_hit = hit.at;
+                state->selected_model = model;
+              }
+            }
+          }
       }
     }
     if (input->key_went_down('A')) {
@@ -260,7 +280,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       }
     }
 
-    if (model->debug) {
+    if (model == state->selected_model) {
       v3 min = model->aabb.min;
       v3 max = model->aabb.max;
       // Draw the direction vector

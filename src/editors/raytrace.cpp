@@ -103,6 +103,7 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
         triangle_hit.at = INFINITY;
         int model_id = -1;
         int object_id = -1;
+        int fan_triangle_id = -1;
         Object_Type object_type;
 
         for (int m = 0; m < sb_count(models); ++m) {
@@ -113,7 +114,7 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
           // Put model in the scene
           m4x4 ModelTransform = model->get_transform_matrix();
 
-          // TODO: fans
+          // Look at triangles
           for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
             Triangle triangle = model->triangles[tr];
             v3 vertices[3];
@@ -129,8 +130,32 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
               object_type = Object_Type_Triangle;
             }
           }
+
+          // Look at fans
+          for (int f = 0; f < sb_count(model->fans); ++f) {
+            Fan fan = model->fans[f];
+            v3 vertices[Fan::kMaxNumVertices];
+            // Transform all vertices
+            for (int i = 0; i < fan.num_vertices; ++i) {
+              vertices[i] =
+                  ModelTransform * model->vertices[fan.vertices[i].index];
+            }
+            // Calculate hits
+            for (int i = 0; i < fan.num_vertices - 2; ++i) {
+              v3 triangle[3] = {vertices[0], vertices[i + 1], vertices[i + 2]};
+              Triangle_Hit hit = ray.hits_triangle(triangle);
+              if (hit.at > 0 && hit.at < triangle_hit.at) {
+                triangle_hit = hit;
+                model_id = m;
+                object_id = f;
+                object_type = Object_Type_Fan;
+                fan_triangle_id = i;
+              }
+            }
+          }
         }
 
+        // See if we hit anything
         if (model_id >= 0 && object_id >= 0) {
           v3 light_source = V3(-1, 2, 3);
           v3 normal = {};
@@ -144,8 +169,15 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
               normal += model->vns[triangle.vertices[i].vn_index] *
                         triangle_hit.barycentric[i];
             }
-            normal = V3(ModelTransform * V4_v(normal.normalized()));
+          } else if (object_type == Object_Type_Fan) {
+            Fan fan = model->fans[object_id];
+            int vertex_ids[3] = {0, fan_triangle_id + 1, fan_triangle_id + 2};
+            for (int i = 0; i < 3; ++i) {
+              normal += model->vns[fan.vertices[vertex_ids[i]].vn_index] *
+                        triangle_hit.barycentric[i];
+            }
           }
+          normal = V3(ModelTransform * V4_v(normal.normalized()));
           r32 intensity = light_dir * normal;
           if (intensity < 0) intensity = 0;
           intensity = lerp(0.2f, 1.0f, intensity);
