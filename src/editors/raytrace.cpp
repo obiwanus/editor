@@ -170,6 +170,7 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
               normal += model->vns[triangle.vertices[i].vn_index] *
                         triangle_hit.barycentric[i];
             }
+
           } else if (object_type == Object_Type_Fan) {
             Fan fan = model->fans[object_id];
             int vertex_ids[3] = {0, fan_triangle_id + 1, fan_triangle_id + 2};
@@ -182,7 +183,19 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
           r32 intensity = light_dir * normal;
           if (intensity < 0) intensity = 0;
           intensity = lerp(0.2f, 1.0f, intensity);
-          u32 color = get_rgb_u32(V3(0.7f, 0.7f, 0.7f) * intensity);
+          u32 color;
+          if (model->texture.data != NULL &&
+              object_type == Object_Type_Triangle) {
+            Triangle triangle = model->triangles[object_id];
+            v2 texel = {};
+            for (int i = 0; i < 3; ++i) {
+              texel += model->vts[triangle.vertices[i].vt_index] *
+                       triangle_hit.barycentric[i];
+            }
+            color = model->texture.color((int)texel.x, (int)texel.y, intensity);
+          } else {
+            color = get_rgb_u32(V3(0.7f, 0.7f, 0.7f) * intensity);
+          }
           draw_pixel(&this->backbuffer, x, y, color);
         }
       }

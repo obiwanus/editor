@@ -54,6 +54,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       // Attempt to select a model
       // TODO: add bounding box check
       // (I don't like this loop)
+      r32 min_hit = INFINITY;
+
       for (int m = 0; m < sb_count(state->models); ++m) {
         Model *model = state->models + m;
         if (!model->display) continue;
@@ -61,7 +63,6 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 
         // Put model in the scene
         m4x4 ModelTransform = model->get_transform_matrix();
-        r32 min_hit = INFINITY;
 
         for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
           Triangle triangle = model->triangles[tr];
@@ -131,6 +132,9 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
         assert(!"Wrong code path");
       }
       this->camera.look_at(pivot);
+    }
+    if (input->button_went_down(IB_escape)) {
+      g_running = false;
     }
     if (input->button_went_down(IB_mouse_middle)) {
       // Remember position

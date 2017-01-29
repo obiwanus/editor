@@ -192,6 +192,9 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer,
   // this->read_wavefront_obj_file("../models/test.wobj");
   // this->read_wavefront_obj_file("../models/culdesac/geometricCuldesac.wobj");
 
+  Model *model = &state->models[0];
+  model->read_texture("../models/african_head/african_head_diffuse.jpg");
+
 }
 
 void ED_Font::load_from_file(char *filename, int char_height) {
@@ -349,13 +352,6 @@ bool User_Input::key_went_down(int key) {
 
 u32 Image::color(int x, int y, r32 intensity = 1.0f) {
   u32 result;
-  // if (this->bytes_per_pixel == 4) {
-  //   result = *(this->data + this->width * y + x);
-  // } else {
-  //   assert(!"TODO: add support for this");
-  //   u8 *pixel_byte = (u8 *)this->data + (this->width * y + x) * 3;
-  //   result = *((u32 *)pixel_byte) >> 8;
-  // }
 
   // TODO: fix the images
   u32 raw_pixel = *(this->data + this->width * y + x);
@@ -367,15 +363,6 @@ u32 Image::color(int x, int y, r32 intensity = 1.0f) {
   return result;
 }
 
-// struct Image {
-//   int width;
-//   int height;
-//   int bytes_per_pixel;
-//   u32 *data;
-
-//   u32 color(int, int, r32);
-//   void load_from_file(char *);
-// };
 
 void Image::load_from_file(char *filename) {
   this->data = (u32 *)stbi_load(filename, &this->width, &this->height,

@@ -15,7 +15,9 @@
 
 #else  // not BUILD_INTERNAL
 
-#define TIMED_BLOCK()
+#define TIMED_BLOCK(counter)
+#define TIME_BEGIN(name)
+#define TIME_END(name, count)
 
 #endif
 
