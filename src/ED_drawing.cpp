@@ -367,6 +367,34 @@ void triangle_shaded(Area *area, v3 verts[], v3 vns[], r32 *z_buffer,
   // clang-format on
 }
 
+inline u32 blend_color(u32 color_bg, u8 alpha_src, u32 color_fg) {
+  if (alpha_src == 0xFF) {
+    // Just draw foreground
+    return color_fg;
+  } else if (alpha_src == 0) {
+    // Don't draw
+    return color_bg;
+  } else {
+    // Blend and draw
+    int alpha = alpha_src + 1;
+    int alpha_inv = 256 - alpha_src;
+    // Background
+    u8 R_bg = (u8)((color_bg & 0x00FF0000) >> 16);
+    u8 G_bg = (u8)((color_bg & 0x0000FF00) >> 8);
+    u8 B_bg = (u8)((color_bg & 0x000000FF) >> 0);
+    // Foreground
+    u8 R_fg = (u8)((color_fg & 0x00FF0000) >> 16);
+    u8 G_fg = (u8)((color_fg & 0x0000FF00) >> 8);
+    u8 B_fg = (u8)((color_fg & 0x000000FF) >> 0);
+    // Blend
+    u8 R = (u8)((alpha * R_fg + alpha_inv * R_bg) >> 8);
+    u8 G = (u8)((alpha * G_fg + alpha_inv * G_bg) >> 8);
+    u8 B = (u8)((alpha * B_fg + alpha_inv * B_bg) >> 8);
+    u32 blend = R << 16 | G << 8 | B << 0;
+    return blend;
+  }
+}
+
 void draw_rect(Area *area, Rect rect, u32 color) {
   // Draw rect in area
 
@@ -398,6 +426,23 @@ void draw_rect(Pixel_Buffer *buffer, Rect rect, u32 color) {
     for (int x = rect.left; x < rect.right; x++) {
       // Don't care about performance (yet)
       draw_pixel(buffer, x, y, color);
+    }
+  }
+}
+
+void draw_sprite(Area *area, Image *image, Rect src, Rect dst) {
+  assert(src.get_width() == dst.get_width());
+  assert(src.get_height() == dst.get_height());
+
+  for (int y = 0; y < src.get_height(); ++y) {
+    for (int x = 0; x < src.get_width(); ++x) {
+      u32 *src_pixel = image->data +
+                       image->width * (image->height - y + src.bottom) +
+                       (x + src.left);
+      u8 alpha = (u8)((0xFF000000 & *src_pixel) >> 24);
+      if (alpha == 0xFF) {
+        draw_pixel(area, x + dst.left, y + dst.bottom, *src_pixel);
+      }
     }
   }
 }
@@ -463,38 +508,16 @@ void draw_string(Area *area, v2i position, char *string, u32 text_color,
     u8 *char_bitmap = codepoint->bitmap;
 
     int min_y = max(buffer_height - area->top, (int)start.y + codepoint->y0);
-    int max_y = min(buffer_height - area->bottom - 1, (int)start.y + codepoint->y1);
+    int max_y =
+        min(buffer_height - area->bottom - 1, (int)start.y + codepoint->y1);
     int min_x = max(area->left, (int)start.x + codepoint->x0);
     int max_x = min(area->right, (int)start.x + codepoint->x1);
     for (int y = min_y; y < max_y; ++y) {
       for (int x = min_x; x < max_x; ++x) {
         u8 alpha_src =
             char_bitmap[(x - min_x) + (y - min_y) * codepoint->width];
-        u32 *pixel = (u32 *)area->buffer->memory + x + y * buffer_width;
-        if (alpha_src == 0xFF) {
-          // Just draw foreground
-          *pixel = text_color;
-        } else if (alpha_src == 0) {
-          // Don't draw
-        } else {
-          // Blend and draw
-          int alpha = alpha_src + 1;
-          int alpha_inv = 256 - alpha_src;
-          // Background
-          u32 bg = *pixel;
-          u8 R_bg = (u8)((bg & 0x00FF0000) >> 16);
-          u8 G_bg = (u8)((bg & 0x0000FF00) >> 8);
-          u8 B_bg = (u8)((bg & 0x000000FF) >> 0);
-          // Foreground
-          u8 R_fg = (u8)((text_color & 0x00FF0000) >> 16);
-          u8 G_fg = (u8)((text_color & 0x0000FF00) >> 8);
-          u8 B_fg = (u8)((text_color & 0x000000FF) >> 0);
-          // Blend
-          u8 R = (u8)((alpha * R_fg + alpha_inv * R_bg) >> 8);
-          u8 G = (u8)((alpha * G_fg + alpha_inv * G_bg) >> 8);
-          u8 B = (u8)((alpha * B_fg + alpha_inv * B_bg) >> 8);
-          *pixel = R << 16 | G << 8 | B << 0;
-        }
+        u32 *dst_pixel = (u32 *)area->buffer->memory + x + y * buffer_width;
+        *dst_pixel = blend_color(*dst_pixel, alpha_src, text_color);
       }
     }
     if (string[ch + 1] != '\0') {

@@ -44,6 +44,7 @@ struct Area {
   UI_Select type_select;
 
   static const int kPanelHeight = 24;
+  static const int kSplitHandleSize = 12;
 
   inline int get_width();
   inline int get_height();

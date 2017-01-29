@@ -2,17 +2,16 @@
 Rect Area::get_split_handle(int num) {
   Rect rect = {};
   assert(num == 0 || num == 1);
-  const int kSquareSize = 15;
   if (num == 0) {
-    rect.top = kSquareSize;
-    rect.right = kSquareSize;
+    rect.top = Area::kSplitHandleSize;
+    rect.right = Area::kSplitHandleSize;
   } else {
     int area_width = this->get_width();
     int area_height = this->get_height();
-    rect.left = area_width - kSquareSize;
+    rect.left = area_width - Area::kSplitHandleSize;
     rect.right = area_width;
     rect.top = area_height;
-    rect.bottom = area_height - kSquareSize;
+    rect.bottom = area_height - Area::kSplitHandleSize;
   }
   return rect;
 }
@@ -743,8 +742,16 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     if (!area->is_visible()) continue;
 
     // Draw split handles
-    draw_rect(area, area->get_split_handle(0), 0x00777777);
-    draw_rect(area, area->get_split_handle(1), 0x00777777);
+    Rect bottom_left_handle = {};
+    bottom_left_handle.left = 13;
+    bottom_left_handle.right = 25;
+    bottom_left_handle.top = 12;
+    draw_sprite(area, &state->icons, bottom_left_handle, area->get_split_handle(0));
+
+    Rect top_right_handle = {};
+    top_right_handle.top = 12;
+    top_right_handle.right = 12;
+    draw_sprite(area, &state->icons, top_right_handle, area->get_split_handle(1));
 
     // Draw delete buttons
     if (i > 0) {
