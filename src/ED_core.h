@@ -82,6 +82,7 @@ struct Image {
   u32 *data;
 
   u32 color(int, int, r32);
+  void load_from_file(char *);
 };
 
 struct Pixel_Buffer {

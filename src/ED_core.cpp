@@ -172,6 +172,8 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer,
 
   g_font.load_from_file("../src/ui/fonts/Ubuntu-R.ttf", 16);
 
+  state->icons.load_from_file("../assets/icons.png");
+
   // Create main area
   sb_reserve(state->UI->areas, 10);  // reserve memory for 10 area pointers
   state->UI->create_area(
@@ -363,4 +365,27 @@ u32 Image::color(int x, int y, r32 intensity = 1.0f) {
   u32 A = (0xFF000000 & raw_pixel) >> 24;
   result = (A << 24 | R << 16 | G << 8 | B << 0);
   return result;
+}
+
+// struct Image {
+//   int width;
+//   int height;
+//   int bytes_per_pixel;
+//   u32 *data;
+
+//   u32 color(int, int, r32);
+//   void load_from_file(char *);
+// };
+
+void Image::load_from_file(char *filename) {
+  this->data = (u32 *)stbi_load(filename, &this->width, &this->height,
+                                &this->bytes_per_pixel, 4);
+  if (this->bytes_per_pixel < 3 || this->bytes_per_pixel > 4) {
+    printf("Image format not supported: %s\n", filename);
+    exit(1);
+  }
+  if (this->data == NULL) {
+    printf("Can't read file %s\n", filename);
+    exit(1);
+  }
 }

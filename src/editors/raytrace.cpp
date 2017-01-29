@@ -7,6 +7,7 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state,
   if (this->is_drawn) {
     if (input->button_went_down(IB_escape)) {
       this->area->editor_type = Area_Editor_Type_3DView;
+      this->area->type_select.option_selected = this->area->editor_type;
     }
 
     TIMED_BLOCK();
