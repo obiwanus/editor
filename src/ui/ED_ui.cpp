@@ -18,7 +18,7 @@ Rect Area::get_split_handle(int num) {
 
 Rect Area::get_delete_button() {
   Rect rect;
-  const int kSquareSize = 10;
+  const int kSquareSize = 8;
   rect.left = 0;
   rect.top = this->get_height();
   rect.right = kSquareSize;
@@ -746,12 +746,14 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     bottom_left_handle.left = 13;
     bottom_left_handle.right = 25;
     bottom_left_handle.top = 12;
-    draw_sprite(area, &state->icons, bottom_left_handle, area->get_split_handle(0));
+    draw_sprite(area, &state->icons, bottom_left_handle,
+                area->get_split_handle(0));
 
     Rect top_right_handle = {};
     top_right_handle.top = 12;
     top_right_handle.right = 12;
-    draw_sprite(area, &state->icons, top_right_handle, area->get_split_handle(1));
+    draw_sprite(area, &state->icons, top_right_handle,
+                area->get_split_handle(1));
 
     // Draw delete buttons
     if (i > 0) {
