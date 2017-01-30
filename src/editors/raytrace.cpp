@@ -192,7 +192,9 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
               texel += model->vts[triangle.vertices[i].vt_index] *
                        triangle_hit.barycentric[i];
             }
-            color = model->texture.color((int)texel.x, (int)texel.y, intensity);
+            color = model->texture.color((int)(texel.x * model->texture.width),
+                                         (int)((1.0f - texel.y) * model->texture.height),
+                                         intensity);
           } else {
             color = get_rgb_u32(V3(0.7f, 0.7f, 0.7f) * intensity);
           }
