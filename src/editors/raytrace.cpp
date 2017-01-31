@@ -105,7 +105,7 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
         int model_id = -1;
         int object_id = -1;
         int fan_triangle_id = -1;
-        Object_Type object_type;
+        Object_Type object_type = Object_Type_Triangle;
 
         for (int m = 0; m < sb_count(models); ++m) {
           Model *model = models + m;
