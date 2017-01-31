@@ -1,13 +1,6 @@
 #ifndef ED_MODEL_H
 #define ED_MODEL_H
 
-enum Object_Type {
-  Object_Type_Triangle = 0,
-  Object_Type_Fan,
-
-  Object_Type__COUNT,
-};
-
 struct Vertex {
   int index;
   int vt_index;
@@ -48,7 +41,6 @@ struct Model : Entity {
   v3 *vns;
   v2 *vts;
   Triangle *triangles;
-  Fan *fans;
   Image texture;
   v3 old_position;
   v3 old_direction;

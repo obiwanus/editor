@@ -77,25 +77,6 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
             state->selected_model = model;
           }
         }
-
-        for (int f = 0; f < sb_count(model->fans); ++f) {
-            Fan fan = model->fans[f];
-            v3 vertices[Fan::kMaxNumVertices];
-            // Transform all vertices
-            for (int i = 0; i < fan.num_vertices; ++i) {
-              vertices[i] =
-                  ModelTransform * model->vertices[fan.vertices[i].index];
-            }
-            // Calculate hits
-            for (int i = 0; i < fan.num_vertices - 2; ++i) {
-              v3 triangle[3] = {vertices[0], vertices[i + 1], vertices[i + 2]};
-              Triangle_Hit hit = ray.hits_triangle(triangle);
-              if (hit.at > 0 && hit.at < min_hit) {
-                min_hit = hit.at;
-                state->selected_model = model;
-              }
-            }
-          }
       }
     }
     if (input->key_went_down('A')) {
@@ -261,27 +242,6 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 
       triangle_rasterize_simd(area, screen_verts, vns, z_buffer, light_dir,
                               outline);
-    }
-
-    for (int f = 0; f < sb_count(model->fans); ++f) {
-      Fan fan = model->fans[f];
-      v3 screen_verts[Fan::kMaxNumVertices];
-      v3 vns[Fan::kMaxNumVertices];
-
-      for (int i = 0; i < fan.num_vertices; ++i) {
-        v3 vertex = ModelTransform * model->vertices[fan.vertices[i].index];
-        screen_verts[i] = WorldTransform * vertex;
-        vns[i] = model->vns[fan.vertices[i].vn_index];
-        vns[i] = V3(ModelTransform * V4_v(vns[i])).normalized();
-      }
-
-      for (int i = 0; i < fan.num_vertices - 2; ++i) {
-        v3 triangle[3] = {screen_verts[0], screen_verts[i + 1],
-                          screen_verts[i + 2]};
-        v3 tr_vns[3] = {vns[0], vns[i + 1], vns[i + 2]};
-        triangle_rasterize_simd(area, triangle, tr_vns, z_buffer, light_dir,
-                                outline);
-      }
     }
 
     if (model == state->selected_model) {

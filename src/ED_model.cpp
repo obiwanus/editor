@@ -40,7 +40,6 @@ void Model::update_aabb(bool transformed) {
 
 void Model::set_defaults() {
   this->triangles = NULL;
-  this->fans = NULL;
   this->vertices = NULL;
   this->vts = NULL;
   this->vns = NULL;
@@ -55,7 +54,6 @@ void Model::destroy() {
   sb_free(this->vns);
   sb_free(this->vts);
   sb_free(this->triangles);
-  sb_free(this->fans);
 }
 
 m4x4 Model::get_transform_matrix() {

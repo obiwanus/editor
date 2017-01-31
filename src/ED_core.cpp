@@ -87,15 +87,7 @@ void Program_State::read_wavefront_obj_file(char *filename) {
         indices[num_indices++] = parsed_index;
         assert(num_indices <= kMaxIndices);
       }
-      if (num_indices == 9) {
-        Triangle triangle;
-        for (int i = 0; i < 3; ++i) {
-          triangle.vertices[i].index = indices[3 * i];
-          triangle.vertices[i].vt_index = indices[3 * i + 1];
-          triangle.vertices[i].vn_index = indices[3 * i + 2];
-        }
-        sb_push(model.triangles, triangle);
-      } else if (num_indices >= 12 && (num_indices % 3) == 0) {
+      if (num_indices >= 9 && (num_indices % 3) == 0) {
         Fan fan;
         fan.num_vertices = num_indices / 3;
         for (int i = 0; i < fan.num_vertices; ++i) {
@@ -103,7 +95,15 @@ void Program_State::read_wavefront_obj_file(char *filename) {
           fan.vertices[i].vt_index = indices[3 * i + 1];
           fan.vertices[i].vn_index = indices[3 * i + 2];
         }
-        sb_push(model.fans, fan);
+        int triangle_count = fan.num_vertices - 2;
+        for (int i = 0; i < triangle_count; ++i) {
+          Triangle triangle;
+          triangle.vertices[0] = fan.vertices[0];
+          triangle.vertices[1] = fan.vertices[1 + i];
+          triangle.vertices[2] = fan.vertices[2 + i];
+
+          sb_push(model.triangles, triangle);
+        }
       } else {
         printf("Unknown face definition in file %s, line \"%s\"\n", filename,
                string);
@@ -186,14 +186,15 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer,
   state->models = NULL;
   state->selected_model = NULL;
 
-  this->read_wavefront_obj_file("../models/african_head/african_head.wobj");
+  // this->read_wavefront_obj_file("../models/african_head/african_head.wobj");
   // this->read_wavefront_obj_file("../models/teapot/teapot.wobj");
   // this->read_wavefront_obj_file("../models/cube/cube.wobj");
   // this->read_wavefront_obj_file("../models/test.wobj");
-  // this->read_wavefront_obj_file("../models/culdesac/geometricCuldesac.wobj");
+  this->read_wavefront_obj_file("../models/culdesac/geometricCuldesac.wobj");
 
   Model *model = &state->models[0];
-  model->read_texture("../models/african_head/african_head_diffuse.jpg");
+  // model->read_texture("../models/african_head/african_head_diffuse.jpg");
+  // model->read_texture("../models/cube/cube.png");
 
 }
 
