@@ -1,15 +1,10 @@
-MINIMUM WHAT NEEDS TO BE DONE:
-
-- Move models with or without manipulator
-- Read mtl files
-- Render from the camera (using mtl)
-- simd for ray tracing?
-
-
 NOW:
 
-- nice icons for splitting and removing
--
+- Move models with or without manipulator
+- Markers for raytrace
+- Read mtl files
+- Render from the camera (using mtl)
+- simd for ray tracing ?
 
 
 BUGS:
@@ -70,10 +65,17 @@ idea: try to look at the objects in clip space from different angles
 
 DONE:
 
-[29/02/2017]
+[01/02/2017]
+- get rid of fans (maybe temporarily)
+- aabb check on model select
 
+[30/01/2017]
+- raytrace texture mapping
 
-[28/02/2017]
+[29/01/2017]
+- nice icons for splitting
+
+[28/01/2017]
 - basic chalky raytrace render
 - don't copy raytrace views on split
 - [linux] raytrace work queue

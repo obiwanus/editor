@@ -1,4 +1,35 @@
 
+Model *select_model(Model *models, Ray ray) {
+  Model *result = NULL;
+
+  r32 min_hit = INFINITY;
+
+  for (int m = 0; m < sb_count(models); ++m) {
+    Model *model = models + m;
+    if (!model->display) continue;
+    if (!ray.hits_aabb(model->aabb)) continue;
+
+    // Put model in the scene
+    m4x4 ModelTransform = model->get_transform_matrix();
+
+    for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
+      Triangle triangle = model->triangles[tr];
+      v3 vertices[3];
+      for (int i = 0; i < 3; ++i) {
+        vertices[i] =
+            ModelTransform * model->vertices[triangle.vertices[i].index];
+      }
+      Triangle_Hit hit = ray.hits_triangle(vertices);
+      if (hit.at > 0 && hit.at < min_hit) {
+        min_hit = hit.at;
+        result = model;
+      }
+    }
+  }
+
+  return result;
+}
+
 void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
                          Program_State *state, User_Input *input) {
 #if 0
@@ -51,33 +82,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
               (ray.direction * this->camera.direction);
       ui->cursor = ray.get_point_at(t);
     } else if (input->button_went_down(IB_mouse_right)) {
-      // Attempt to select a model
-      // TODO: add bounding box check
-      // (I don't like this loop)
-      r32 min_hit = INFINITY;
-
-      for (int m = 0; m < sb_count(state->models); ++m) {
-        Model *model = state->models + m;
-        if (!model->display) continue;
-        if (model == state->selected_model) continue;
-
-        // Put model in the scene
-        m4x4 ModelTransform = model->get_transform_matrix();
-
-        for (int tr = 0; tr < sb_count(model->triangles); ++tr) {
-          Triangle triangle = model->triangles[tr];
-          v3 vertices[3];
-          for (int i = 0; i < 3; ++i) {
-            vertices[i] =
-                ModelTransform * model->vertices[triangle.vertices[i].index];
-          }
-          Triangle_Hit hit = ray.hits_triangle(vertices);
-          if (hit.at > 0 && hit.at < min_hit) {
-            min_hit = hit.at;
-            state->selected_model = model;
-          }
-        }
-      }
+      state->selected_model = select_model(state->models, ray);
     }
     if (input->key_went_down('A')) {
       Model model = state->models[0];
