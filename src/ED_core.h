@@ -125,6 +125,7 @@ struct Program_State {
 
   Model *models = NULL;
   Model *selected_model = NULL;
+  Model *model_being_moved = NULL;
 
   Image icons;
 

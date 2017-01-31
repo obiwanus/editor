@@ -74,17 +74,8 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     v2i mouse_position = this->area->get_rect().projected(input->mouse);
     Ray ray = this->camera.get_ray_through_pixel(mouse_position);
 
-    if (input->button_went_down(IB_mouse_left)) {
-      // Set cursor position to the point of intersection between the ray
-      // and the plane passing through the camera pivot and orthogonal
-      // to camera's direction
-      r32 t = (this->camera.pivot - ray.origin) * this->camera.direction /
-              (ray.direction * this->camera.direction);
-      ui->cursor = ray.get_point_at(t);
-    } else if (input->button_went_down(IB_mouse_right)) {
-      state->selected_model = select_model(state->models, ray);
-    }
     if (input->key_went_down('A')) {
+      // @TMP
       Model model = state->models[0];
       model.position = ui->cursor;
       model.direction = (this->camera.position - model.position).normalized();
@@ -166,6 +157,38 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       this->camera.position += -this->camera.direction *
                                this->camera.distance_to_pivot() *
                                (input->scroll / 10.0f);
+    }
+
+    if (input->button_went_down(IB_mouse_left)) {
+      // Set cursor position to the point of intersection between the ray
+      // and the plane passing through the camera pivot and orthogonal
+      // to camera's direction
+      r32 t = (this->camera.pivot - ray.origin) * this->camera.direction /
+              (ray.direction * this->camera.direction);
+      ui->cursor = ray.get_point_at(t);
+    }
+
+    if (input->button_went_down(IB_mouse_right)) {
+      state->selected_model = select_model(state->models, ray);
+    }
+
+    if (input->button_is_down(IB_mouse_right)) {
+      v2 delta = V2(input->mouse_positions[IB_mouse_right] - input->mouse);
+
+      const int kThreshold = 5;
+      if (state->selected_model != NULL && delta.len() > kThreshold) {
+        state->model_being_moved = state->selected_model;
+      }
+      if (state->model_being_moved != NULL) {
+        // @TODO: fix
+        r32 t = (state->model_being_moved->position - ray.origin) *
+                this->camera.direction /
+                (ray.direction * this->camera.direction);
+        state->model_being_moved->position = ray.get_point_at(t);
+      }
+
+    } else {
+      state->model_being_moved = NULL;
     }
   }
 
