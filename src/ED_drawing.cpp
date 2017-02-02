@@ -128,15 +128,6 @@ void draw_line(Area *area, v3 Af, v3 Bf, u32 color, r32 *z_buffer) {
   }
 }
 
-// void triangle_wireframe(Area *area, v3 verts[], u32 color) {
-//   v2i vert0 = V2i(verts[0]);
-//   v2i vert1 = V2i(verts[1]);
-//   v2i vert2 = V2i(verts[2]);
-//   draw_line(area, vert0, vert1, color);
-//   draw_line(area, vert0, vert2, color);
-//   draw_line(area, vert1, vert2, color);
-// }
-
 int orient2d(v2i p, v2i a, v2i b) {
   return (a.x - p.x) * (b.y - p.y) - (a.y - p.y) * (b.x - p.x);
 }

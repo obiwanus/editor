@@ -10,7 +10,6 @@
   char fps_string[100];
   sprintf(fps_string, "FPS: %d, min: %d, max: %d", g_FPS.value, g_FPS.min,
           g_FPS.max);
-  // char *fps_string = "60";
   draw_string(main_area, V2i(10, 10), fps_string, 0x00FFFFFF);
 
   g_FPS.frame_count--;
