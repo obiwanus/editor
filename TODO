@@ -27,7 +27,6 @@ BACKLOG:
 - thread-safe performance counters
 - when selecting models, take the closest one
 - properly outline triangles
-- try to update before drawing to remove the lag between different areas
 - use 2 light sources (maybe even point ones)
 - drawing a silhouette of the selected model
 - drag models without manipulator
@@ -64,6 +63,9 @@ idea: try to look at the objects in clip space from different angles
 ==============================================================================
 
 DONE:
+
+[05/02/2017]
+- try to update before drawing to remove the lag between different areas
 
 [01/02/2017]
 - get rid of fans (maybe temporarily)

@@ -679,9 +679,35 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
   }
   memset(this->z_buffer, 0, buffer->width * buffer->height * sizeof(r32));
 
-  // for (int i = 0; i < buffer->width * buffer->height; ++i) {
-  //   this->z_buffer[i] = -INFINITY;
-  // }
+  // I don't like that we loop over all areas twice, but
+  // if we update them all first, then draw, there will be no
+  // delay when displaying changes in other areas
+  for (int i = 0; i < this->num_areas; ++i) {
+    Area *area = this->areas[i];
+    if (!area->is_visible()) continue;  // ignore wrapper areas
+
+    // Update
+    switch (area->editor_type) {
+      case Area_Editor_Type_3DView: {
+        area->editor_3dview.update(state, input);
+      } break;
+
+      case Area_Editor_Type_Raytrace: {
+        area->editor_raytrace.update(input);
+      } break;
+
+      default: { assert(!"Unknown editor type"); } break;
+    }
+
+    // Draw panels
+    Rect panel_rect = {};
+    panel_rect.top = Area::kPanelHeight;
+    panel_rect.right = area->get_width();
+    draw_rect(area, panel_rect, 0x00686868);
+
+    // Draw type select
+    area->type_select.update_and_draw(input);
+  }
 
   // Update and draw areas
   for (int i = 0; i < this->num_areas; ++i) {
@@ -691,11 +717,11 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     // Draw editor contents
     switch (area->editor_type) {
       case Area_Editor_Type_3DView: {
-        area->editor_3dview.draw(buffer, z_buffer, state, input);
+        area->editor_3dview.draw(buffer, z_buffer, state);
       } break;
 
       case Area_Editor_Type_Raytrace: {
-        area->editor_raytrace.draw(buffer, state, input);
+        area->editor_raytrace.draw(buffer, state);
       } break;
 
       default: { assert(!"Unknown editor type"); } break;

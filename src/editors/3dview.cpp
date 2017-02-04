@@ -30,10 +30,7 @@ Model *select_model(Model *models, Ray ray) {
   return result;
 }
 
-void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
-                         Program_State *state, User_Input *input) {
-  TIMED_BLOCK();
-
+void Editor_3DView::update(Program_State *state, User_Input *input) {
   User_Interface *ui = state->UI;
   bool active = ui->active_area == this->area;
 
@@ -163,6 +160,12 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
       state->model_being_moved = NULL;
     }
   }
+}
+
+void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
+                         Program_State *state) {
+  int area_width = this->area->get_width();
+  int area_height = this->area->get_height();
 
   m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
 
@@ -307,7 +310,7 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
 
   // Draw cursor
   {
-    v2i cursor = V2i(WorldTransform * ui->cursor);
+    v2i cursor = V2i(WorldTransform * state->UI->cursor);
     Rect cursor_rect = {cursor.x - 3, cursor.y + 3, cursor.x + 3, cursor.y - 3};
     draw_rect(area, cursor_rect, 0x00FF0000);
   }

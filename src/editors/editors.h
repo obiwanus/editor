@@ -33,13 +33,15 @@ struct Editor_3DView : Area_Editor {
   Camera camera;
   Editor_3DView_Mode mode;
 
-  void draw(Pixel_Buffer *, r32 *, Program_State *, User_Input *);
+  void update(Program_State *, User_Input *);
+  void draw(Pixel_Buffer *, r32 *, Program_State *);
 };
 
 struct Editor_Raytrace : Area_Editor {
   Pixel_Buffer backbuffer;
 
-  void draw(Pixel_Buffer *, Program_State *, User_Input *);
+  void update(User_Input *);
+  void draw(Pixel_Buffer *, Program_State *);
   void trace_tile(Model *, v2i, v2i);
 };
 

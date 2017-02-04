@@ -1,15 +1,19 @@
 
-void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state,
-                           User_Input *input) {
-  int area_width = this->area->get_width();
-  int area_height = this->area->get_height();
-
+void Editor_Raytrace::update(User_Input *input) {
   if (this->is_drawn) {
     if (input->button_went_down(IB_escape)) {
       this->area->editor_type = Area_Editor_Type_3DView;
       this->area->type_select.option_selected = this->area->editor_type;
     }
+  }
+}
 
+
+void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
+  int area_width = this->area->get_width();
+  int area_height = this->area->get_height();
+
+  if (this->is_drawn) {
     TIMED_BLOCK();
     // Blit the contents of the back buffer
     // TODO: simd?
