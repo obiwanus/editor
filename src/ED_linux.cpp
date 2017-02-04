@@ -325,6 +325,9 @@ struct thread_info {
   int thread_num;
 };
 
+static const int kNumThreads = 4;
+static thread_info g_threads[kNumThreads];
+
 void *raytrace_worker_thread(void *arg) {
   thread_info *info = (thread_info *)arg;
 
@@ -435,18 +438,15 @@ int main(int argc, char *argv[]) {
 
   // Create worked threads
   {
-    const int kNumThreads = 4;
-
     // Init work queue
     g_raytrace_queue.next_entry_to_add = 0;
     g_raytrace_queue.next_entry_to_do = 0;
     sem_init(&g_raytrace_queue.semaphore, 0, 0);
 
-    thread_info threads[kNumThreads];
     for (int i = 0; i < kNumThreads; ++i) {
-      threads[i].thread_num = i + 1;
-      int error = pthread_create(&threads[i].thread_id, NULL,
-                                 raytrace_worker_thread, &threads[i]);
+      g_threads[i].thread_num = i + 1;
+      int error = pthread_create(&g_threads[i].thread_id, NULL,
+                                 raytrace_worker_thread, &g_threads[i]);
       if (error) {
         printf("Can't create thread\n");
         exit(EXIT_FAILURE);

@@ -24,7 +24,6 @@ BACKLOG:
 - avoid random heap allocations everywhere
 - put things we're not going to free in the permanent memory
 - thread-safe performance counters
-- when selecting models, take the closest one
 - properly outline triangles
 - use 2 light sources (maybe even point ones)
 - drawing a silhouette of the selected model
