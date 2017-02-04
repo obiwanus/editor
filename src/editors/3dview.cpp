@@ -182,15 +182,17 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     Model *model = state->models + m;
     if (!model->display) continue;
 
-    // Basic frustum culling - using the AABB calculated in the prev frame
+    if (model->old_position != model->position ||
+        model->old_direction != model->direction) {
+      model->old_direction = model->direction;
+      model->old_position = model->position;
+      model->transform_calculated = false;
+      model->update_aabb(true);  // transformed model aabb
+    }
+
+    // Basic frustum culling
     // (the vertices are already in the scene space)
     {
-      if (model->old_position != model->position ||
-          model->old_direction != model->direction) {
-        model->old_direction = model->direction;
-        model->old_position = model->position;
-        model->update_aabb(true);  // transformed model aabb
-      }
       v3 min = model->aabb.min;
       v3 max = model->aabb.max;
       v3 verts[] = {
@@ -371,5 +373,4 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
     draw_string(area, V2i(15, 50), state->selected_model->name, 0x00FFFFFF,
                 false, true);
   }
-
 }

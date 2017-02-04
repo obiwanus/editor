@@ -1,6 +1,5 @@
 NOW:
 
-- Move models with or without manipulator
 - Markers for raytrace
 - Read mtl files
 - Render from the camera (using mtl)
@@ -65,6 +64,7 @@ idea: try to look at the objects in clip space from different angles
 DONE:
 
 [05/02/2017]
+- Move models without manipulator
 - try to update before drawing to remove the lag between different areas
 
 [01/02/2017]
