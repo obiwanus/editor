@@ -125,7 +125,10 @@ struct Program_State {
 
   Model *models = NULL;
   Model *selected_model = NULL;
+
   Model *model_being_moved = NULL;
+  v3 model_moving_offset;  // so that models don't jump when we start moving
+                           // them
 
   Image icons;
 
@@ -171,6 +174,5 @@ global bool g_running;
 global Pixel_Buffer g_pixel_buffer;
 global Program_Memory g_program_memory;
 global ED_Font g_font;
-
 
 #endif  // ED_CORE_H

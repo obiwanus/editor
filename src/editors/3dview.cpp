@@ -145,15 +145,24 @@ void Editor_3DView::update(Program_State *state, User_Input *input) {
       v2 delta = V2(input->mouse_positions[IB_mouse_right] - input->mouse);
 
       const int kThreshold = 5;
-      if (state->selected_model != NULL && delta.len() > kThreshold) {
+      if (state->selected_model != NULL && state->model_being_moved == NULL &&
+          delta.len() > kThreshold) {
         state->model_being_moved = state->selected_model;
-      }
-      if (state->model_being_moved != NULL) {
-        // @TODO: fix
+
+        // @duplicated
         r32 t = (state->model_being_moved->position - ray.origin) *
                 this->camera.direction /
                 (ray.direction * this->camera.direction);
-        state->model_being_moved->position = ray.get_point_at(t);
+        state->model_moving_offset =
+            state->model_being_moved->position - ray.get_point_at(t);
+      }
+      if (state->model_being_moved != NULL) {
+        // @duplicated
+        r32 t = (state->model_being_moved->position - ray.origin) *
+                this->camera.direction /
+                (ray.direction * this->camera.direction);
+        state->model_being_moved->position =
+            ray.get_point_at(t) + state->model_moving_offset;
       }
 
     } else {
