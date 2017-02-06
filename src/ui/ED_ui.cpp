@@ -665,10 +665,6 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
 
   // ------- Draw area contents -------------------------------------------
 
-  // Potentially will be in separate threads
-
-  // TODO: maybe take this completely away from ui::draw?
-
   // Clear
   memset(buffer->memory, EDITOR_BACKGROUND_COLOR,
          buffer->width * buffer->height * sizeof(u32));
@@ -736,9 +732,6 @@ Update_Result User_Interface::update_and_draw(User_Input *input,
     // Draw type select
     area->type_select.update_and_draw(input);
   }
-
-  // TODO: optimize multiple loops.
-  // or maybe use an iterator if we need to keep them?
 
   // ------ Draw UI elements ----------------------------------------------
 

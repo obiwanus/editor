@@ -171,6 +171,7 @@ inline r32 Win32GetMillisecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End) {
   return Result;
 }
 
+// TODO: completion count?
 DWORD WINAPI RaytraceWorkerThread(LPVOID lpParam) {
   Thread_Info *info = (Thread_Info *)lpParam;
 
@@ -487,8 +488,6 @@ int CALLBACK WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance,
     r32 ms_elapsed =
         Win32GetMillisecondsElapsed(last_timestamp, Win32GetWallClock());
     g_FPS.value = (int)(1000.0f / ms_elapsed);
-    // printf("fps: %d\n", g_FPS.x);
-    // printf("%.2f - ", ms_elapsed);
     last_timestamp = Win32GetWallClock();
   }
 
