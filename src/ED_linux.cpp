@@ -320,14 +320,6 @@ u64 linux_time_elapsed() {
   return result;
 }
 
-struct thread_info {
-  pthread_t thread_id;
-  int thread_num;
-};
-
-static const int kNumThreads = 4;
-static thread_info g_threads[kNumThreads];
-
 void *raytrace_worker_thread(void *arg) {
   thread_info *info = (thread_info *)arg;
 
@@ -443,10 +435,12 @@ int main(int argc, char *argv[]) {
     g_raytrace_queue.next_entry_to_do = 0;
     sem_init(&g_raytrace_queue.semaphore, 0, 0);
 
-    for (int i = 0; i < kNumThreads; ++i) {
+    for (int i = 0; i < g_kNumThreads; ++i) {
       g_threads[i].thread_num = i + 1;
-      int error = pthread_create(&g_threads[i].thread_id, NULL,
-                                 raytrace_worker_thread, &g_threads[i]);
+      pthread_t thread_id;  // we forget it since we don't want to talk about it
+                            // (maybe tmp)
+      int error = pthread_create(&thread_id, NULL, raytrace_worker_thread,
+                                 &g_threads[i]);
       if (error) {
         printf("Can't create thread\n");
         exit(EXIT_FAILURE);

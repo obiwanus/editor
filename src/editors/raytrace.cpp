@@ -13,6 +13,7 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
   int area_width = this->area->get_width();
   int area_height = this->area->get_height();
 
+  // TODO: maybe change to needs_redraw?
   if (this->is_drawn) {
     TIMED_BLOCK();
     // Blit the contents of the back buffer
@@ -34,6 +35,7 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
         *pixel_dst = *pixel_src;
       }
     }
+    // Draw the markers of the areas being currently drawn
     return;
   }
 

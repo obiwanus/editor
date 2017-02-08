@@ -117,6 +117,13 @@ struct Update_Result {
 
 struct Raytrace_Work_Queue;
 
+struct thread_info {
+  int thread_num;
+};
+
+const int g_kNumThreads = 4;
+thread_info g_threads[g_kNumThreads];
+
 struct Program_State {
   int kWindowWidth;
   int kWindowHeight;
