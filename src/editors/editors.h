@@ -13,7 +13,7 @@ enum Area_Editor_Type {
 
 struct Area_Editor {
   Area *area;
-  bool is_drawn;
+  bool needs_redraw = true;
 
   void update_and_draw(Pixel_Buffer *, User_Input *){};
 };

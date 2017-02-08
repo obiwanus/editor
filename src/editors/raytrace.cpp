@@ -1,6 +1,6 @@
 
 void Editor_Raytrace::update(User_Input *input) {
-  if (this->is_drawn) {
+  if (!this->needs_redraw) {
     if (input->button_went_down(IB_escape)) {
       this->area->editor_type = Area_Editor_Type_3DView;
       this->area->type_select.option_selected = this->area->editor_type;
@@ -13,8 +13,7 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
   int area_width = this->area->get_width();
   int area_height = this->area->get_height();
 
-  // TODO: maybe change to needs_redraw?
-  if (this->is_drawn) {
+  if (!this->needs_redraw) {
     TIMED_BLOCK();
     // Blit the contents of the back buffer
     // TODO: simd?
@@ -40,7 +39,7 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
   }
 
   // Draw
-  this->is_drawn = true;
+  this->needs_redraw = false;
 
   // Always update the boundaries when drawing
   this->backbuffer.width = area_width;

@@ -286,7 +286,7 @@ void UI_Select::update_and_draw(User_Input *input) {
           // TODO: if we ever generalize this, this bit will have to change
           select->parent_area->editor_type = (Area_Editor_Type)opt;
           if (select->parent_area->editor_type == Area_Editor_Type_Raytrace) {
-            select->parent_area->editor_raytrace.is_drawn = false;
+            select->parent_area->editor_raytrace.needs_redraw = true;
             // TODO: when we use multiple threads to draw, need to
             // be careful as they might not have finished drawing yet
           }
@@ -367,7 +367,8 @@ Area *User_Interface::create_area(Area *parent_area, Rect rect, bool smaller) {
   // Copy raytrace backbuffer if there is one
   if (parent_area != NULL && !smaller) {
     area->editor_raytrace.backbuffer = parent_area->editor_raytrace.backbuffer;
-    area->editor_raytrace.is_drawn = parent_area->editor_raytrace.is_drawn;
+    area->editor_raytrace.needs_redraw =
+        parent_area->editor_raytrace.needs_redraw;
   }
 
   return area;
