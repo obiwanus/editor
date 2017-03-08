@@ -164,6 +164,9 @@ void Program_State::init(Program_Memory *memory, Pixel_Buffer *buffer,
   state->UI->buffer = buffer;
 
   state->raytrace_queue = queue;
+  for (int i = 0; i < g_kNumThreads; ++i) {
+    state->raytrace_queue->entries_in_progress[i] = -1;
+  }
 
   // Allocate memory for the main buffer
   buffer->allocate();

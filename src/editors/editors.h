@@ -25,8 +25,7 @@ enum Editor_3DView_Mode {
 };
 
 char *Editor_Names[Area_Editor_Type__COUNT] = {
-  "3D view",
-  "Ray trace",
+    "3D view", "Ray trace",
 };
 
 struct Editor_3DView : Area_Editor {
@@ -57,6 +56,7 @@ struct Raytrace_Work_Queue {
   u32 volatile next_entry_to_add;
 
   Raytrace_Work_Entry entries[256];
+  int volatile entries_in_progress[g_kNumThreads];
 
   virtual void add_entry(Raytrace_Work_Entry) = 0;
 };

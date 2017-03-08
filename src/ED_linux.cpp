@@ -337,8 +337,11 @@ void *raytrace_worker_thread(void *arg) {
       if (index == original_next_entry_to_do) {
         // No other thread has beaten us to it, do the work
         Raytrace_Work_Entry entry = queue->entries[index];
+        queue->entries_in_progress[info->thread_num] = index;
+        // The line above may cause a machine clear but that's probably OK?
         entry.editor->trace_tile(entry.models, entry.start, entry.end);
         printf("Thread %d did work entry %d\n", info->thread_num, index);
+        queue->entries_in_progress[info->thread_num] = -1;
       }
     } else {
       // Sleep

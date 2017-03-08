@@ -35,20 +35,35 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
     }
 
     // Draw the markers of the areas being currently drawn
-    {
-      int next_to_do = state->raytrace_queue->next_entry_to_do;
-      int next_to_add = state->raytrace_queue->next_entry_to_add;
-      if (next_to_add < next_to_do) {
-        next_to_add += COUNT_OF(state->raytrace_queue->entries);
-        assert(COUNT_OF(state->raytrace_queue->entries) == 256);  // TODO: del
-      }
-      for (int i = next_to_do; i < next_to_add; i++) {
+    for (int i = 0; i < g_kNumThreads; ++i) {
+      int entry_in_progress = state->raytrace_queue->entries_in_progress[i];
+      if (entry_in_progress >= 0) {
         Raytrace_Work_Entry *entry =
-            state->raytrace_queue->entries +
-            (i % COUNT_OF(state->raytrace_queue->entries));
+            state->raytrace_queue->entries + entry_in_progress;
         draw_line(this->area, entry->start, entry->end, 0xFF4000);
       }
     }
+
+    // TODO: bugs
+    // 1. one of the entries is not displayed
+    // 2. drawing is not centered
+    // 3. one thread keeps waking up at the end
+
+    // {
+    //   int next_to_do = state->raytrace_queue->next_entry_to_do;
+    //   int next_to_add = state->raytrace_queue->next_entry_to_add;
+    //   if (next_to_add < next_to_do) {
+    //     next_to_add += COUNT_OF(state->raytrace_queue->entries);
+    //     assert(COUNT_OF(state->raytrace_queue->entries) == 256);  // TODO:
+    //     del
+    //   }
+    //   for (int i = next_to_do; i < next_to_add; i++) {
+    //     Raytrace_Work_Entry *entry =
+    //         state->raytrace_queue->entries +
+    //         (i % COUNT_OF(state->raytrace_queue->entries));
+    //     draw_line(this->area, entry->start, entry->end, 0xFF4000);
+    //   }
+    // }
 
     return;
   }
