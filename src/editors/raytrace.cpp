@@ -8,7 +8,6 @@ void Editor_Raytrace::update(User_Input *input) {
   }
 }
 
-
 void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
   int area_width = this->area->get_width();
   int area_height = this->area->get_height();
@@ -34,7 +33,23 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
         *pixel_dst = *pixel_src;
       }
     }
+
     // Draw the markers of the areas being currently drawn
+    {
+      int next_to_do = state->raytrace_queue->next_entry_to_do;
+      int next_to_add = state->raytrace_queue->next_entry_to_add;
+      if (next_to_add < next_to_do) {
+        next_to_add += COUNT_OF(state->raytrace_queue->entries);
+        assert(COUNT_OF(state->raytrace_queue->entries) == 256);  // TODO: del
+      }
+      for (int i = next_to_do; i < next_to_add; i++) {
+        Raytrace_Work_Entry *entry =
+            state->raytrace_queue->entries +
+            (i % COUNT_OF(state->raytrace_queue->entries));
+        draw_line(this->area, entry->start, entry->end, 0xFF4000);
+      }
+    }
+
     return;
   }
 
@@ -158,9 +173,9 @@ void Editor_Raytrace::trace_tile(Model *models, v2i start, v2i end) {
               texel += model->vts[triangle.vertices[i].vt_index] *
                        triangle_hit.barycentric[i];
             }
-            color = model->texture.color((int)(texel.x * model->texture.width),
-                                         (int)((1.0f - texel.y) * model->texture.height),
-                                         intensity);
+            color = model->texture.color(
+                (int)(texel.x * model->texture.width),
+                (int)((1.0f - texel.y) * model->texture.height), intensity);
           } else {
             color = get_rgb_u32(V3(0.7f, 0.7f, 0.7f) * intensity);
           }
