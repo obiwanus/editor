@@ -34,36 +34,31 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
       }
     }
 
+    v2i offset = V2i((this->backbuffer.width - area_width) / 2,
+                     (this->backbuffer.height - area_height) / 2);
+
     // Draw the markers of the areas being currently drawn
     for (int i = 0; i < g_kNumThreads; ++i) {
       int entry_in_progress = state->raytrace_queue->entries_in_progress[i];
       if (entry_in_progress >= 0) {
         Raytrace_Work_Entry *entry =
             state->raytrace_queue->entries + entry_in_progress;
-        draw_line(this->area, entry->start, entry->end, 0xFF4000);
+        v2i lb = entry->start - offset;
+        v2i rt = entry->end - offset;
+        v2i lt = V2i(lb.x, rt.y);
+        v2i rb = V2i(rt.x, lb.y);
+        const int kLen = 10;  // corner line length
+        const u32 kColor = 0xFF4000;
+        draw_line(this->area, lb, lb + V2i(0, kLen), kColor);
+        draw_line(this->area, lb, lb + V2i(kLen, 0), kColor);
+        draw_line(this->area, rt, rt - V2i(0, kLen), kColor);
+        draw_line(this->area, rt, rt - V2i(kLen, 0), kColor);
+        draw_line(this->area, lt, lt - V2i(0, kLen), kColor);
+        draw_line(this->area, lt, lt + V2i(kLen, 0), kColor);
+        draw_line(this->area, rb, rb + V2i(0, kLen), kColor);
+        draw_line(this->area, rb, rb - V2i(kLen, 0), kColor);
       }
     }
-
-    // TODO: bugs
-    // 1. one of the entries is not displayed
-    // 2. drawing is not centered
-    // 3. one thread keeps waking up at the end
-
-    // {
-    //   int next_to_do = state->raytrace_queue->next_entry_to_do;
-    //   int next_to_add = state->raytrace_queue->next_entry_to_add;
-    //   if (next_to_add < next_to_do) {
-    //     next_to_add += COUNT_OF(state->raytrace_queue->entries);
-    //     assert(COUNT_OF(state->raytrace_queue->entries) == 256);  // TODO:
-    //     del
-    //   }
-    //   for (int i = next_to_do; i < next_to_add; i++) {
-    //     Raytrace_Work_Entry *entry =
-    //         state->raytrace_queue->entries +
-    //         (i % COUNT_OF(state->raytrace_queue->entries));
-    //     draw_line(this->area, entry->start, entry->end, 0xFF4000);
-    //   }
-    // }
 
     return;
   }

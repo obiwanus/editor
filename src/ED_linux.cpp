@@ -439,7 +439,7 @@ int main(int argc, char *argv[]) {
     sem_init(&g_raytrace_queue.semaphore, 0, 0);
 
     for (int i = 0; i < g_kNumThreads; ++i) {
-      g_threads[i].thread_num = i + 1;
+      g_threads[i].thread_num = i;
       pthread_t thread_id;  // we forget it since we don't want to talk about it
                             // (maybe tmp)
       int error = pthread_create(&thread_id, NULL, raytrace_worker_thread,
