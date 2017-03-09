@@ -34,6 +34,8 @@ void Editor_Raytrace::draw(Pixel_Buffer *buffer, Program_State *state) {
       }
     }
 
+    draw_line(this->area, V2i(-100, 100), V2i(800, 300), 0xFFFFFF);
+
     v2i offset = V2i((this->backbuffer.width - area_width) / 2,
                      (this->backbuffer.height - area_height) / 2);
 

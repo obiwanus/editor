@@ -71,12 +71,29 @@ void draw_line(Area *area, v2i A, v2i B, u32 color, int width = 1) {
   int area_width = area->get_width();
   int area_height = area->get_height();
 
+  // Cull
+  if ((A.x < 0 && B.x < 0) || (A.y < 0 && B.y < 0) ||
+      (A.x > area_width && B.x > area_width) ||
+      (A.y > area_height && B.y > area_height)) {
+    return;  // line is outside area
+  }
+
+  // TODO: bugs
+  // Either culling or clipping below should be modified
+
+  // Clip against area bounds
+  if (A.x > B.x) swap(A, B);
+  if (A.x < 0) A = lerp(A, B, (r32)(-A.x) / (B.x - A.x));
+  if (B.x > area_width) B = lerp(A, B, (r32)(area_width - A.x) / (B.x - A.x));
+
+  if (A.y > B.y) swap(A, B);
+  if (A.y < 0) A = lerp(A, B, (r32)(-A.y) / (B.y - A.y));
+  if (B.y > area_height) B = lerp(A, B, (r32)(area_height - A.y) / (B.y - A.y));
+
   // Put into the area
   v2i offset = V2i(area->left, area->bottom);
   A += offset;
   B += offset;
-
-  // TODO: clip against area bounds
 
   draw_line(area->buffer, A, B, color, width);
 }

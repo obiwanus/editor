@@ -1,6 +1,5 @@
 NOW:
 
-- Markers for raytrace
 - Read mtl files
 - Render from the camera (using mtl)
 
@@ -60,6 +59,11 @@ idea: try to look at the objects in clip space from different angles
 ==============================================================================
 
 DONE:
+
+[10/03/2017]
+- Markers for raytrace
+- Basic line clipping (with bugs)
+
 
 [05/02/2017]
 - Move models without manipulator
