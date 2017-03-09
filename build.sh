@@ -7,7 +7,7 @@ mkdir -p build
 OPTIMIZE=false
 RUN=false
 OPENMP=true
-OPENGL=false
+OPENGL=true
 
 LEAKCHECK=true
 BUILD_INTERNAL=true
@@ -27,7 +27,7 @@ CFLAGS="-g -fno-exceptions\
         -DED_LEAKCHECK=$LEAKCHECK\
         "
 
-LFLAGS="$(pkg-config --cflags --libs x11) -lGL -ldl -lpthread -lm"
+LFLAGS="$(pkg-config --cflags --libs x11 glfw3) -lGL  -ldl -lpthread -lm"
 
 if $OPTIMIZE; then
     CFLAGS="$CFLAGS -O3"
