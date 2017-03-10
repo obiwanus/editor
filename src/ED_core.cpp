@@ -128,7 +128,21 @@ void Program_State::read_wavefront_obj_file(char *filename) {
   }
 
   if (model.vertices != NULL) {
-    sb_push(this->models, model);
+    // sb_push(this->models, model);
+    {
+      assert(this->models == NULL);
+      // push model
+      int *p = (int *)realloc(0, sizeof(Model) + sizeof(int) * 2);
+      if (p) {
+        p[1] = 1;
+        p[0] = 1;
+        Model *result = (Model *)(p + 2);
+        *result = model;
+        this->models = result;
+      } else {
+        assert(!"vasia");
+      }
+    }
     num_models++;
   }
 
