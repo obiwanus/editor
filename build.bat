@@ -25,7 +25,8 @@ pushd build
 @del /Q *.pdb > NUL 2> NUL
 @del /Q *.gmi > NUL 2> NUL
 
-set FilesToCompile= ..\src\ED_win32.cpp
+rem set FilesToCompile= ..\src\ED_win32.cpp
+set FilesToCompile= ..\src\testsimd.cpp
 
 set run_compilation= cl -Feeditor.exe -I..\src %OptimizeFlags% %CommonCompilerFlags% %FilesToCompile% /link %CommonLinkerFlags%
 
