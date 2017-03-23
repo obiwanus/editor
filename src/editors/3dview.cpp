@@ -176,9 +176,9 @@ void Editor_3DView::draw(Pixel_Buffer *buffer, r32 *z_buffer,
   int area_width = this->area->get_width();
   int area_height = this->area->get_height();
 
-  m4x4 CameraSpaceTransform = camera.transform_to_entity_space();
+  m4x4 CameraSpaceTransform = this->camera.transform_to_entity_space();
 
-  m4x4 ProjectionMatrix = camera.projection_matrix();
+  m4x4 ProjectionMatrix = this->camera.projection_matrix();
 
   m4x4 ViewportTransform = Matrix::viewport(0, 0, area_width, area_height);
 

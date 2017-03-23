@@ -27,7 +27,7 @@ CFLAGS="-g -fno-exceptions\
         -DED_LEAKCHECK=$LEAKCHECK\
         "
 
-LFLAGS="$(pkg-config --cflags --libs x11 glfw3) -lGL  -ldl -lpthread -lm"
+LFLAGS="-lGL -lglfw3 $(pkg-config --cflags --libs x11) -lm -ldl -lXrandr -lXi -lXxf86vm -lpthread"
 
 if $OPTIMIZE; then
     CFLAGS="$CFLAGS -O3"
