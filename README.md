@@ -7,8 +7,8 @@ This is a project I built for self education, with the goals being:
 3) Use SIMD and multithreading
 4) Code as quickly as possible, without thinking too much about design
 
-(click to see a quick demo)
+(click below to see a quick demo)
 
 [![Quick demo](https://img.youtube.com/vi/cqdyQezP9Ck/0.jpg)](https://www.youtube.com/watch?v=cqdyQezP9Ck)
 
-The project is on hold. I am likely to return to it some time in the future. I will most likely require a redesign (see goal 4)
+The project is on hold. I am likely to return to it some time in the future. It will most likely require a redesign (a concequence of the goal 4 above)
