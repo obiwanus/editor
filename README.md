@@ -11,4 +11,6 @@ This is a project I built for self education, with the goals being:
 
 [![Quick demo](https://img.youtube.com/vi/cqdyQezP9Ck/0.jpg)](https://www.youtube.com/watch?v=cqdyQezP9Ck)
 
-The project is on hold. I am likely to return to it some time in the future. It will most likely require a redesign (a concequence of the goal 4 above)
+This is done trivially if one uses a math library and a graphics API such as OpenGL, but in this project I did everything the hard way, essentially inventing how to implement all the transforms, how to move the camera around etc. - see the process here http://ivan.ivanovs.info/process.html
+
+The project is on hold. It is possible that I return to it some time in the future. It will most likely require a redesign (a concequence of the goal 4 above)
